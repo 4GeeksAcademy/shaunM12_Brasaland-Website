@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Brasaland grill scene illustration">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#f59e0b"/>
+      <stop offset="1" stop-color="#b45309"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#b91c1c"/>
+      <stop offset="1" stop-color="#facc15"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="800" fill="url(#bg)"/>
+  <rect x="140" y="360" width="920" height="220" rx="28" fill="#1f2937" opacity="0.9"/>
+  <g opacity="0.9">
+    <rect x="200" y="395" width="800" height="14" rx="7" fill="#d1d5db"/>
+    <rect x="200" y="435" width="800" height="14" rx="7" fill="#d1d5db"/>
+    <rect x="200" y="475" width="800" height="14" rx="7" fill="#d1d5db"/>
+    <rect x="200" y="515" width="800" height="14" rx="7" fill="#d1d5db"/>
+  </g>
+  <path d="M360 360c-22-60 16-110 44-152 22 32 42 64 36 108-4 28-12 44-24 44-24 0-42 0-56 0z" fill="url(#flame)"/>
+  <path d="M536 360c-26-72 18-132 58-180 28 38 50 78 42 132-6 36-16 48-32 48-26 0-44 0-68 0z" fill="url(#flame)"/>
+  <path d="M726 360c-22-60 16-110 44-152 22 32 42 64 36 108-4 28-12 44-24 44-24 0-42 0-56 0z" fill="url(#flame)"/>
+  <circle cx="915" cy="220" r="90" fill="#fde68a" opacity="0.35"/>
+  <text x="160" y="690" font-family="Arial, sans-serif" font-size="58" font-weight="700" fill="#fff7ed">Brasaland • Since 2008</text>
+</svg>

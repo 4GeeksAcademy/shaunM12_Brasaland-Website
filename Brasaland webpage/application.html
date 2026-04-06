@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brasaland | Brasa Points Registration</title>
+    <meta
+      name="description"
+      content="Register for Brasa Points and start earning rewards at Brasaland's 14 locations in Colombia and the United States."
+    />
+    <link rel="canonical" href="https://brasaland.com/application.html" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+  <body class="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 text-stone-100 antialiased">
+    <header class="border-b border-amber-200/10 bg-stone-950/95" role="banner">
+      <div class="mx-auto flex w-full max-w-5xl flex-col gap-3 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+        <a href="index.html" class="inline-flex items-center gap-2 rounded text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300">
+          <span class="text-3xl font-extrabold tracking-wide">Brasaland</span>
+        </a>
+
+        <div class="flex items-center gap-2" role="group" aria-label="Language selector" data-i18n-aria-label="languageSelector">
+          <button type="button" data-lang-switch="es" class="rounded-full border border-stone-500 px-3 py-1 text-sm font-semibold text-stone-100 transition hover:border-amber-300 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300">ES</button>
+          <button type="button" data-lang-switch="en" class="rounded-full border border-stone-500 px-3 py-1 text-sm font-semibold text-stone-100 transition hover:border-amber-300 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300">EN</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="mx-auto w-full max-w-5xl px-4 pb-16 pt-8 sm:px-6 lg:px-8" role="main">
+      <section class="rounded-3xl border border-amber-200/20 bg-stone-900/85 p-6 shadow-2xl shadow-black/20 sm:p-8">
+        <h1 class="text-5xl font-extrabold uppercase tracking-wide text-amber-300" data-i18n="formTitle">Join Brasa Points</h1>
+        <p class="mt-2 max-w-3xl text-stone-200" data-i18n="formSubtitle">
+          Complete the form to create your digital loyalty profile and start earning points at any Brasaland location.
+        </p>
+
+        <p class="mt-4 rounded-xl border border-amber-200/30 bg-amber-100/10 p-4 text-sm font-semibold text-amber-100 sm:text-base" data-i18n="orderNotice">
+          Want to place an order? Call your favorite location or visit us directly. Online ordering coming soon!
+        </p>
+
+        <form id="applicationForm" class="mt-6 grid gap-5" novalidate aria-describedby="formMessage">
+          <div class="grid gap-5 md:grid-cols-2">
+            <div>
+              <label class="text-sm font-semibold text-stone-100" for="fullName">
+                <span data-i18n="fullNameLabel">Full name</span> <span class="text-red-300">*</span>
+              </label>
+              <input id="fullName" name="fullName" type="text" autocomplete="name" required data-required="true" class="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-4 py-3 text-base text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20" data-i18n-placeholder="fullNamePlaceholder" placeholder="Jane Doe" aria-describedby="fullNameError" />
+              <p id="fullNameError" class="mt-1 hidden text-sm font-semibold text-red-300" role="alert"></p>
+            </div>
+
+            <div>
+              <label class="text-sm font-semibold text-stone-100" for="email">
+                <span data-i18n="emailLabel">Email</span> <span class="text-red-300">*</span>
+              </label>
+              <input id="email" name="email" type="email" autocomplete="email" required data-required="true" class="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-4 py-3 text-base text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20" data-i18n-placeholder="emailPlaceholder" placeholder="name@email.com" aria-describedby="emailError" />
+              <p id="emailError" class="mt-1 hidden text-sm font-semibold text-red-300" role="alert"></p>
+            </div>
+
+            <div>
+              <label class="text-sm font-semibold text-stone-100" for="phone">
+                <span data-i18n="phoneLabel">Phone</span> <span class="text-red-300">*</span>
+              </label>
+              <input id="phone" name="phone" type="tel" autocomplete="tel" required data-required="true" class="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-4 py-3 text-base text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20" placeholder="+57 300 123 4567" aria-describedby="phoneError" />
+              <p id="phoneError" class="mt-1 hidden text-sm font-semibold text-red-300" role="alert"></p>
+            </div>
+
+            <div>
+              <label class="text-sm font-semibold text-stone-100" for="country">
+                <span data-i18n="countryLabel">Country</span> <span class="text-red-300">*</span>
+              </label>
+              <select id="country" name="country" required data-required="true" class="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-4 py-3 text-base text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20" aria-describedby="countryError">
+                <option value="" data-i18n="countryPlaceholder">Select your country</option>
+              </select>
+              <p id="countryError" class="mt-1 hidden text-sm font-semibold text-red-300" role="alert"></p>
+            </div>
+
+            <div>
+              <label class="text-sm font-semibold text-stone-100" for="city">
+                <span data-i18n="cityLabel">City</span> <span class="text-red-300">*</span>
+              </label>
+              <select id="city" name="city" required data-required="true" class="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-4 py-3 text-base text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20" aria-describedby="cityError">
+                <option value="" data-i18n="cityPlaceholder">Select your city</option>
+              </select>
+              <p id="cityError" class="mt-1 hidden text-sm font-semibold text-red-300" role="alert"></p>
+            </div>
+
+            <div>
+              <label class="text-sm font-semibold text-stone-100" for="favoriteLocation">
+                <span data-i18n="favoriteLocationLabel">Favorite Brasaland location</span>
+              </label>
+              <select id="favoriteLocation" name="favoriteLocation" class="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-4 py-3 text-base text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20" aria-describedby="favoriteLocationHelp">
+                <option value="" data-i18n="favoriteLocationPlaceholder">Select location (optional)</option>
+              </select>
+              <p id="favoriteLocationHelp" class="mt-1 text-xs text-stone-400" data-i18n="favoriteLocationHelp">Options update based on country and city.</p>
+            </div>
+
+            <div>
+              <label class="text-sm font-semibold text-stone-100" for="discoverySource">
+                <span data-i18n="discoveryLabel">How did you find us?</span> <span class="text-red-300">*</span>
+              </label>
+              <select id="discoverySource" name="discoverySource" required data-required="true" class="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-4 py-3 text-base text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20" aria-describedby="discoverySourceError">
+                <option value="" data-i18n="discoveryPlaceholder">Tell us how you found Brasaland</option>
+                <option value="social-media" data-i18n="discoverySocial">Social media</option>
+                <option value="recommendation" data-i18n="discoveryRecommendation">Recommendation</option>
+                <option value="walked-by" data-i18n="discoveryWalkedBy">Walked by</option>
+                <option value="internet-search" data-i18n="discoveryInternetSearch">Internet search</option>
+                <option value="other" data-i18n="discoveryOther">Other</option>
+              </select>
+              <p id="discoverySourceError" class="mt-1 hidden text-sm font-semibold text-red-300" role="alert"></p>
+            </div>
+
+            <div>
+              <label class="text-sm font-semibold text-stone-100" for="dateOfBirth">
+                <span data-i18n="dobLabel">Date of birth</span> <span class="text-red-300">*</span>
+              </label>
+              <input id="dateOfBirth" name="dateOfBirth" type="date" required data-required="true" class="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-4 py-3 text-base text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20" aria-describedby="dateOfBirthError" />
+              <p id="dateOfBirthError" class="mt-1 hidden text-sm font-semibold text-red-300" role="alert"></p>
+            </div>
+          </div>
+
+          <fieldset class="rounded-2xl border border-stone-700/80 p-4" aria-describedby="dietaryHelp">
+            <legend class="px-2 text-sm font-semibold text-stone-100" data-i18n="dietaryLegend">Dietary preferences</legend>
+            <p id="dietaryHelp" class="text-xs text-stone-400" data-i18n="dietaryHelp">Select all that apply.</p>
+            <div class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <label class="inline-flex items-center gap-2 text-sm text-stone-200" for="dietaryNone">
+                <input id="dietaryNone" name="dietaryPreferences" value="no-restrictions" type="checkbox" class="h-4 w-4 rounded border-stone-500 bg-stone-950 text-amber-300 focus:ring-amber-300" />
+                <span data-i18n="dietaryNone">No restrictions</span>
+              </label>
+              <label class="inline-flex items-center gap-2 text-sm text-stone-200" for="dietaryVegetarian">
+                <input id="dietaryVegetarian" name="dietaryPreferences" value="vegetarian" type="checkbox" class="h-4 w-4 rounded border-stone-500 bg-stone-950 text-amber-300 focus:ring-amber-300" />
+                <span data-i18n="dietaryVegetarian">Vegetarian</span>
+              </label>
+              <label class="inline-flex items-center gap-2 text-sm text-stone-200" for="dietaryGlutenFree">
+                <input id="dietaryGlutenFree" name="dietaryPreferences" value="gluten-free" type="checkbox" class="h-4 w-4 rounded border-stone-500 bg-stone-950 text-amber-300 focus:ring-amber-300" />
+                <span data-i18n="dietaryGlutenFree">Gluten-free</span>
+              </label>
+              <label class="inline-flex items-center gap-2 text-sm text-stone-200" for="dietaryOther">
+                <input id="dietaryOther" name="dietaryPreferences" value="other" type="checkbox" class="h-4 w-4 rounded border-stone-500 bg-stone-950 text-amber-300 focus:ring-amber-300" />
+                <span data-i18n="dietaryOther">Other</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <fieldset class="rounded-2xl border border-stone-700/80 p-4">
+            <legend class="px-2 text-sm font-semibold text-stone-100" data-i18n="consentLegend">Consent</legend>
+            <div class="grid gap-2">
+              <label class="inline-flex items-start gap-2 text-sm text-stone-200" for="acceptTerms">
+                <input id="acceptTerms" name="acceptTerms" type="checkbox" required data-required="true" class="mt-0.5 h-4 w-4 rounded border-stone-500 bg-stone-950 text-amber-300 focus:ring-amber-300" aria-describedby="acceptTermsError" />
+                <span><span data-i18n="acceptTermsLabel">I accept program terms</span> <span class="text-red-300">*</span></span>
+              </label>
+              <p id="acceptTermsError" class="hidden text-sm font-semibold text-red-300" role="alert"></p>
+
+              <label class="inline-flex items-start gap-2 text-sm text-stone-200" for="emailOffers">
+                <input id="emailOffers" name="emailOffers" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-stone-500 bg-stone-950 text-amber-300 focus:ring-amber-300" />
+                <span data-i18n="emailOffersLabel">I want to receive offers via email</span>
+              </label>
+            </div>
+          </fieldset>
+
+          <div class="flex flex-wrap gap-3 pt-2">
+            <button type="submit" class="rounded-full bg-amber-300 px-6 py-3 font-bold text-stone-950 transition hover:-translate-y-0.5 hover:bg-amber-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300" data-i18n="submitButton">Submit registration</button>
+            <button id="clearFormButton" type="button" class="rounded-full border border-stone-500 px-6 py-3 font-bold text-stone-100 transition hover:-translate-y-0.5 hover:border-stone-300 hover:text-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-100" data-i18n="clearButton">Clear form</button>
+            <a href="index.html" class="rounded-full border border-amber-300 px-6 py-3 font-bold text-amber-200 transition hover:-translate-y-0.5 hover:bg-amber-300/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300" data-i18n="backButton">Back to home</a>
+          </div>
+
+          <div id="formMessage" class="hidden rounded-xl border px-4 py-3 text-sm font-semibold sm:text-base" aria-live="polite"></div>
+        </form>
+      </section>
+    </main>
+
+    <script src="validation.js" defer></script>
+  </body>
+</html>

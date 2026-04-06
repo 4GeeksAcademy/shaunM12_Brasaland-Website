@@ -1,0 +1,16 @@
+{
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/Brasaland webpage/index.html"
+    },
+    {
+      "source": "/application",
+      "destination": "/Brasaland webpage/application.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/Brasaland webpage/$1"
+    }
+  ]
+}
