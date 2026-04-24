@@ -1,0 +1,978 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Brasaland Operations Interface | Milestone 2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="min-h-screen bg-[radial-gradient(circle_at_10%_10%,#3f1f12_0%,#140f0b_45%,#090909_100%)] text-stone-100">
+    <main class="mx-auto w-[94%] max-w-7xl py-8">
+      <section class="rounded-3xl border border-amber-200/20 bg-black/40 p-6 shadow-2xl shadow-black/40 backdrop-blur">
+        <p class="text-xs uppercase tracking-[0.3em] text-amber-200">Milestone 2</p>
+        <h1 class="mt-2 text-4xl font-black uppercase tracking-tight text-amber-100 md:text-5xl">Brasaland Operations Interface</h1>
+        <p class="mt-3 max-w-4xl text-sm text-stone-300 md:text-base">
+          Dashboard aligned with context3 requirements: entities, validations, filtering/search, financial calculations,
+          performance scoring, and operational reports.
+        </p>
+        <div class="mt-5 flex flex-wrap gap-3 text-sm">
+          <a href="../index.html" class="rounded-full border border-amber-300/60 px-4 py-2 font-semibold text-amber-100 hover:bg-amber-300/10">Back to Corporate Site</a>
+        </div>
+      </section>
+
+      <section class="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <article class="rounded-2xl border border-emerald-300/30 bg-emerald-950/30 p-4">
+          <h2 class="text-lg font-bold text-emerald-200">MenuItem Rules</h2>
+          <ul class="mt-2 space-y-1 text-sm text-stone-200">
+            <li>USD/COP prices must be above 0</li>
+            <li>Prep time between 1 and 60 minutes</li>
+            <li>Name is required</li>
+            <li>Available in Colombia or USA</li>
+          </ul>
+        </article>
+        <article class="rounded-2xl border border-cyan-300/30 bg-cyan-950/30 p-4">
+          <h2 class="text-lg font-bold text-cyan-200">SaleTransaction Rules</h2>
+          <ul class="mt-2 space-y-1 text-sm text-stone-200">
+            <li>Quantity above 0</li>
+            <li>USD/COP totals above 0</li>
+            <li>Waiter name required</li>
+            <li>Payment method tracked</li>
+          </ul>
+        </article>
+        <article class="rounded-2xl border border-fuchsia-300/30 bg-fuchsia-950/30 p-4">
+          <h2 class="text-lg font-bold text-fuchsia-200">Location Rules</h2>
+          <ul class="mt-2 space-y-1 text-sm text-stone-200">
+            <li>Opening year 2008 to current year</li>
+            <li>Capacity and staff above 0</li>
+            <li>Rent/utilities above 0</li>
+            <li>Status awareness enabled</li>
+          </ul>
+        </article>
+        <article class="rounded-2xl border border-orange-300/30 bg-orange-950/30 p-4">
+          <h2 class="text-lg font-bold text-orange-200">WasteRecord Tracking</h2>
+          <ul class="mt-2 space-y-1 text-sm text-stone-200">
+            <li>Reason grouped by type</li>
+            <li>Cost measured in USD and COP</li>
+            <li>Linked to item and location</li>
+            <li>Feeds performance score</li>
+          </ul>
+        </article>
+      </section>
+
+      <section class="mt-6 grid gap-4 lg:grid-cols-2">
+        <article class="rounded-2xl border border-amber-200/20 bg-black/35 p-5">
+          <h2 class="text-xl font-bold text-amber-100">Function Runner</h2>
+          <p class="mt-1 text-sm text-stone-300">Run one function at a time. Output is replaced on each selection.</p>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <button data-group-filter="all" class="rounded-full border border-amber-300 bg-amber-300/20 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-100">All</button>
+            <button data-group-filter="collections" class="rounded-full border border-stone-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-stone-200 hover:border-amber-300">Collections</button>
+            <button data-group-filter="search" class="rounded-full border border-stone-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-stone-200 hover:border-amber-300">Search</button>
+            <button data-group-filter="financial" class="rounded-full border border-stone-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-stone-200 hover:border-amber-300">Financial</button>
+            <button data-group-filter="performance" class="rounded-full border border-stone-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-stone-200 hover:border-amber-300">Performance</button>
+            <button data-group-filter="reports" class="rounded-full border border-stone-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-stone-200 hover:border-amber-300">Reports</button>
+            <button data-group-filter="validations" class="rounded-full border border-stone-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-stone-200 hover:border-amber-300">Validations</button>
+          </div>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <button data-group="collections" data-fn="filterSalesByLocation" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">filterSalesByLocation</button>
+            <button data-group="collections" data-fn="filterSalesByDateRange" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">filterSalesByDateRange</button>
+            <button data-group="collections" data-fn="filterMenuItemsByCategory" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">filterMenuItemsByCategory</button>
+            <button data-group="collections" data-fn="filterActiveLocations" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">filterActiveLocations</button>
+            <button data-group="collections" data-fn="sortLocationsByCapacity" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">sortLocationsByCapacity</button>
+            <button data-group="collections" data-fn="sortMenuItemsByPrice" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">sortMenuItemsByPrice</button>
+            <button data-group="search" data-fn="findLocationById" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">findLocationById</button>
+            <button data-group="search" data-fn="findMenuItemByName" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">findMenuItemByName</button>
+            <button data-group="search" data-fn="binarySearchLocationByCapacity" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">binarySearchLocationByCapacity</button>
+            <button data-group="financial" data-fn="calculateDailyRevenue" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">calculateDailyRevenue</button>
+            <button data-group="financial" data-fn="calculateLocationMargin" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">calculateLocationMargin</button>
+            <button data-group="financial" data-fn="calculateWasteCost" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">calculateWasteCost</button>
+            <button data-group="financial" data-fn="convertCurrency" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">convertCurrency</button>
+            <button data-group="performance" data-fn="scoreLocationPerformance" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">scoreLocationPerformance</button>
+            <button data-group="performance" data-fn="rankLocationsByPerformance" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">rankLocationsByPerformance</button>
+            <button data-group="reports" data-fn="countSalesByPaymentMethod" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">countSalesByPaymentMethod</button>
+            <button data-group="reports" data-fn="calculateAverageTicket" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">calculateAverageTicket</button>
+            <button data-group="reports" data-fn="findTopSellingItems" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">findTopSellingItems</button>
+            <button data-group="reports" data-fn="groupWasteByReason" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">groupWasteByReason</button>
+            <button data-group="reports" data-fn="calculateCountryComparison" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">calculateCountryComparison</button>
+            <button data-group="validations" data-fn="validateMenuItem" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">validateMenuItem</button>
+            <button data-group="validations" data-fn="validateSaleTransaction" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">validateSaleTransaction</button>
+            <button data-group="validations" data-fn="validateLocation" class="rounded-xl border border-amber-300/40 px-3 py-2 text-left text-sm font-semibold hover:bg-amber-300/10">validateLocation</button>
+          </div>
+        </article>
+
+        <article class="rounded-2xl border border-amber-200/20 bg-black/35 p-5">
+          <h2 class="text-xl font-bold text-amber-100">Scenario Controls</h2>
+          <div class="mt-4 grid gap-4 md:grid-cols-2">
+            <label class="text-sm font-semibold text-stone-200">Currency
+              <select id="currency" class="mt-1 w-full rounded-lg border border-stone-600 bg-stone-900 px-3 py-2">
+                <option value="USD">USD</option>
+                <option value="COP">COP</option>
+              </select>
+            </label>
+            <label class="text-sm font-semibold text-stone-200">Location ID
+              <select id="location-id" class="mt-1 w-full rounded-lg border border-stone-600 bg-stone-900 px-3 py-2"></select>
+            </label>
+            <label class="text-sm font-semibold text-stone-200">Target Capacity (Binary Search)
+              <input id="target-capacity" type="number" value="100" class="mt-1 w-full rounded-lg border border-stone-600 bg-stone-900 px-3 py-2" />
+            </label>
+            <label class="text-sm font-semibold text-stone-200">Top N Items
+              <input id="top-n" type="number" value="2" min="1" class="mt-1 w-full rounded-lg border border-stone-600 bg-stone-900 px-3 py-2" />
+            </label>
+          </div>
+        </article>
+      </section>
+
+      <section class="mt-6 rounded-2xl border border-amber-200/20 bg-stone-950/85 p-5">
+        <div class="flex items-center justify-between gap-2">
+          <h2 class="text-xl font-bold text-amber-100">Output</h2>
+          <div class="flex items-center gap-2">
+            <span id="result-counter" class="rounded-full border border-stone-700 bg-stone-900 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-stone-300">0 results</span>
+            <button id="clear-output" class="rounded-lg border border-stone-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-stone-300 hover:border-stone-400">Clear</button>
+          </div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold uppercase tracking-wide">
+          <span class="rounded-full border border-emerald-400/40 bg-emerald-900/30 px-2 py-1 text-emerald-200">Healthy / Positive</span>
+          <span class="rounded-full border border-amber-400/40 bg-amber-900/30 px-2 py-1 text-amber-200">Needs Attention</span>
+          <span class="rounded-full border border-red-400/40 bg-red-900/30 px-2 py-1 text-red-200">Risk / Error</span>
+          <span class="rounded-full border border-cyan-400/40 bg-cyan-900/30 px-2 py-1 text-cyan-200">Informational</span>
+        </div>
+        <div id="output" class="mt-3 grid gap-3"></div>
+      </section>
+    </main>
+
+    <script>
+      const exchangeRate = 4000;
+
+      const menuItems = [
+        { id: "ITEM-PICANHA-250", name: "Picanha 250g", category: "Meat", basePrice: { USD: 18.5, COP: 74000 }, ingredientCost: { USD: 7.2, COP: 28800 }, prepTimeMinutes: 15, isAvailableInColombia: true, isAvailableInUSA: true, allergens: [], status: "Active" },
+        { id: "ITEM-FRIES", name: "French Fries", category: "Side", basePrice: { USD: 4.5, COP: 18000 }, ingredientCost: { USD: 1.2, COP: 4800 }, prepTimeMinutes: 8, isAvailableInColombia: true, isAvailableInUSA: true, allergens: [], status: "Active" },
+        { id: "ITEM-COKE", name: "Coca-Cola", category: "Beverage", basePrice: { USD: 2.5, COP: 10000 }, ingredientCost: { USD: 0.8, COP: 3200 }, prepTimeMinutes: 2, isAvailableInColombia: true, isAvailableInUSA: true, allergens: [], status: "Active" }
+      ];
+
+      const locations = [
+        { id: "LOC-MEDELLIN-01", name: "Brasaland Medellin Centro", city: "Medellin", country: "Colombia", openingYear: 2008, seatingCapacity: 80, staffCount: 12, monthlyRentCost: { USD: 1500, COP: 6000000 }, averageMonthlyUtilities: { USD: 400, COP: 1600000 }, manager: "Carlos Jimenez", status: "Active" },
+        { id: "LOC-MIAMI-01", name: "Brasaland Miami Beach", city: "Miami", country: "USA", openingYear: 2018, seatingCapacity: 100, staffCount: 15, monthlyRentCost: { USD: 5500, COP: 22000000 }, averageMonthlyUtilities: { USD: 800, COP: 3200000 }, manager: "Jake Morrison", status: "Active" }
+      ];
+
+      const sales = [
+        { id: "TXN-2024-15482", locationId: "LOC-MEDELLIN-01", itemId: "ITEM-PICANHA-250", quantity: 2, totalPrice: { USD: 37.0, COP: 148000 }, paymentMethod: "Credit card", timestamp: new Date("2024-03-15T19:30:00Z"), waiterName: "Maria Gonzalez" },
+        { id: "TXN-2024-15483", locationId: "LOC-MIAMI-01", itemId: "ITEM-FRIES", quantity: 3, totalPrice: { USD: 13.5, COP: 54000 }, paymentMethod: "Cash", timestamp: new Date("2024-03-15T20:15:00Z"), waiterName: "John Smith" },
+        { id: "TXN-2024-15484", locationId: "LOC-MIAMI-01", itemId: "ITEM-COKE", quantity: 4, totalPrice: { USD: 10.0, COP: 40000 }, paymentMethod: "Digital wallet", timestamp: new Date("2024-03-16T12:40:00Z"), waiterName: "Sofia Rivera" }
+      ];
+
+      const wasteRecords = [
+        { id: "WST-01", locationId: "LOC-MEDELLIN-01", itemId: "ITEM-FRIES", quantity: 2, reason: "Expired", cost: { USD: 2.4, COP: 9600 }, timestamp: new Date("2024-03-15T21:00:00Z"), reportedBy: "Carlos" },
+        { id: "WST-02", locationId: "LOC-MIAMI-01", itemId: "ITEM-PICANHA-250", quantity: 1, reason: "Cooking error", cost: { USD: 7.2, COP: 28800 }, timestamp: new Date("2024-03-16T13:10:00Z"), reportedBy: "Jake" }
+      ];
+
+      const output = document.getElementById("output");
+      const resultCounter = document.getElementById("result-counter");
+      const currencyEl = document.getElementById("currency");
+      const locationEl = document.getElementById("location-id");
+      const capacityEl = document.getElementById("target-capacity");
+      const topNEl = document.getElementById("top-n");
+
+      function round2(value) {
+        return Number(value.toFixed(2));
+      }
+
+      function formatValue(value) {
+        if (typeof value === "number") {
+          return Number.isInteger(value) ? String(value) : value.toFixed(2);
+        }
+        if (typeof value === "boolean") {
+          return value ? "Yes" : "No";
+        }
+        if (value === null || value === undefined) {
+          return "-";
+        }
+        if (value instanceof Date) {
+          return value.toISOString();
+        }
+        if (Array.isArray(value)) {
+          if (value.length === 0) {
+            return "No items";
+          }
+          return value
+            .slice(0, 3)
+            .map((entry) => (entry && typeof entry === "object" ? summarizeValue(entry) : String(entry)))
+            .join(" | ");
+        }
+        if (typeof value === "object") {
+          return summarizeValue(value);
+        }
+        return String(value);
+      }
+
+      function humanizeKey(key) {
+        return key
+          .replace(/_/g, " ")
+          .replace(/([a-z])([A-Z])/g, "$1 $2")
+          .replace(/\s+/g, " ")
+          .trim()
+          .replace(/^./, (char) => char.toUpperCase());
+      }
+
+      function getSemanticTone(key, value) {
+        const normalizedKey = String(key || "").toLowerCase();
+
+        if (typeof value === "boolean") {
+          return value
+            ? "border-emerald-400/40 bg-emerald-900/30 text-emerald-200"
+            : "border-red-400/40 bg-red-900/30 text-red-200";
+        }
+
+        if (typeof value === "number") {
+          if (normalizedKey.includes("waste") || normalizedKey.includes("error")) {
+            return value > 0
+              ? "border-red-400/40 bg-red-900/30 text-red-200"
+              : "border-emerald-400/40 bg-emerald-900/30 text-emerald-200";
+          }
+
+          if (normalizedKey.includes("score") || normalizedKey.includes("margin") || normalizedKey.includes("revenue") || normalizedKey.includes("average")) {
+            if (value >= 70 || value >= 25) {
+              return "border-emerald-400/40 bg-emerald-900/30 text-emerald-200";
+            }
+            if (value >= 10) {
+              return "border-amber-400/40 bg-amber-900/30 text-amber-200";
+            }
+            return "border-red-400/40 bg-red-900/30 text-red-200";
+          }
+
+          if (normalizedKey.includes("index") || normalizedKey.includes("rank")) {
+            return value >= 0
+              ? "border-emerald-400/40 bg-emerald-900/30 text-emerald-200"
+              : "border-red-400/40 bg-red-900/30 text-red-200";
+          }
+
+          return "border-cyan-400/40 bg-cyan-900/30 text-cyan-200";
+        }
+
+        if (typeof value === "string") {
+          if (value.toLowerCase().includes("must") || value.toLowerCase().includes("invalid")) {
+            return "border-red-400/40 bg-red-900/30 text-red-200";
+          }
+        }
+
+        return "border-stone-600 bg-stone-900/70 text-stone-200";
+      }
+
+      function summarizeValue(value) {
+        if (value === null || value === undefined) {
+          return "-";
+        }
+        if (typeof value !== "object") {
+          return formatValue(value);
+        }
+        if (Array.isArray(value)) {
+          return `Array(${value.length})`;
+        }
+
+        const entries = Object.entries(value).filter(([, innerValue]) => !isTrulyEmpty(innerValue));
+        if (entries.length === 0) {
+          return "No data";
+        }
+
+        return entries
+          .slice(0, 2)
+          .map(([innerKey, innerValue]) => `${humanizeKey(innerKey)}: ${typeof innerValue === "object" ? summarizeValue(innerValue) : formatValue(innerValue)}`)
+          .join(" | ");
+      }
+
+      function isTrulyEmpty(value) {
+        if (value === null || value === undefined) {
+          return true;
+        }
+        if (typeof value === "string") {
+          return value.trim() === "";
+        }
+        if (Array.isArray(value)) {
+          return value.length === 0;
+        }
+        if (typeof value === "object") {
+          return Object.keys(value).length === 0;
+        }
+        return false;
+      }
+
+      function getEmptyStateLabel(keyHint = "") {
+        const key = keyHint.toLowerCase();
+        if (key.includes("errors")) {
+          return "No validation errors";
+        }
+        if (key.includes("invalid") || key.includes("missing") || key.includes("find")) {
+          return "No matching result";
+        }
+        return "No data";
+      }
+
+      function createStatusBadge(value) {
+        const badge = document.createElement("span");
+        badge.className = value
+          ? "inline-flex items-center gap-1 rounded-full border border-emerald-400/40 bg-emerald-900/40 px-2 py-1 text-xs font-bold uppercase tracking-wide text-emerald-200"
+          : "inline-flex items-center gap-1 rounded-full border border-red-400/40 bg-red-900/40 px-2 py-1 text-xs font-bold uppercase tracking-wide text-red-200";
+        badge.textContent = value ? "PASS" : "FAIL";
+        return badge;
+      }
+
+      function createStatusIcon(value) {
+        const icon = document.createElement("span");
+        icon.className = value ? "text-emerald-300" : "text-red-300";
+        icon.textContent = value ? "OK" : "X";
+        return icon;
+      }
+
+      function updateResultCounter() {
+        const count = output.children.length;
+        resultCounter.textContent = `${count} result${count === 1 ? "" : "s"}`;
+      }
+
+      function createMetricChips(data) {
+        const chips = document.createElement("div");
+        chips.className = "mt-3 flex flex-wrap gap-2";
+
+        Object.entries(data)
+          .filter(([, value]) => typeof value === "number")
+          .slice(0, 4)
+          .forEach(([key, value]) => {
+            const chip = document.createElement("span");
+            chip.className = `rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide ${getSemanticTone(key, value)}`;
+            chip.textContent = `${humanizeKey(key)}: ${formatValue(value)}`;
+            chips.appendChild(chip);
+          });
+
+        if (chips.children.length === 0) {
+          return null;
+        }
+
+        return chips;
+      }
+
+      function renderArrayValue(value, keyHint = "") {
+        if (value.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "text-sm text-stone-400";
+          empty.textContent = getEmptyStateLabel(keyHint);
+          return empty;
+        }
+
+        const allObjects = value.every((entry) => entry && typeof entry === "object" && !Array.isArray(entry));
+
+        if (allObjects) {
+          const rawColumns = Array.from(
+            value.slice(0, 8).reduce((set, entry) => {
+              Object.keys(entry).forEach((key) => set.add(key));
+              return set;
+            }, new Set()),
+          );
+
+          const columns = rawColumns.filter((column) =>
+            value.some((entry) => !isTrulyEmpty(entry[column])),
+          );
+
+          if (columns.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "text-sm text-stone-400";
+            empty.textContent = getEmptyStateLabel(keyHint);
+            return empty;
+          }
+
+          const tableWrap = document.createElement("div");
+          tableWrap.className = "overflow-auto rounded-lg border border-stone-700";
+
+          const table = document.createElement("table");
+          table.className = "min-w-full border-collapse text-xs";
+
+          const thead = document.createElement("thead");
+          const headRow = document.createElement("tr");
+          headRow.className = "bg-stone-900/80 text-amber-100";
+
+          columns.forEach((column) => {
+            const th = document.createElement("th");
+            th.className = "border-b border-stone-700 px-2 py-2 text-left font-semibold";
+            th.textContent = humanizeKey(column);
+            headRow.appendChild(th);
+          });
+
+          thead.appendChild(headRow);
+          table.appendChild(thead);
+
+          const tbody = document.createElement("tbody");
+          value.slice(0, 8).forEach((rowData, index) => {
+            const tr = document.createElement("tr");
+            tr.className = index % 2 === 0 ? "bg-stone-950/70" : "bg-stone-900/40";
+
+            columns.forEach((column) => {
+              const td = document.createElement("td");
+              td.className = "border-b border-stone-800 px-2 py-2 align-top text-stone-200";
+              const cellValue = rowData[column];
+              td.textContent = isTrulyEmpty(cellValue) ? getEmptyStateLabel(column) : summarizeValue(cellValue);
+              tr.appendChild(td);
+            });
+
+            tbody.appendChild(tr);
+          });
+
+          table.appendChild(tbody);
+          tableWrap.appendChild(table);
+
+          if (value.length > 8) {
+            const note = document.createElement("p");
+            note.className = "mt-2 text-[11px] font-semibold uppercase tracking-wide text-stone-400";
+            note.textContent = `Showing 8 of ${value.length} rows`;
+            tableWrap.appendChild(note);
+          }
+
+          return tableWrap;
+        }
+
+        const list = document.createElement("ul");
+        list.className = "space-y-1 text-sm text-stone-200";
+        value.slice(0, 8).forEach((entry) => {
+          const li = document.createElement("li");
+          li.className = `rounded-md border px-2 py-1 ${getSemanticTone(keyHint, entry)}`;
+          li.textContent = isTrulyEmpty(entry) ? getEmptyStateLabel(keyHint) : summarizeValue(entry);
+          list.appendChild(li);
+        });
+
+        if (value.length > 8) {
+          const more = document.createElement("li");
+          more.className = "text-xs font-semibold uppercase tracking-wide text-stone-400";
+          more.textContent = `+ ${value.length - 8} more items`;
+          list.appendChild(more);
+        }
+
+        return list;
+      }
+
+      function renderObjectValue(value, depth = 0, keyHint = "") {
+        if (isTrulyEmpty(value)) {
+          const empty = document.createElement("p");
+          empty.className = "text-sm text-stone-400";
+          empty.textContent = getEmptyStateLabel(keyHint);
+          return empty;
+        }
+
+        const detailGrid = document.createElement("div");
+        detailGrid.className = "grid gap-2";
+
+        Object.entries(value).forEach(([nestedKey, nestedValue]) => {
+          const block = document.createElement("div");
+          block.className = "rounded-lg border border-stone-700 bg-stone-900/60 p-2";
+
+          const label = document.createElement("p");
+          label.className = "text-[11px] font-bold uppercase tracking-wide text-cyan-200";
+          label.textContent = humanizeKey(nestedKey);
+          block.appendChild(label);
+
+          if (Array.isArray(nestedValue)) {
+            block.appendChild(renderArrayValue(nestedValue, nestedKey));
+          } else if (nestedValue && typeof nestedValue === "object") {
+            if (depth >= 1) {
+              const text = document.createElement("p");
+              text.className = "mt-1 text-sm text-stone-200";
+              text.textContent = isTrulyEmpty(nestedValue)
+                ? getEmptyStateLabel(nestedKey)
+                : summarizeValue(nestedValue);
+              block.appendChild(text);
+            } else {
+              block.appendChild(renderObjectValue(nestedValue, depth + 1, nestedKey));
+            }
+          } else {
+            const text = document.createElement("p");
+            text.className = `mt-1 inline-flex w-fit rounded-md border px-2 py-1 text-sm ${getSemanticTone(nestedKey, nestedValue)}`;
+            text.textContent = formatValue(nestedValue);
+            block.appendChild(text);
+          }
+
+          detailGrid.appendChild(block);
+        });
+
+        return detailGrid;
+      }
+
+      function createRows(data) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "mt-3 overflow-hidden rounded-xl border border-stone-800 bg-black/40";
+
+        const entries = Object.entries(data);
+        entries.forEach(([key, value], index) => {
+          const row = document.createElement("div");
+          row.className = `grid gap-2 px-3 py-2 md:grid-cols-[220px,1fr] ${index < entries.length - 1 ? "border-b border-stone-800" : ""}`;
+
+          const label = document.createElement("p");
+          label.className = "inline-flex items-center gap-1 text-xs font-bold uppercase tracking-wide text-amber-200";
+          const labelText = document.createElement("span");
+          labelText.textContent = humanizeKey(key);
+          label.appendChild(labelText);
+
+          if (/valid|invalid|error/i.test(key) && typeof value === "boolean") {
+            label.appendChild(createStatusIcon(value));
+          }
+
+          const content = document.createElement("div");
+
+          if (isTrulyEmpty(value)) {
+            const text = document.createElement("p");
+            text.className = "inline-flex w-fit rounded-md border border-stone-600 bg-stone-900/70 px-2 py-1 text-sm text-stone-300";
+            text.textContent = getEmptyStateLabel(key);
+            content.appendChild(text);
+            row.appendChild(label);
+            row.appendChild(content);
+            wrapper.appendChild(row);
+            return;
+          }
+
+          if (Array.isArray(value)) {
+            content.appendChild(renderArrayValue(value, key));
+          } else if (value && typeof value === "object") {
+            content.appendChild(renderObjectValue(value, 0, key));
+          } else {
+            if (/valid$/i.test(key) && typeof value === "boolean") {
+              content.appendChild(createStatusBadge(value));
+            } else {
+              const text = document.createElement("p");
+              text.className = `inline-flex w-fit rounded-md border px-2 py-1 text-sm ${getSemanticTone(key, value)}`;
+              text.textContent = formatValue(value);
+              content.appendChild(text);
+            }
+          }
+
+          row.appendChild(label);
+          row.appendChild(content);
+          wrapper.appendChild(row);
+        });
+
+        return wrapper;
+      }
+
+      function print(label, data) {
+        const card = document.createElement("article");
+        card.className = "rounded-2xl border border-stone-700 bg-gradient-to-br from-stone-900/95 to-stone-950/90 p-4 shadow-lg transition hover:border-amber-300/40";
+
+        const header = document.createElement("div");
+        header.className = "flex flex-wrap items-center justify-between gap-2";
+
+        const title = document.createElement("h3");
+        title.className = "text-base font-black uppercase tracking-wide text-amber-100";
+        title.textContent = label;
+
+        const stamp = document.createElement("span");
+        stamp.className = "rounded-full border border-stone-600 bg-stone-900 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-stone-300";
+        stamp.textContent = new Date().toLocaleTimeString();
+
+        header.appendChild(title);
+        header.appendChild(stamp);
+        card.appendChild(header);
+
+        if (/validation/i.test(label) && data && typeof data === "object") {
+          const validationKeys = Object.keys(data).filter((key) => /valid$/i.test(key) && typeof data[key] === "boolean");
+          if (validationKeys.length > 0) {
+            const summary = document.createElement("div");
+            summary.className = "mt-3 flex flex-wrap items-center gap-2";
+
+            const passCount = validationKeys.filter((key) => data[key] === true).length;
+            const failCount = validationKeys.length - passCount;
+
+            const summaryTitle = document.createElement("span");
+            summaryTitle.className = "text-xs font-bold uppercase tracking-wide text-stone-300";
+            summaryTitle.textContent = "Validation Summary";
+            summary.appendChild(summaryTitle);
+
+            const passBadge = document.createElement("span");
+            passBadge.className = "rounded-full border border-emerald-400/40 bg-emerald-900/30 px-2 py-1 text-xs font-bold uppercase tracking-wide text-emerald-200";
+            passBadge.textContent = `PASS ${passCount}`;
+            summary.appendChild(passBadge);
+
+            const failBadge = document.createElement("span");
+            failBadge.className = "rounded-full border border-red-400/40 bg-red-900/30 px-2 py-1 text-xs font-bold uppercase tracking-wide text-red-200";
+            failBadge.textContent = `FAIL ${failCount}`;
+            summary.appendChild(failBadge);
+
+            card.appendChild(summary);
+          }
+        }
+
+        if (data && typeof data === "object" && !Array.isArray(data)) {
+          const chips = createMetricChips(data);
+          if (chips) {
+            card.appendChild(chips);
+          }
+          card.appendChild(createRows(data));
+        } else {
+          const fallback = document.createElement("p");
+          fallback.className = `mt-3 inline-flex w-fit rounded-lg border px-3 py-2 text-sm ${getSemanticTone("result", data)}`;
+          fallback.textContent = formatValue(data);
+          card.appendChild(fallback);
+        }
+
+        output.prepend(card);
+        updateResultCounter();
+      }
+
+      function showSingleResult(label, data) {
+        output.innerHTML = "";
+        const readableLabel = label === "Ready" ? label : humanizeKey(label);
+        print(readableLabel, data);
+      }
+
+      function applyFunctionButtonLabels() {
+        document.querySelectorAll("[data-fn]").forEach((button) => {
+          const functionName = button.getAttribute("data-fn");
+          button.textContent = humanizeKey(functionName);
+        });
+      }
+
+      function convertCurrency(amount, fromCurrency, toCurrency) {
+        if (fromCurrency === toCurrency) {
+          return round2(amount);
+        }
+        if (fromCurrency === "USD" && toCurrency === "COP") {
+          return round2(amount * exchangeRate);
+        }
+        return round2(amount / exchangeRate);
+      }
+
+      function filterSalesByLocation(rows, locationId) {
+        return rows.filter((sale) => sale.locationId === locationId);
+      }
+
+      function filterSalesByDateRange(rows, startDate, endDate) {
+        return rows.filter((sale) => sale.timestamp >= startDate && sale.timestamp <= endDate);
+      }
+
+      function filterMenuItemsByCategory(items, category) {
+        return items.filter((item) => item.category === category);
+      }
+
+      function filterActiveLocations(rows) {
+        return rows.filter((loc) => loc.status === "Active");
+      }
+
+      function sortLocationsByCapacity(rows, order) {
+        return [...rows].sort((a, b) => (order === "asc" ? a.seatingCapacity - b.seatingCapacity : b.seatingCapacity - a.seatingCapacity));
+      }
+
+      function sortMenuItemsByPrice(items, currency, order) {
+        return [...items].sort((a, b) => (order === "asc" ? a.basePrice[currency] - b.basePrice[currency] : b.basePrice[currency] - a.basePrice[currency]));
+      }
+
+      function findLocationById(rows, id) {
+        return rows.find((loc) => loc.id === id) ?? null;
+      }
+
+      function findMenuItemByName(items, name) {
+        const normalized = name.trim().toLowerCase();
+        return items.find((item) => item.name.toLowerCase() === normalized) ?? null;
+      }
+
+      function binarySearchLocationByCapacity(sortedLocations, targetCapacity) {
+        let left = 0;
+        let right = sortedLocations.length - 1;
+        while (left <= right) {
+          const middle = Math.floor((left + right) / 2);
+          const value = sortedLocations[middle].seatingCapacity;
+          if (value === targetCapacity) {
+            return middle;
+          }
+          if (value < targetCapacity) {
+            left = middle + 1;
+          } else {
+            right = middle - 1;
+          }
+        }
+        return -1;
+      }
+
+      function calculateDailyRevenue(rows, date, currency) {
+        const targetDate = date.toISOString().slice(0, 10);
+        const total = rows
+          .filter((sale) => sale.timestamp.toISOString().slice(0, 10) === targetDate)
+          .reduce((sum, sale) => sum + sale.totalPrice[currency], 0);
+        return round2(total);
+      }
+
+      function calculateLocationMargin(rows, items, locationId, currency) {
+        const scopedSales = rows.filter((sale) => sale.locationId === locationId);
+        const revenue = scopedSales.reduce((sum, sale) => sum + sale.totalPrice[currency], 0);
+        if (revenue === 0) {
+          return 0;
+        }
+        const ingredientCost = scopedSales.reduce((sum, sale) => {
+          const item = items.find((menuItem) => menuItem.id === sale.itemId);
+          if (!item) {
+            return sum;
+          }
+          return sum + item.ingredientCost[currency] * sale.quantity;
+        }, 0);
+        return round2(((revenue - ingredientCost) / revenue) * 100);
+      }
+
+      function calculateWasteCost(records, locationId, currency) {
+        return round2(records.filter((record) => record.locationId === locationId).reduce((sum, record) => sum + record.cost[currency], 0));
+      }
+
+      function scoreLocationPerformance(location, allSales, allWaste, items) {
+        const locationSales = allSales.filter((sale) => sale.locationId === location.id);
+        const totalRevenueUSD = locationSales.reduce((sum, sale) => sum + sale.totalPrice.USD, 0);
+        const operatingDays = Math.max(1, (new Date().getFullYear() - location.openingYear + 1) * 365);
+        const avgDailyRevenue = totalRevenueUSD / operatingDays;
+        const revenueScore = Math.min(40, (avgDailyRevenue / 1000) * 40);
+
+        const efficiencyScore = Math.min(30, (locationSales.length / location.seatingCapacity) * 30);
+
+        const wasteUSD = calculateWasteCost(allWaste, location.id, "USD");
+        const wastePercentage = totalRevenueUSD > 0 ? (wasteUSD / totalRevenueUSD) * 100 : 100;
+        const wasteControlScore = Math.max(0, 20 - wastePercentage * 2);
+
+        const margin = calculateLocationMargin(allSales, items, location.id, "USD");
+        const marginScore = Math.min(10, margin / 10);
+
+        return round2(revenueScore + efficiencyScore + wasteControlScore + marginScore);
+      }
+
+      function rankLocationsByPerformance(allLocations, allSales, allWaste, items) {
+        return allLocations
+          .map((location) => ({ location, score: scoreLocationPerformance(location, allSales, allWaste, items) }))
+          .sort((a, b) => b.score - a.score);
+      }
+
+      function countSalesByPaymentMethod(rows) {
+        const result = { Cash: 0, "Credit card": 0, "Debit card": 0, "Digital wallet": 0 };
+        rows.forEach((sale) => {
+          result[sale.paymentMethod] += 1;
+        });
+        return result;
+      }
+
+      function calculateAverageTicket(rows, currency) {
+        if (rows.length === 0) {
+          return 0;
+        }
+        const total = rows.reduce((sum, sale) => sum + sale.totalPrice[currency], 0);
+        return round2(total / rows.length);
+      }
+
+      function findTopSellingItems(allSales, items, topN) {
+        const soldByItem = {};
+        allSales.forEach((sale) => {
+          soldByItem[sale.itemId] = (soldByItem[sale.itemId] || 0) + sale.quantity;
+        });
+        return Object.entries(soldByItem)
+          .map(([itemId, totalSold]) => ({ item: items.find((entry) => entry.id === itemId), totalSold }))
+          .filter((entry) => entry.item)
+          .sort((a, b) => b.totalSold - a.totalSold)
+          .slice(0, topN);
+      }
+
+      function groupWasteByReason(records) {
+        return records.reduce((grouped, record) => {
+          if (!grouped[record.reason]) {
+            grouped[record.reason] = [];
+          }
+          grouped[record.reason].push(record);
+          return grouped;
+        }, {});
+      }
+
+      function calculateCountryComparison(allSales, allLocations) {
+        const mapCountry = {
+          Colombia: { totalLocations: 0, totalRevenue: { USD: 0, COP: 0 }, averageRevenuePerLocation: { USD: 0, COP: 0 }, totalSales: 0 },
+          USA: { totalLocations: 0, totalRevenue: { USD: 0, COP: 0 }, averageRevenuePerLocation: { USD: 0, COP: 0 }, totalSales: 0 }
+        };
+
+        allLocations.forEach((loc) => {
+          mapCountry[loc.country].totalLocations += 1;
+        });
+
+        allSales.forEach((sale) => {
+          const loc = allLocations.find((entry) => entry.id === sale.locationId);
+          if (!loc) {
+            return;
+          }
+          mapCountry[loc.country].totalRevenue.USD += sale.totalPrice.USD;
+          mapCountry[loc.country].totalRevenue.COP += sale.totalPrice.COP;
+          mapCountry[loc.country].totalSales += 1;
+        });
+
+        Object.keys(mapCountry).forEach((country) => {
+          const metrics = mapCountry[country];
+          metrics.averageRevenuePerLocation.USD = metrics.totalLocations ? round2(metrics.totalRevenue.USD / metrics.totalLocations) : 0;
+          metrics.averageRevenuePerLocation.COP = metrics.totalLocations ? round2(metrics.totalRevenue.COP / metrics.totalLocations) : 0;
+          metrics.totalRevenue.USD = round2(metrics.totalRevenue.USD);
+          metrics.totalRevenue.COP = round2(metrics.totalRevenue.COP);
+        });
+
+        return mapCountry;
+      }
+
+      function validateMenuItem(item) {
+        const errors = [];
+        if (!item.name || !item.name.trim()) errors.push("name must not be empty");
+        if (item.basePrice.USD <= 0 || item.basePrice.COP <= 0) errors.push("both base prices must be > 0");
+        if (item.prepTimeMinutes <= 0 || item.prepTimeMinutes > 60) errors.push("prepTimeMinutes must be > 0 and <= 60");
+        if (!item.isAvailableInColombia && !item.isAvailableInUSA) errors.push("item must be available in at least one country");
+        return { valid: errors.length === 0, errors };
+      }
+
+      function validateSaleTransaction(sale) {
+        const errors = [];
+        if (sale.quantity <= 0) errors.push("quantity must be > 0");
+        if (sale.totalPrice.USD <= 0 || sale.totalPrice.COP <= 0) errors.push("both price values must be > 0");
+        if (!sale.waiterName || !sale.waiterName.trim()) errors.push("waiterName must not be empty");
+        return { valid: errors.length === 0, errors };
+      }
+
+      function validateLocation(location) {
+        const errors = [];
+        const currentYear = new Date().getFullYear();
+        if (location.openingYear < 2008 || location.openingYear > currentYear) errors.push("openingYear must be between 2008 and current year");
+        if (location.seatingCapacity <= 0) errors.push("seatingCapacity must be > 0");
+        if (location.staffCount <= 0) errors.push("staffCount must be > 0");
+        if (location.monthlyRentCost.USD <= 0 || location.monthlyRentCost.COP <= 0) errors.push("rent costs must be > 0");
+        if (location.averageMonthlyUtilities.USD <= 0 || location.averageMonthlyUtilities.COP <= 0) errors.push("utility costs must be > 0");
+        return { valid: errors.length === 0, errors };
+      }
+
+      function populateLocations() {
+        locationEl.innerHTML = "";
+        locations.forEach((location) => {
+          const option = document.createElement("option");
+          option.value = location.id;
+          option.textContent = `${location.id} - ${location.name}`;
+          locationEl.appendChild(option);
+        });
+
+        if (!locationEl.value && locations.length > 0) {
+          locationEl.value = locations[0].id;
+        }
+      }
+
+      function runFunction(functionName) {
+        const currency = currencyEl.value;
+        const locationId = locationEl.value || (locations[0] ? locations[0].id : "");
+        if (!locationEl.value && locationId) {
+          locationEl.value = locationId;
+        }
+        const targetCapacity = Number(capacityEl.value || 0);
+        const topN = Math.max(1, Number(topNEl.value || 1));
+
+        const sortedByCapacity = sortLocationsByCapacity(locations, "asc");
+        const invalidMenuItem = { ...menuItems[0], name: "", prepTimeMinutes: 70, isAvailableInColombia: false, isAvailableInUSA: false };
+        const invalidSale = { ...sales[0], quantity: 0, waiterName: "" };
+        const invalidLocation = { ...locations[0], openingYear: 2000, seatingCapacity: 0 };
+
+        const currentControls = {
+          currency,
+          locationId,
+          targetCapacity,
+          topN,
+        };
+
+        function normalizeResult(label, result, fallbackBuilder) {
+          const emptyResult =
+            result === null ||
+            result === undefined ||
+            (Array.isArray(result) && result.length === 0) ||
+            (typeof result === "object" && !Array.isArray(result) && Object.keys(result).length === 0);
+
+          if (!emptyResult) {
+            return showSingleResult(label, result);
+          }
+
+          const fallbackExample = typeof fallbackBuilder === "function" ? fallbackBuilder() : null;
+
+          return showSingleResult(label, {
+            status: "No matching records for current controls",
+            why: "This function depends on the selected filters and current sample data.",
+            controlsUsed: currentControls,
+            suggestion: "Try another Location ID, Target Capacity, or Top N value.",
+            fallbackExample,
+          });
+        }
+
+        if (functionName === "filterSalesByLocation") {
+          const matchedSales = filterSalesByLocation(sales, locationId);
+          return showSingleResult("filterSalesByLocation", {
+            selectedLocationId: locationId,
+            totalMatches: matchedSales.length,
+            sales: matchedSales,
+          });
+        }
+        if (functionName === "filterSalesByDateRange") {
+          return normalizeResult("filterSalesByDateRange", filterSalesByDateRange(sales, new Date("2024-03-15T00:00:00Z"), new Date("2024-03-15T23:59:59Z")), () => filterSalesByDateRange(sales, new Date("2024-03-15T00:00:00Z"), new Date("2024-03-16T23:59:59Z")));
+        }
+        if (functionName === "filterMenuItemsByCategory") {
+          return normalizeResult("filterMenuItemsByCategory", filterMenuItemsByCategory(menuItems, "Meat"), () => filterMenuItemsByCategory(menuItems, "Side"));
+        }
+        if (functionName === "filterActiveLocations") return showSingleResult("filterActiveLocations", filterActiveLocations(locations));
+        if (functionName === "sortLocationsByCapacity") return showSingleResult("sortLocationsByCapacity", sortLocationsByCapacity(locations, "asc"));
+        if (functionName === "sortMenuItemsByPrice") return showSingleResult("sortMenuItemsByPrice", sortMenuItemsByPrice(menuItems, currency, "asc"));
+        if (functionName === "findLocationById") {
+          return normalizeResult("findLocationById", findLocationById(locations, locationId), () => findLocationById(locations, "LOC-MEDELLIN-01"));
+        }
+        if (functionName === "findMenuItemByName") return showSingleResult("findMenuItemByName", findMenuItemByName(menuItems, "french fries"));
+        if (functionName === "binarySearchLocationByCapacity") return showSingleResult("binarySearchLocationByCapacity", { targetCapacity, index: binarySearchLocationByCapacity(sortedByCapacity, targetCapacity), sortedByCapacity });
+        if (functionName === "calculateDailyRevenue") return showSingleResult("calculateDailyRevenue", calculateDailyRevenue(sales, new Date("2024-03-15T00:00:00Z"), currency));
+        if (functionName === "calculateLocationMargin") return showSingleResult("calculateLocationMargin", calculateLocationMargin(sales, menuItems, locationId, currency));
+        if (functionName === "calculateWasteCost") return showSingleResult("calculateWasteCost", calculateWasteCost(wasteRecords, locationId, currency));
+        if (functionName === "convertCurrency") return showSingleResult("convertCurrency", { usdToCop: convertCurrency(25, "USD", "COP"), copToUsd: convertCurrency(100000, "COP", "USD") });
+        if (functionName === "scoreLocationPerformance") return showSingleResult("scoreLocationPerformance", scoreLocationPerformance(findLocationById(locations, locationId), sales, wasteRecords, menuItems));
+        if (functionName === "rankLocationsByPerformance") return showSingleResult("rankLocationsByPerformance", rankLocationsByPerformance(locations, sales, wasteRecords, menuItems));
+        if (functionName === "countSalesByPaymentMethod") return showSingleResult("countSalesByPaymentMethod", countSalesByPaymentMethod(sales));
+        if (functionName === "calculateAverageTicket") return showSingleResult("calculateAverageTicket", calculateAverageTicket(sales, currency));
+        if (functionName === "findTopSellingItems") {
+          return normalizeResult("findTopSellingItems", findTopSellingItems(sales, menuItems, topN), () => findTopSellingItems(sales, menuItems, 2));
+        }
+        if (functionName === "groupWasteByReason") return showSingleResult("groupWasteByReason", groupWasteByReason(wasteRecords));
+        if (functionName === "calculateCountryComparison") return showSingleResult("calculateCountryComparison", calculateCountryComparison(sales, locations));
+        if (functionName === "validateMenuItem") return showSingleResult("validateMenuItem", { validCase: validateMenuItem(menuItems[0]), invalidCase: validateMenuItem(invalidMenuItem) });
+        if (functionName === "validateSaleTransaction") return showSingleResult("validateSaleTransaction", { validCase: validateSaleTransaction(sales[0]), invalidCase: validateSaleTransaction(invalidSale) });
+        if (functionName === "validateLocation") return showSingleResult("validateLocation", { validCase: validateLocation(locations[0]), invalidCase: validateLocation(invalidLocation) });
+      }
+
+      document.querySelectorAll("[data-fn]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const functionName = button.getAttribute("data-fn");
+          runFunction(functionName);
+        });
+      });
+
+      function applyGroupFilter(group) {
+        const functionButtons = document.querySelectorAll("[data-fn]");
+        functionButtons.forEach((button) => {
+          const buttonGroup = button.getAttribute("data-group");
+          const isVisible = group === "all" || buttonGroup === group;
+          button.classList.toggle("hidden", !isVisible);
+        });
+
+        document.querySelectorAll("[data-group-filter]").forEach((tabButton) => {
+          const isActive = tabButton.getAttribute("data-group-filter") === group;
+          tabButton.className = isActive
+            ? "rounded-full border border-amber-300 bg-amber-300/20 px-3 py-1 text-xs font-bold uppercase tracking-wide text-amber-100"
+            : "rounded-full border border-stone-600 px-3 py-1 text-xs font-bold uppercase tracking-wide text-stone-200 hover:border-amber-300";
+        });
+      }
+
+      document.querySelectorAll("[data-group-filter]").forEach((tabButton) => {
+        tabButton.addEventListener("click", () => {
+          const group = tabButton.getAttribute("data-group-filter");
+          applyGroupFilter(group);
+        });
+      });
+
+      document.getElementById("clear-output").addEventListener("click", () => {
+        output.innerHTML = "";
+        updateResultCounter();
+      });
+
+      populateLocations();
+      applyFunctionButtonLabels();
+      applyGroupFilter("all");
+      showSingleResult("Ready", {
+        message: "Select any function button to run a single result view.",
+        note: "Each new selection replaces the previous output."
+      });
+      updateResultCounter();
+    </script>
+  </body>
+</html>
