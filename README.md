@@ -78,6 +78,54 @@ ai-engineering-company-project-template/
 
 ---
 
+## Milestone 2 implementation (Programming Fundamentals)
+
+This repository now includes a TypeScript implementation for Milestone 2 under `Brasaland webpage/src/`:
+
+```text
+Brasaland webpage/src/
+├── demo.ts
+├── index.ts
+├── index.html
+├── types/
+│   └── models.ts
+└── utils/
+	├── collections.ts
+	├── search.ts
+	├── transformations.ts
+	└── validations.ts
+```
+
+Automated tests are located in `tests/`.
+
+### Development commands
+
+```bash
+npm install
+npm run typecheck
+npm test
+npm run demo
+npm start
+npm run serve
+npm run serve:src
+npm run serve:root
+npm run serve:required
+npm run serve:logs
+npm run serve:stop
+```
+
+`npm run serve` serves the site from the repository root (detached mode).
+`npm run serve:src` serves the operations interface from `Brasaland webpage/src/` directly (detached mode).
+`npm run serve:root` serves the repository root (detached mode).
+`npm run serve:required` runs the exact required command: `npx http-server . -p 3000 -a 0.0.0.0`.
+`npm run serve:logs` shows recent server log output.
+`npm run serve:stop` stops the detached server.
+If you typed `npm serve run`, that command is invalid and will not start the server.
+
+These commands satisfy the requirement to expose a clear TypeScript validation/execution workflow during development.
+
+---
+
 ## Links
 
 - [4Geeks Academy — AI Engineering](https://4geeksacademy.com/es/programas-de-carrera/ingenieria-ia)

@@ -1,0 +1,29 @@
+{
+  "name": "brasaland-programming-fundamentals",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Milestone 2 TypeScript utilities for Brasaland operations",
+  "scripts": {
+    "start": "npm run serve",
+    "typecheck": "tsc --noEmit",
+    "demo": "tsx \"Brasaland webpage/src/demo.ts\"",
+    "serve": "node scripts/serve-root.cjs",
+    "serve:src": "node scripts/serve-src.cjs",
+    "serve:root": "npx --yes http-server . -p 3000 -a 0.0.0.0",
+    "serve:required": "npx --yes http-server . -p 3000 -a 0.0.0.0",
+    "serve:stop": "node scripts/serve-stop.cjs",
+    "serve:logs": "sh -c 'if [ -f /tmp/brasaland-server.log ]; then tail -n 50 /tmp/brasaland-server.log; else echo No server log found; fi'",
+    "functions:list": "node scripts/functions-cli.cjs --list",
+    "functions:run": "node scripts/functions-cli.cjs",
+    "functions:all": "node scripts/functions-cli.cjs --all",
+    "functions:pick": "node scripts/functions-cli.cjs --pick",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.2",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.1.2"
+  }
+}
