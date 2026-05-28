@@ -1,3 +1,8 @@
+import {
+  COUNTRY_TO_CITIES_DATA,
+  LOCATIONS_BY_COUNTRY_AND_CITY_DATA,
+} from "../../validation-shared"; // Removed .js extension to ensure TypeScript resolves the .d.ts file
+
 export type Country = "Colombia" | "United States";
 
 export type City = "Medellín" | "Bogotá" | "Cali" | "Miami" | "Orlando";
@@ -55,37 +60,7 @@ export interface RegistrationValidationResult {
   errors: RegistrationValidationErrors;
 }
 
-export const COUNTRY_TO_CITIES: Record<Country, City[]> = {
-  Colombia: ["Medellín", "Bogotá", "Cali"],
-  "United States": ["Miami", "Orlando"],
-};
+export const COUNTRY_TO_CITIES: Record<Country, City[]> = COUNTRY_TO_CITIES_DATA as Record<Country, City[]>;
 
-export const LOCATIONS_BY_COUNTRY_AND_CITY: Record<Country, Record<City, string[]>> = {
-  Colombia: {
-    "Medellín": [
-      "Brasaland El Poblado",
-      "Brasaland Laureles",
-      "Brasaland Envigado",
-      "Brasaland Sabaneta",
-    ],
-    "Bogotá": [
-      "Brasaland Usaquén",
-      "Brasaland Chapinero",
-      "Brasaland Zona Rosa",
-    ],
-    Cali: [
-      "Brasaland Granada",
-      "Brasaland Ciudad Jardín",
-      "Brasaland Unicentro",
-    ],
-    Miami: [],
-    Orlando: [],
-  },
-  "United States": {
-    "Medellín": [],
-    "Bogotá": [],
-    Cali: [],
-    Miami: ["Brasaland Brickell", "Brasaland Coral Gables"],
-    Orlando: ["Brasaland Downtown", "Brasaland International Drive"],
-  },
-};
+export const LOCATIONS_BY_COUNTRY_AND_CITY: Record<Country, Record<City, string[]>> =
+  LOCATIONS_BY_COUNTRY_AND_CITY_DATA as Record<Country, Record<City, string[]>>;

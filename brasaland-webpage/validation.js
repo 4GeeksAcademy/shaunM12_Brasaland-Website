@@ -1,3 +1,13 @@
+import {
+  UI_COUNTRIES,
+  UI_CITIES_BY_COUNTRY,
+  UI_LOCATIONS_BY_COUNTRY_CITY,
+  hasAtLeastTwoWords,
+  isValidEmail,
+  isPhoneFormatValid,
+  calculateAge,
+} from "./validation-shared.js";
+
 const form = document.getElementById("applicationForm");
 const messageBox = document.getElementById("formMessage");
 const countrySelect = document.getElementById("country");
@@ -8,30 +18,9 @@ const languageButtons = document.querySelectorAll("[data-lang-switch]");
 
 const languageStorageKey = "brasaland_lang";
 
-const countries = [
-  { value: "colombia", label: { en: "Colombia", es: "Colombia" } },
-  { value: "united-states", label: { en: "United States", es: "Estados Unidos" } }
-];
-
-const citiesByCountry = {
-  colombia: [
-    { value: "medellin", label: { en: "Medellin", es: "Medellín" } },
-    { value: "bogota", label: { en: "Bogota", es: "Bogotá" } },
-    { value: "cali", label: { en: "Cali", es: "Cali" } }
-  ],
-  "united-states": [
-    { value: "miami", label: { en: "Miami", es: "Miami" } },
-    { value: "orlando", label: { en: "Orlando", es: "Orlando" } }
-  ]
-};
-
-const locationsByCountryCity = {
-  "colombia|medellin": ["Brasaland El Poblado", "Brasaland Laureles", "Brasaland Envigado", "Brasaland Sabaneta"],
-  "colombia|bogota": ["Brasaland Usaquén", "Brasaland Chapinero", "Brasaland Zona Rosa"],
-  "colombia|cali": ["Brasaland Granada", "Brasaland Ciudad Jardín", "Brasaland Unicentro"],
-  "united-states|miami": ["Brasaland Brickell", "Brasaland Coral Gables"],
-  "united-states|orlando": ["Brasaland Downtown", "Brasaland International Drive"]
-};
+const countries = UI_COUNTRIES;
+const citiesByCountry = UI_CITIES_BY_COUNTRY;
+const locationsByCountryCity = UI_LOCATIONS_BY_COUNTRY_CITY;
 
 const translations = {
   en: {
@@ -283,16 +272,7 @@ function isAdult(dateString) {
     return false;
   }
 
-  const today = new Date();
-  const birthDate = new Date(dateString + "T00:00:00");
-  let age = today.getFullYear() - birthDate.getFullYear();
-  const monthDifference = today.getMonth() - birthDate.getMonth();
-
-  if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
-    age -= 1;
-  }
-
-  return age >= 18;
+  return calculateAge(dateString + "T00:00:00") >= 18;
 }
 
 function validateField(fieldName) {
@@ -300,25 +280,23 @@ function validateField(fieldName) {
 
   switch (fieldName) {
     case "fullName": {
-      const hasTwoWords = /^\S+\s+\S+/.test(value);
+      const hasTwoWords = hasAtLeastTwoWords(value);
       const error = hasTwoWords ? "" : translate("errorFullName");
       setFieldError(fieldName, error);
       return !error;
     }
     case "email": {
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const error = emailPattern.test(value) ? "" : translate("errorEmail");
+      const error = isValidEmail(value) ? "" : translate("errorEmail");
       setFieldError(fieldName, error);
       return !error;
     }
     case "phone": {
-      const phonePattern = /^\+(57|1)\s[0-9\s-]{7,}$/;
       const country = form.elements.country.value;
       const countryPrefixMatches =
         !country ||
         (country === "colombia" && value.startsWith("+57")) ||
         (country === "united-states" && value.startsWith("+1"));
-      const isValid = phonePattern.test(value) && countryPrefixMatches;
+      const isValid = isPhoneFormatValid(value) && countryPrefixMatches;
       const error = isValid ? "" : translate("errorPhone");
       setFieldError(fieldName, error);
       return !error;

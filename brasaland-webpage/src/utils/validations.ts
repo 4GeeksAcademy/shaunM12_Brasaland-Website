@@ -9,23 +9,18 @@ import {
   RegistrationValidationErrors,
   RegistrationValidationResult,
 } from "../types/models.js";
+import {
+  ALLOWED_DIETARY_PREFERENCES_DATA,
+  ALLOWED_DISCOVERY_CHANNELS_DATA,
+  EMAIL_REGEX,
+  PHONE_REGEX,
+} from "../../validation-shared.js";
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const ALLOWED_DIETARY_PREFERENCES: DietaryPreference[] =
+  ALLOWED_DIETARY_PREFERENCES_DATA as DietaryPreference[];
 
-const ALLOWED_DIETARY_PREFERENCES: DietaryPreference[] = [
-  "No restrictions",
-  "Vegetarian",
-  "Gluten-free",
-  "Other",
-];
-
-const ALLOWED_DISCOVERY_CHANNELS: DiscoveryChannel[] = [
-  "Social media",
-  "Recommendation",
-  "Walked by",
-  "Internet search",
-  "Other",
-];
+const ALLOWED_DISCOVERY_CHANNELS: DiscoveryChannel[] =
+  ALLOWED_DISCOVERY_CHANNELS_DATA as DiscoveryChannel[];
 
 function hasAtLeastTwoWords(fullName: string): boolean {
   return fullName.trim().split(/\s+/).filter((part) => part.length > 0).length >= 2;
@@ -40,7 +35,7 @@ function isValidEmail(email: string): boolean {
 }
 
 function isPhoneFormatValid(phone: string): boolean {
-  return /^\+\d{1,3}[\s\d-]+$/.test(phone.trim());
+  return PHONE_REGEX.test(phone.trim());
 }
 
 export function calculateAge(dateOfBirth: string, referenceDate: Date = new Date()): number {

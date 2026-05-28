@@ -8,8 +8,8 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
-    "rootDir": "Brasaland webpage/src",
+    "rootDir": "brasaland-webpage/src",
     "outDir": "dist"
   },
-  "include": ["Brasaland webpage/src"]
+  "include": ["brasaland-webpage/src"]
 }
