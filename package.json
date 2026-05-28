@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm run serve",
     "typecheck": "tsc --noEmit",
-    "demo": "tsx \"Brasaland webpage/src/demo.ts\"",
+    "demo": "tsx \"brasaland-webpage/src/demo.ts\"",
     "serve": "node scripts/serve-root.cjs",
     "serve:src": "node scripts/serve-src.cjs",
     "serve:root": "npx --yes http-server . -p 3000 -a 0.0.0.0",
