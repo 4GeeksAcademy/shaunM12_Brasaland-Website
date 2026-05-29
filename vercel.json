@@ -2,15 +2,15 @@
   "rewrites": [
     {
       "source": "/",
-      "destination": "/Brasaland webpage/index.html"
+      "destination": "/apps/brasaland-webpage/index.html"
     },
     {
       "source": "/application",
-      "destination": "/Brasaland webpage/application.html"
+      "destination": "/apps/brasaland-webpage/application.html"
     },
     {
       "source": "/(.*)",
-      "destination": "/Brasaland webpage/$1"
+      "destination": "/apps/brasaland-webpage/$1"
     }
   ]
 }

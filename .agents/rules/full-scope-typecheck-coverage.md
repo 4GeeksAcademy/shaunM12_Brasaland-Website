@@ -10,7 +10,7 @@
 - CI must execute all relevant typecheck targets.
 
 **How to Apply:**
-1. Ensure `tsconfig.json` at the root includes all relevant source and test directories (e.g., `brasaland-webpage/src`, `tests`).
+1. Ensure `tsconfig.json` at the root includes all relevant source and test directories (e.g., `src`, `tests`).
 2. For subprojects (e.g., `apps/talent-pipeline-tracker`), add a typecheck script in their `package.json` (e.g., `tsc --noEmit`).
 3. In CI (e.g., GitHub Actions), run both root and subproject typechecks:
 	 - `npx tsc --noEmit`

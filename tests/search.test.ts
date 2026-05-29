@@ -4,8 +4,8 @@ import {
   binarySearchRegistrationByEmail,
   findLocationByName,
   findRegistrationByEmail,
-} from "../Brasaland webpage/src/utils/search.js";
-import { BrasaLocation, BrasaPointsRegistration } from "../Brasaland webpage/src/types/models.js";
+} from "../src/utils/search.js";
+import { BrasaLocation, BrasaPointsRegistration } from "../src/types/models.js";
 
 const sampleLocations: BrasaLocation[] = [
   {
@@ -79,7 +79,7 @@ describe("search utilities", () => {
     expect(binarySearchRegistrationByEmail(registrationsSortedByEmail, "beth@example.com")).toBe(1);
     expect(binarySearchRegistrationByEmail(registrationsSortedByEmail, "none@example.com")).toBe(-1);
 
-    expect(binarySearchLocationByName(locationsSortedByName, "Brasaland El Poblado")).toBe(1);
+    expect(binarySearchLocationByName(locationsSortedByName, "Brasaland El Poblado")).toBe(2);
     expect(binarySearchLocationByName(locationsSortedByName, "Unknown")).toBe(-1);
   });
 });

@@ -16,7 +16,7 @@
 
 **Example:**
 - Bad: `{ "destination": "/Brasaland webpage/index.html" }` (folder does not exist)
-- Good: `{ "destination": "/brasaland-webpage/index.html" }`
+- Good: `{ "destination": "/apps/brasaland-webpage/index.html" }`
 
 **Detection Signals:**
 - Destination path does not exist in the repository tree.

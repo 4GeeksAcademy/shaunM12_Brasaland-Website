@@ -1,7 +1,7 @@
 import {
   COUNTRY_TO_CITIES_DATA,
   LOCATIONS_BY_COUNTRY_AND_CITY_DATA,
-} from "../../validation-shared"; // Removed .js extension to ensure TypeScript resolves the .d.ts file
+} from "../validation-shared.js";
 
 export type Country = "Colombia" | "United States";
 

@@ -4,8 +4,8 @@ import {
   filterRegistrationsByCriteria,
   sortLocationsByFields,
   sortRegistrationsByField,
-} from "../Brasaland webpage/src/utils/collections.js";
-import { BrasaLocation, BrasaPointsRegistration } from "../Brasaland webpage/src/types/models.js";
+} from "../src/utils/collections.js";
+import { BrasaLocation, BrasaPointsRegistration } from "../src/types/models.js";
 
 const sampleLocations: BrasaLocation[] = [
   {

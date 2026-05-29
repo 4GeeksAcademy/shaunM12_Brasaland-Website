@@ -14,7 +14,7 @@ import {
   ALLOWED_DISCOVERY_CHANNELS_DATA,
   EMAIL_REGEX,
   PHONE_REGEX,
-} from "../../validation-shared.js";
+} from "../validation-shared.js";
 
 const ALLOWED_DIETARY_PREFERENCES: DietaryPreference[] =
   ALLOWED_DIETARY_PREFERENCES_DATA as DietaryPreference[];
