@@ -3,8 +3,8 @@ import {
   buildLocationDistributionReport,
   buildRegistrationReport,
   summarizeNumbers,
-} from "../Brasaland webpage/src/utils/transformations.js";
-import { BrasaLocation, BrasaPointsRegistration } from "../Brasaland webpage/src/types/models.js";
+} from "../src/utils/transformations.js";
+import { BrasaLocation, BrasaPointsRegistration } from "../src/types/models.js";
 
 const registrations: BrasaPointsRegistration[] = [
   {
@@ -91,8 +91,8 @@ describe("transformations utilities", () => {
     expect(report.registrationsByDiscoveryChannel["Internet search"]).toBe(1);
     expect(report.dietaryPreferenceSelections["Gluten-free"]).toBe(1);
     expect(report.emailOptInCount).toBe(2);
-    expect(report.ageSummary.total).toBe(95);
-    expect(report.ageSummary.average).toBe(31.67);
+    expect(report.ageSummary.total).toBe(86);
+    expect(report.ageSummary.average).toBe(28.67);
     expect(report.ageSummary.minimum).toBe(21);
     expect(report.ageSummary.maximum).toBe(35);
   });

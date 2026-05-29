@@ -4,7 +4,7 @@ const path = require("node:path");
 
 const host = "0.0.0.0";
 const port = 3000;
-const rootDir = path.resolve(__dirname, "..", "brasaland-webpage", "src");
+const rootDir = path.resolve(__dirname, "..", "src");
 const pidFile = "/tmp/brasaland-server.pid";
 
 const mimeTypes = {
@@ -72,7 +72,7 @@ const server = http.createServer((req, res) => {
 
 server.listen(port, host, () => {
   fs.writeFileSync(pidFile, String(process.pid));
-  console.log(`Serving brasaland-webpage/src/index.html at http://${host}:${port}`);
+  console.log(`Serving src/index.html at http://${host}:${port}`);
 });
 
 function shutdown() {

@@ -1,23 +1,24 @@
 # Canonical Path Consistency
 
-**Scope:** All code, tests, documentation, and deployment configuration referencing project directories (e.g., `brasaland-webpage`, `Brasaland webpage`).
+**Scope:** All code, tests, documentation, and deployment configuration referencing project directories (e.g., `apps/brasaland-webpage`, `Brasaland webpage`).
 
 **Rationale:** Prevents runtime and deployment failures caused by inconsistent or legacy path references.
 
 **Guardrails:**
-- Use `brasaland-webpage` as the only canonical path for the website implementation.
+- Use `src` as the canonical path for the TypeScript implementation.
+- Keep static website assets under `apps/brasaland-webpage`.
 - Do not introduce new references to `Brasaland webpage` or other legacy names.
 - Ensure all redirects, rewrites, and imports match real filesystem names.
 
 **How to Apply:**
-1. When creating or updating files, always use `brasaland-webpage` in imports, rewrites, and documentation.
-2. When refactoring, search for `Brasaland webpage` and update all references to `brasaland-webpage`.
-3. For new tests, use import paths like `from "../../brasaland-webpage/src/utils/validations"`.
+1. When creating or updating TypeScript files, use `src` imports and references.
+2. When refactoring, search for `Brasaland webpage` and update all legacy references.
+3. For new tests, use import paths like `from "../src/utils/validations.js"`.
 4. When editing deployment configs (e.g., `vercel.json`), ensure all paths use the canonical name.
 
 **Example:**
 - Bad: `import { validate } from "../Brasaland webpage/src/utils/validations.js";`
-- Good: `import { validate } from "../brasaland-webpage/src/utils/validations";`
+- Good: `import { validate } from "../src/utils/validations.js";`
 
 **Detection Signals:**
 - Mixed usage of path names for the same module area.

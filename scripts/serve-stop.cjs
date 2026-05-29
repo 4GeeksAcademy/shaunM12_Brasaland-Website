@@ -24,7 +24,9 @@ try {
     console.log("Server process was not running");
   }
 
-  fs.unlinkSync(pidFile);
+  if (fs.existsSync(pidFile)) {
+    fs.unlinkSync(pidFile);
+  }
   process.exit(0);
 } catch (error) {
   console.error("serve:stop failed", error);

@@ -3,8 +3,8 @@ import {
   getCitiesForCountry,
   getFavoriteLocationsByCountryAndCity,
   validateBrasaPointsRegistration,
-} from "../Brasaland webpage/src/utils/validations.js";
-import { BrasaPointsRegistration } from "../Brasaland webpage/src/types/models.js";
+} from "../src/utils/validations.js";
+import { BrasaPointsRegistration } from "../src/types/models.js";
 
 const validRegistration: BrasaPointsRegistration = {
   fullName: "Ana Diaz",

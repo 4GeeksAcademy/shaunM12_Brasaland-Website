@@ -1,0 +1,104 @@
+name: candidate-label-guard
+version: 1.0.0
+description: Verify that Talent Pipeline UI renders human-readable candidate status/stage labels and never exposes raw API tokens.
+objective: Ensure all candidate status and stage values displayed in the UI are rendered via the canonical label mapping, with zero raw API token leakage.
+scope:
+  app: talent-pipeline-tracker
+  surfaces:
+    - candidate-list
+    - candidate-detail
+    - status-filter-controls
+    - stage-filter-controls
+inputs:
+  - name: target_paths
+    type: array<string>
+    required: true
+    description: Paths to inspect for UI rendering and label mapping usage.
+    default:
+      - apps/talent-pipeline-tracker/app/page.tsx
+      - apps/talent-pipeline-tracker/app/candidates/[id]/page.tsx
+  - name: label_map_source
+    type: string
+    required: true
+    description: Canonical source file for status/stage UI label mappings.
+    default: apps/talent-pipeline-tracker/lib/constants.ts
+  - name: include_tests
+    type: boolean
+    required: false
+    description: Whether to enforce test assertions for label rendering.
+    default: true
+  - name: strict_mode
+    type: boolean
+    required: false
+    description: If true, fail on any ambiguous inline label fallback not sourced from canonical mapping.
+    default: true
+procedure:
+  - id: scan-ui-tokens
+    description: Search target_paths for raw status/stage API tokens in rendered text paths.
+    checks:
+      - received
+      - in_progress
+      - selected
+      - discarded
+      - pending
+      - review
+      - personal_interview
+      - technical_interview
+      - offer_presented
+  - id: verify-mapping-source
+    description: Confirm UI rendering reads labels from label_map_source, not hardcoded ad-hoc mappings.
+  - id: verify-list-detail-surfaces
+    description: Confirm list and detail surfaces both use mapped human-readable labels.
+  - id: verify-filter-controls
+    description: Confirm status/stage filter controls display labels and not raw API tokens.
+  - id: verify-tests
+    when: include_tests == true
+    description: Confirm tests assert human-readable labels for list and detail views.
+acceptance_criteria:
+  - id: ac-1
+    criterion: No raw status API tokens appear in rendered UI text paths.
+    verification: Pass if zero matches for [received,in_progress,selected,discarded] in rendered label outputs.
+  - id: ac-2
+    criterion: No raw stage API tokens appear in rendered UI text paths.
+    verification: Pass if zero matches for [pending,review,personal_interview,technical_interview,offer_presented] in rendered label outputs.
+  - id: ac-3
+    criterion: All status/stage UI labels are sourced from canonical mapping in label_map_source.
+    verification: Pass if all rendering call sites resolve to imported mapping constants/functions from label_map_source.
+  - id: ac-4
+    criterion: Candidate list and candidate detail both render mapped labels.
+    verification: Pass if both surfaces have verified mapped label usage and zero raw-token output.
+  - id: ac-5
+    criterion: Tests cover label rendering behavior when include_tests is true.
+    verification: Pass if at least one assertion exists for list and one for detail validating human-readable labels.
+output_contract:
+  type: object
+  required_fields:
+    - skill_name
+    - timestamp
+    - objective
+    - inputs_used
+    - criteria_results
+    - violations
+    - overall_status
+  criteria_results_item_shape:
+    id: string
+    status: pass|fail
+    evidence: string
+  violations_item_shape:
+    file: string
+    line: number
+    criterion_id: string
+    message: string
+success_definition: overall_status == pass and all acceptance_criteria statuses == pass.
+examples:
+  - name: full-check-default
+    inputs:
+      target_paths:
+        - apps/talent-pipeline-tracker/app/page.tsx
+        - apps/talent-pipeline-tracker/app/candidates/[id]/page.tsx
+      label_map_source: apps/talent-pipeline-tracker/lib/constants.ts
+      include_tests: true
+      strict_mode: true
+    expected:
+      overall_status: pass
+      criteria_results_all: pass

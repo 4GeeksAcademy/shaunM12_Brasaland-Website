@@ -80,10 +80,10 @@ ai-engineering-company-project-template/
 
 ## Milestone 2 implementation (Programming Fundamentals)
 
-This repository now includes a TypeScript implementation for Milestone 2 under `brasaland-webpage/src/`:
+This repository now includes a TypeScript implementation for Milestone 2 under `src/`:
 
 ```text
-brasaland-webpage/src/
+src/
 ├── demo.ts
 ├── index.ts
 ├── index.html
@@ -115,14 +115,14 @@ npm run serve:stop
 ```
 
 `npm run serve` serves the site from the repository root (detached mode).
-`npm run serve:src` serves the operations interface from `brasaland-webpage/src/` directly (detached mode).
+`npm run serve:src` serves the operations interface from `src/` directly (detached mode).
 `npm run serve:root` serves the repository root (detached mode).
 `npm run serve:required` runs the exact required command: `npx http-server . -p 3000 -a 0.0.0.0`.
 `npm run serve:logs` shows recent server log output.
 `npm run serve:stop` stops the detached server.
 If you typed `npm serve run`, that command is invalid and will not start the server.
 
-Migration note: the legacy folder `Brasaland webpage/` has been retired. Use `brasaland-webpage/` as the canonical implementation path.
+Migration note: the legacy folder `Brasaland webpage/` has been retired. The TypeScript implementation now lives under `src/`.
 
 These commands satisfy the requirement to expose a clear TypeScript validation/execution workflow during development.
 
