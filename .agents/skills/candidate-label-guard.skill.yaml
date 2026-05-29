@@ -15,13 +15,13 @@ inputs:
     required: true
     description: Paths to inspect for UI rendering and label mapping usage.
     default:
-      - apps/talent-pipeline-tracker/app/page.tsx
-      - apps/talent-pipeline-tracker/app/candidates/[id]/page.tsx
+      - uis/talent-pipeline-tracker/app/page.tsx
+      - uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx
   - name: label_map_source
     type: string
     required: true
     description: Canonical source file for status/stage UI label mappings.
-    default: apps/talent-pipeline-tracker/lib/constants.ts
+    default: uis/talent-pipeline-tracker/lib/constants.ts
   - name: include_tests
     type: boolean
     required: false
@@ -94,9 +94,9 @@ examples:
   - name: full-check-default
     inputs:
       target_paths:
-        - apps/talent-pipeline-tracker/app/page.tsx
-        - apps/talent-pipeline-tracker/app/candidates/[id]/page.tsx
-      label_map_source: apps/talent-pipeline-tracker/lib/constants.ts
+        - uis/talent-pipeline-tracker/app/page.tsx
+        - uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx
+      label_map_source: uis/talent-pipeline-tracker/lib/constants.ts
       include_tests: true
       strict_mode: true
     expected:

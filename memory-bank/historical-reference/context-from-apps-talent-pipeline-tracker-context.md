@@ -2,7 +2,7 @@
 
 ## AI Engineering - 4Geeks Academy
 
-> Source: apps/talent-pipeline-tracker/context.md
+> Source: uis/talent-pipeline-tracker/context.md
 
 ### Milestone Focus
 

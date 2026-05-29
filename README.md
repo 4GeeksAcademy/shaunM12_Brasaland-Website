@@ -37,7 +37,7 @@ ai-engineering-company-project-template/
 ├── README.es.md
 ├── CONTEXT.md                # Placeholder to be replaced with assigned context
 ├── agents/                   # Agent patterns/templates and tools docs
-├── apps/                     # Product apps (web, APIs, dashboards)
+├── uis/                      # Product apps (web, APIs, dashboards)
 ├── data/                     # raw, process, pipelines, eval
 ├── docs/                     # Project and architecture documentation
 ├── packages/
@@ -55,8 +55,8 @@ ai-engineering-company-project-template/
 1. **Use this repository as a template** and create your own project repo.
 2. **Clone** your repository (or open it in Codespaces).
 3. **Replace** `CONTEXT.md` with the full context for your assigned company.
-4. **Review** each top-level folder `README.md` to understand intended responsibilities (`apps/`, `data/`, `skills/`, etc.).
-5. **Start implementing** milestone deliverables in `apps/`, reusing `packages/shared/` and `data/` as needed.
+4. **Review** each top-level folder `README.md` to understand intended responsibilities (`uis/`, `data/`, `skills/`, etc.).
+5. **Start implementing** milestone deliverables in `uis/`, reusing `packages/shared/` and `data/` as needed.
 
 ---
 
