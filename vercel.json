@@ -1,16 +1,20 @@
 {
   "rewrites": [
     {
-      "source": "/",
-      "destination": "/uis/brasaland-webpage/index.html"
-    },
-    {
       "source": "/application",
-      "destination": "/uis/brasaland-webpage/application.html"
+      "destination": "/uis/website/public/application.html"
     },
     {
-      "source": "/(.*)",
-      "destination": "/uis/brasaland-webpage/$1"
+      "source": "/application.html",
+      "destination": "/uis/website/public/application.html"
+    },
+    {
+      "source": "/validation.js",
+      "destination": "/uis/website/public/validation.js"
+    },
+    {
+      "source": "/validation-shared.js",
+      "destination": "/uis/website/public/validation-shared.js"
     }
   ]
 }

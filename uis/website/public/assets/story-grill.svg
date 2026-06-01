@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 800" role="img" aria-label="Stylized overhead grill table with skewers, fire glow and food plates">
+  <defs>
+    <radialGradient id="heat" cx="0.5" cy="0.5" r="0.62">
+      <stop offset="0" stop-color="#fb923c" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#0c0a09" stop-opacity="0.9"/>
+    </radialGradient>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#cbd5e1"/>
+      <stop offset="0.5" stop-color="#94a3b8"/>
+      <stop offset="1" stop-color="#e2e8f0"/>
+    </linearGradient>
+    <linearGradient id="coal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7f1d1d"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#ef4444"/>
+      <stop offset="0.55" stop-color="#f97316"/>
+      <stop offset="1" stop-color="#fde047"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="800" fill="#1c1917"/>
+  <rect width="1200" height="800" fill="url(#heat)"/>
+
+  <g opacity="0.22" fill="#f59e0b">
+    <circle cx="140" cy="110" r="2.2"/>
+    <circle cx="280" cy="150" r="1.8"/>
+    <circle cx="420" cy="86" r="2.4"/>
+    <circle cx="640" cy="120" r="2.3"/>
+    <circle cx="830" cy="96" r="1.9"/>
+    <circle cx="1020" cy="140" r="2.1"/>
+  </g>
+
+  <rect x="170" y="120" width="860" height="560" rx="32" fill="#111827" stroke="#f59e0b" stroke-opacity="0.2" stroke-width="2"/>
+
+  <g>
+    <rect x="230" y="245" width="740" height="310" rx="22" fill="#0b1220"/>
+    <rect x="255" y="275" width="690" height="250" rx="18" fill="url(#coal)" opacity="0.95"/>
+    <rect x="255" y="296" width="690" height="12" rx="6" fill="url(#metal)"/>
+    <rect x="255" y="334" width="690" height="12" rx="6" fill="url(#metal)"/>
+    <rect x="255" y="372" width="690" height="12" rx="6" fill="url(#metal)"/>
+    <rect x="255" y="410" width="690" height="12" rx="6" fill="url(#metal)"/>
+    <rect x="255" y="448" width="690" height="12" rx="6" fill="url(#metal)"/>
+    <rect x="255" y="486" width="690" height="12" rx="6" fill="url(#metal)"/>
+  </g>
+
+  <g>
+    <path d="M410 522c-22-56 16-102 44-140 22 31 39 58 34 98-4 24-12 42-23 42h-55z" fill="url(#flame)"/>
+    <path d="M585 520c-26-66 20-120 54-164 28 35 49 70 42 118-6 30-18 46-32 46h-64z" fill="url(#flame)"/>
+    <path d="M760 522c-24-60 18-108 48-149 24 32 42 61 36 102-4 25-13 47-25 47h-59z" fill="url(#flame)"/>
+  </g>
+
+  <g transform="rotate(-10 600 380)">
+    <rect x="305" y="340" width="590" height="20" rx="10" fill="#c4b5fd" opacity="0.2"/>
+    <rect x="305" y="340" width="590" height="6" rx="3" fill="#d6d3d1"/>
+    <rect x="360" y="326" width="76" height="34" rx="12" fill="#b45309"/>
+    <rect x="462" y="326" width="84" height="34" rx="12" fill="#92400e"/>
+    <rect x="576" y="326" width="72" height="34" rx="12" fill="#b45309"/>
+    <rect x="672" y="326" width="82" height="34" rx="12" fill="#92400e"/>
+  </g>
+
+  <g>
+    <circle cx="270" cy="565" r="84" fill="#292524" stroke="#f59e0b" stroke-opacity="0.25" stroke-width="2"/>
+    <circle cx="930" cy="205" r="84" fill="#292524" stroke="#f59e0b" stroke-opacity="0.25" stroke-width="2"/>
+    <circle cx="930" cy="565" r="84" fill="#292524" stroke="#f59e0b" stroke-opacity="0.25" stroke-width="2"/>
+
+    <ellipse cx="270" cy="565" rx="44" ry="28" fill="#16a34a" opacity="0.75"/>
+    <ellipse cx="930" cy="205" rx="44" ry="28" fill="#dc2626" opacity="0.75"/>
+    <ellipse cx="930" cy="565" rx="44" ry="28" fill="#0ea5e9" opacity="0.75"/>
+  </g>
+</svg>

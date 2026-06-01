@@ -2,7 +2,7 @@
 
 ## AI Engineering - 4Geeks Academy
 
-> Source: uis/talent-pipeline-tracker/context.md
+> Source: archived context from legacy talent-pipeline-tracker app (folder retired)
 
 ### Milestone Focus
 
@@ -158,4 +158,4 @@ Use this section as the source of truth for Milestone 3 implementation.
 _Internal document — 4Geeks Academy · AI Engineering Track_
 _For exclusive use in programme project generation_
 
-This file provides context and documentation for the talent-pipeline-tracker application. Add relevant project details, environment notes, and usage instructions here as needed.
+This file preserves historical context from the legacy talent-pipeline-tracker application for reference only.

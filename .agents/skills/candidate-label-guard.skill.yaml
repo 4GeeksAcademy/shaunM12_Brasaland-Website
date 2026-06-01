@@ -3,7 +3,7 @@ version: 1.0.0
 description: Verify that Talent Pipeline UI renders human-readable candidate status/stage labels and never exposes raw API tokens.
 objective: Ensure all candidate status and stage values displayed in the UI are rendered via the canonical label mapping, with zero raw API token leakage.
 scope:
-  app: talent-pipeline-tracker
+  app: backoffice
   surfaces:
     - candidate-list
     - candidate-detail
@@ -15,13 +15,13 @@ inputs:
     required: true
     description: Paths to inspect for UI rendering and label mapping usage.
     default:
-      - uis/talent-pipeline-tracker/app/page.tsx
-      - uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx
+      - uis/backoffice/app/page.tsx
+      - uis/backoffice/app/candidates/[id]/page.tsx
   - name: label_map_source
     type: string
     required: true
     description: Canonical source file for status/stage UI label mappings.
-    default: uis/talent-pipeline-tracker/lib/constants.ts
+    default: uis/backoffice/lib/constants.ts
   - name: include_tests
     type: boolean
     required: false
@@ -94,9 +94,9 @@ examples:
   - name: full-check-default
     inputs:
       target_paths:
-        - uis/talent-pipeline-tracker/app/page.tsx
-        - uis/talent-pipeline-tracker/app/candidates/[id]/page.tsx
-      label_map_source: uis/talent-pipeline-tracker/lib/constants.ts
+        - uis/backoffice/app/page.tsx
+        - uis/backoffice/app/candidates/[id]/page.tsx
+      label_map_source: uis/backoffice/lib/constants.ts
       include_tests: true
       strict_mode: true
     expected:

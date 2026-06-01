@@ -8,7 +8,7 @@ import {
   LOCATIONS_BY_COUNTRY_AND_CITY,
   RegistrationValidationErrors,
   RegistrationValidationResult,
-} from "../types/models.js";
+} from "../types/models";
 import {
   ALLOWED_DIETARY_PREFERENCES_DATA,
   ALLOWED_DISCOVERY_CHANNELS_DATA,

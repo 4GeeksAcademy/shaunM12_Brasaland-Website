@@ -1,12 +1,12 @@
 # Canonical Path Consistency
 
-**Scope:** All code, tests, documentation, and deployment configuration referencing project directories (e.g., `uis/brasaland-webpage`, `Brasaland webpage`).
+**Scope:** All code, tests, documentation, and deployment configuration referencing project directories (e.g., `uis/website`, `uis/backoffice`, `Brasaland webpage`).
 
 **Rationale:** Prevents runtime and deployment failures caused by inconsistent or legacy path references.
 
 **Guardrails:**
 - Use `src` as the canonical path for the TypeScript implementation.
-- Keep static website assets under `uis/brasaland-webpage`.
+- Keep public website static assets under `uis/website/public`.
 - Do not introduce new references to `Brasaland webpage` or other legacy names.
 - Ensure all redirects, rewrites, and imports match real filesystem names.
 
