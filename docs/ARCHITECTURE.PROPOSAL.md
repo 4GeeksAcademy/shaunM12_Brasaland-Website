@@ -1,197 +1,344 @@
 # ARCHITECTURE PROPOSAL - Brasaland Backend
 
-## 1. Context and Scope Boundaries
+## 1. Objective and Scope
 
-Brasaland operates 14 restaurants across Colombia and the United States and is modernizing manual, fragmented processes across operations, procurement, marketing, and internal tracking workflows.
+This document defines how Brasaland should structure the backend before implementation starts.
 
-This proposal defines the target backend architecture for the next stage of Brasaland Digital.
+The goal is to provide a decision record that answers:
+- What architecture we should adopt.
+- Why it fits Brasaland's operating reality.
+- How modules and domains should be organized.
+- How FastAPI routes should be grouped for clarity and long-term maintainability.
+- What risks we face if the structure is not followed.
 
 In scope:
-- Architectural pattern recommendation and justification.
-- Backend folder/module structure and separation criteria.
+- Architectural pattern recommendation and trade-off analysis.
+- Backend folder and module structure proposal.
 - FastAPI endpoint and router organization by domain.
-- Risks and points of attention if the structure is not followed.
+- Risks and operational points of attention.
 
 Out of scope:
-- Immediate implementation of backend services.
-- Database migration scripts.
+- Service implementation details.
+- Data migration scripts.
+- Infrastructure-as-code setup.
 - Frontend refactors.
 
-## 2. Recommended Architectural Pattern and Rationale
+## 2. Business and Technical Context
 
-### Recommended pattern
-Domain-Oriented Layered Architecture implemented as a Modular Monolith with FastAPI.
+Brasaland operates 14 restaurants across Colombia and the United States. The company is digitizing workflows that are currently fragmented across spreadsheets, email, and disconnected tools. The backend must support multiple domains that are related but distinct:
+- Candidate pipeline management for people operations.
+- Operations metrics (sales, waste, performance).
+- Procurement workflows.
+- Brasa Points loyalty management.
 
-### Why this is the best fit for Brasaland now
-1. Multi-country operations need clear domain boundaries.
-Brasaland runs in two countries with different operational realities. Domain boundaries reduce cross-team confusion and keep business rules explicit.
+The frontends are separate systems (public website and internal backoffice). This means the backend must act as a stable contract layer, not as a UI-specific implementation detail.
 
-2. Current complexity does not justify microservices yet.
-The company needs speed, consistency, and low operational overhead. A modular monolith gives strong internal separation without distributed-system complexity.
+Design implications:
+- API contracts must remain stable while frontend experiences evolve independently.
+- Business rules must live in backend domain logic, not duplicated in frontend code.
+- Versioning and standardized errors are required from day one.
 
-3. Existing pain points are cross-functional but connected.
-Operations, procurement, loyalty, and talent tracking share data and decisions. A modular monolith allows phased domain rollout while preserving one source of truth.
+## 3. Architectural Decision
 
-4. Reliability of metrics is a business-critical requirement.
-Leadership decisions depend on trusted data. Layered architecture makes validation, business rules, and persistence responsibilities explicit and auditable.
+### 3.1 Recommended pattern
 
-5. FastAPI aligns with current needs.
-FastAPI supports typed contracts, validation, async I/O, and clear router composition, all needed for stable internal and public-facing integrations.
+Domain-Oriented Layered Architecture implemented as a Modular Monolith using FastAPI.
 
-### Alternatives considered
-1. MVC as primary pattern.
-Rejected as the main pattern because it tends to mix transport and business concerns in growth stages and offers weaker domain boundary discipline.
+### 3.2 Why this pattern fits Brasaland
 
-2. Serverless-first architecture.
-Deferred because it can increase operational fragmentation, local development complexity, and observability overhead at Brasaland's current stage.
+1. Clear boundaries for a multi-domain company
+- Brasaland has distinct business concerns with different owners and workflows.
+- Domain-oriented modules reduce ambiguity about where rules belong.
+- Consequence: faster onboarding and fewer cross-domain side effects.
 
-3. Immediate microservices.
-Rejected for now due to coordination and deployment overhead that is higher than current domain scale requires.
+2. Delivery speed without distributed-systems overhead
+- The current scale does not require microservices-level operational complexity.
+- A modular monolith provides separation and testability while keeping deployment simple.
+- Consequence: faster iteration and lower DevOps burden in early backend phases.
 
-## 3. Proposed Backend Structure (Folders and Modules)
+3. Better control of business-critical consistency
+- Revenue, margin, waste, and candidate lifecycle data influence business decisions.
+- Layered boundaries make validation and business invariants explicit and auditable.
+- Consequence: higher trust in data and lower risk of silent rule drift.
 
-Proposed root structure:
+4. Strong fit with FastAPI capabilities
+- FastAPI supports typed request/response models, async I/O, router composition, and contract-first API docs.
+- Consequence: consistent interfaces for both website and backoffice clients.
 
-- backend/
-- backend/app/
-- backend/app/main.py
-- backend/app/api/
-- backend/app/api/routers/
-- backend/app/api/schemas/
-- backend/app/application/
-- backend/app/application/use_cases/
-- backend/app/domain/
-- backend/app/domain/candidates/
-- backend/app/domain/operations/
-- backend/app/domain/procurement/
-- backend/app/domain/loyalty/
-- backend/app/infrastructure/
-- backend/app/infrastructure/persistence/
-- backend/app/infrastructure/external/
-- backend/app/shared/
-- backend/app/shared/config/
-- backend/app/shared/errors/
-- backend/app/shared/logging/
-- backend/tests/
-- backend/tests/unit/
-- backend/tests/integration/
+### 3.3 Alternatives considered
 
-## 4. Responsibility Separation Criteria
+1. MVC
+- Benefit: simple mental model for small apps.
+- Limitation: tends to couple transport logic and business logic as complexity grows.
+- Decision: not selected as primary architecture.
 
-1. API layer.
-Owns HTTP concerns only: request parsing, response formatting, auth boundaries, and status codes.
+2. Serverless-first
+- Benefit: fast initial deployment and scaling primitives.
+- Limitation: can fragment local development, tracing, and ownership boundaries for this stage.
+- Decision: deferred until traffic and domain independence justify it.
 
-2. Application layer.
-Owns use-case orchestration: transaction flow, policy sequencing, and coordination between domain and infrastructure.
+3. Immediate microservices
+- Benefit: strong service isolation.
+- Limitation: high coordination cost, duplicated platform concerns, and slower early delivery.
+- Decision: not selected for initial backend foundation.
 
-3. Domain layer.
-Owns business language and rules: entities, value objects, invariants, and domain services. Domain code must not depend on FastAPI, database clients, or framework utilities.
+## 4. Proposed Backend Module Structure
 
-4. Infrastructure layer.
-Owns technical adapters: repositories, external API clients, and persistence implementations. Infrastructure depends on domain contracts, never the opposite.
+### 4.1 Structure overview
 
-5. Shared layer.
-Owns cross-cutting capabilities: configuration, structured logging, error mapping, and security primitives. Shared modules must not become a hidden business layer.
+```text
+backend/
+	app/
+		main.py
+		api/
+			routers/
+				system.py
+				candidates.py
+				candidate_notes.py
+				operations.py
+				procurement.py
+				loyalty.py
+			schemas/
+				common.py
+				candidates.py
+				operations.py
+				procurement.py
+				loyalty.py
+		application/
+			use_cases/
+				candidates/
+				operations/
+				procurement/
+				loyalty/
+			services/
+		domain/
+			candidates/
+				entities.py
+				value_objects.py
+				repository_ports.py
+				policies.py
+			operations/
+			procurement/
+			loyalty/
+		infrastructure/
+			persistence/
+				sqlalchemy/
+				repositories/
+			external/
+				email/
+				analytics/
+			security/
+		shared/
+			config/
+			errors/
+			logging/
+			observability/
+	tests/
+		unit/
+		integration/
+		contract/
+```
 
-6. Testing separation.
-Unit tests validate domain/application logic. Integration tests validate API contracts and adapter behavior.
+### 4.2 Responsibility separation criteria
+
+1. API layer (app/api)
+- Owns HTTP concerns only: parsing, validation at boundary, serialization, status codes, auth enforcement.
+- Must not contain business decisions.
+
+2. Application layer (app/application)
+- Owns use-case orchestration: transactions, policy sequencing, command flow.
+- Calls domain models and repository ports.
+
+3. Domain layer (app/domain)
+- Owns entities, value objects, invariants, and business policies.
+- Must be framework-agnostic and persistence-agnostic.
+
+4. Infrastructure layer (app/infrastructure)
+- Owns adapters for databases, external services, and security implementations.
+- Implements interfaces defined by domain/application layers.
+
+5. Shared layer (app/shared)
+- Owns cross-cutting concerns such as config, logging, structured errors, and observability.
+- Must not become a dumping ground for domain logic.
+
+6. Test layers
+- Unit tests verify domain/application behavior.
+- Integration tests verify API + infrastructure wiring.
+- Contract tests verify request/response compatibility for frontend consumers.
+
+### 4.3 Why this structure helps separate frontend and backend systems
+
+- Frontends consume stable API contracts from the API layer.
+- Backend can evolve internals (domain/application/infrastructure) without forcing frontend rewrites.
+- Contract tests prevent accidental breaking changes when backend teams refactor internals.
 
 ## 5. FastAPI Endpoint and Router Organization by Domain
 
-### Grouping criteria
-1. Group routes by bounded context and aggregate ownership, not by HTTP verb.
-2. Keep write and read flows near the same domain aggregate when they share lifecycle rules.
-3. Place cross-domain endpoints in dedicated system routers only when they do not belong to one business context.
+### 5.1 Grouping principles
 
-### Proposed API base prefix
-- /api/v1
+1. Group by domain ownership, not by CRUD verb.
+2. Keep aggregate and child resources close (for example, candidate and candidate notes).
+3. Reserve system-level routes for platform concerns only.
+4. Version all public APIs using /api/v1.
 
-### Router groups and route inventory
+### 5.2 Proposed router map
 
-1. System router: /api/v1/system
-- GET /health
-- GET /ready
-- GET /version
-Purpose: operational status, deployment checks, and runtime diagnostics.
+1. System router
+- Prefix: /api/v1/system
+- Routes:
+	- GET /health
+	- GET /ready
+	- GET /version
+- Purpose: deployment/runtime checks for operations.
 
-2. Candidates router: /api/v1/candidates
-- GET /
-- POST /
-- GET /{candidate_id}
-- PUT /{candidate_id}
-- PATCH /{candidate_id}
-- DELETE /{candidate_id}
-Purpose: core candidate lifecycle management for talent pipeline.
+2. Candidates router
+- Prefix: /api/v1/candidates
+- Routes:
+	- GET /
+	- POST /
+	- GET /{candidate_id}
+	- PUT /{candidate_id}
+	- PATCH /{candidate_id}
+	- DELETE /{candidate_id}
+- Purpose: candidate lifecycle ownership.
 
-3. Candidate notes router: /api/v1/candidates/{candidate_id}/notes
-- GET /
-- POST /
-- DELETE /{note_id}
-Purpose: notes managed as a child resource under the candidate aggregate.
+3. Candidate notes router
+- Prefix: /api/v1/candidates/{candidate_id}/notes
+- Routes:
+	- GET /
+	- POST /
+	- DELETE /{note_id}
+- Purpose: note lifecycle as child of candidate aggregate.
 
-4. Operations router (phase-ready): /api/v1/operations
-- GET /locations
-- GET /locations/{location_id}/performance
-- GET /waste
-Purpose: location-level operational KPIs and waste tracking domain.
+4. Operations router
+- Prefix: /api/v1/operations
+- Routes:
+	- GET /locations
+	- GET /locations/{location_id}/performance
+	- GET /waste
+	- GET /sales/summary
+- Purpose: operational metrics and performance analytics.
 
-5. Procurement router (phase-ready): /api/v1/procurement
-- GET /suppliers
-- GET /purchase-orders
-- POST /purchase-orders
-Purpose: supplier and purchasing control domain.
+5. Procurement router
+- Prefix: /api/v1/procurement
+- Routes:
+	- GET /suppliers
+	- GET /purchase-orders
+	- POST /purchase-orders
+	- PATCH /purchase-orders/{order_id}
+- Purpose: supplier and order control workflows.
 
-6. Loyalty router (phase-ready): /api/v1/loyalty
-- POST /members
-- GET /members/{member_id}
-- GET /campaigns
-Purpose: Brasa Points member and campaign domain.
+6. Loyalty router
+- Prefix: /api/v1/loyalty
+- Routes:
+	- POST /members
+	- GET /members/{member_id}
+	- PATCH /members/{member_id}
+	- GET /campaigns
+- Purpose: Brasa Points member and campaign management.
 
-### API standards to apply across all routers
-1. Versioned routes from day one to protect consumers from breaking changes.
-2. Standard pagination and filtering conventions in list endpoints.
-3. Consistent error envelope and machine-readable error codes.
-4. Idempotency expectations for update/delete operations where applicable.
-5. Explicit contract documentation for each route before new consumers integrate.
+### 5.3 API conventions that all routers must follow
 
-## 6. Domain Roadmap and Adoption Sequence
+1. Uniform list conventions
+- Query params for pagination, filtering, sorting.
+- Consistent metadata envelope for paginated results.
 
-1. Wave 1: Talent Pipeline.
-Stabilize current candidate and note lifecycle as the foundational domain.
+2. Uniform error model
+- Machine-readable error code.
+- Human-readable message.
+- Correlation id for traceability.
 
-2. Wave 2: Operations.
-Add location performance and waste metrics domain aligned with decision-making needs.
+3. Contract stability
+- Backward-compatible changes within v1.
+- Breaking changes require a new version path.
 
-3. Wave 3: Procurement.
-Introduce supplier and purchasing context to reduce spreadsheet-heavy processes.
+4. Auth and authorization boundaries
+- Route-level role checks defined per domain.
+- Sensitive operations (delete, status transitions) require explicit authorization policy.
 
-4. Wave 4: Marketing and Loyalty.
-Evolve Brasa Points and campaign attribution into first-class backend capabilities.
+## 6. Initial Technical Decisions (Day 0)
 
-Adoption guardrails:
-- Keep API compatibility and version contracts stable across waves.
-- Reuse shared cross-cutting modules instead of duplicating utilities.
-- Define domain contracts before exposing endpoints to additional clients.
+1. API contract-first workflow
+- Define and review schema contracts before implementing handlers.
+- Why: keeps frontend/backend teams aligned and reduces rework.
+
+2. Dependency direction enforcement
+- Domain cannot import FastAPI or ORM modules.
+- Why: prevents long-term coupling and improves testability.
+
+3. Unified configuration policy
+- Environment-based settings with strict required variables in production.
+- Why: prevents staging/production drift.
+
+4. Structured observability baseline
+- Request id propagation, structured logs, and basic metrics from first release.
+- Why: production incidents become diagnosable without architectural rewrites.
+
+5. Migration-ready persistence abstraction
+- Use repository ports in domain/application layers from start.
+- Why: allows future extraction to services if domain scale demands it.
 
 ## 7. Risks and Points of Attention
 
-1. Layer leakage risk.
-If API, domain, and infrastructure concerns mix, changes become high-risk and slow. Impact: lower delivery speed, harder debugging, and fragile releases.
+1. Layer leakage
+- What can go wrong: business rules end up in routers or persistence adapters.
+- Consequence: unpredictable behavior, hard refactors, high regression risk.
+- Preventive control: architecture checks in review and dependency direction lint rules.
 
-2. Domain boundary erosion risk.
-If business rules are copied across modules, status/stage logic and eligibility rules drift. Impact: inconsistent behavior between routes and unreliable analytics.
+2. Domain boundary erosion
+- What can go wrong: duplicated logic across candidates, loyalty, and operations modules.
+- Consequence: inconsistent outcomes and low trust in analytics/reporting.
+- Preventive control: single ownership per rule and domain policy review before merges.
 
-3. Contract inconsistency risk.
-If endpoints evolve without versioning and error standards, clients break unpredictably. Impact: backoffice instability and costly coordination.
+3. API contract drift between teams
+- What can go wrong: backend response changes without contract governance.
+- Consequence: website/backoffice breakage and sprint delays.
+- Preventive control: contract tests and required changelog for schema changes.
 
-4. Environment drift risk.
-If configuration standards are not enforced per environment, staging and production behavior diverge. Impact: runtime incidents and unreliable incident triage.
+4. Premature microservice pressure
+- What can go wrong: team splits services too early due to perceived scalability concerns.
+- Consequence: slower delivery and operational complexity without business benefit.
+- Preventive control: define objective extraction triggers (team size, throughput, scaling bottlenecks).
 
-## 8. Verification and Adoption Checklist
+## 8. Team Alignment Notes (Confusion Prevention)
 
-- The architecture pattern is justified with Brasaland-specific constraints.
-- The backend structure is organized by clear layer responsibilities.
-- FastAPI routers are grouped by domain and lifecycle ownership.
-- Route standards define versioning, filtering, and error consistency.
-- Risks describe concrete failure modes and operational impact.
-- Domain roadmap provides phased adoption without architectural rewrites.
+Potential confusion point 1: "Modular monolith" interpreted as "single folder with everything mixed"
+- Clarification: modular monolith means one deployable unit with strict internal domain boundaries.
+
+Potential confusion point 2: "FastAPI schema" interpreted as domain model
+- Clarification: API schemas are transport contracts; domain entities are business models and may differ.
+
+Potential confusion point 3: "Shared" interpreted as place for any reusable code
+- Clarification: shared is only for cross-cutting technical concerns, never domain rules.
+
+## 9. Phased Adoption Plan
+
+1. Phase 1: Candidate lifecycle stabilization
+- Complete candidate and notes domain with contract tests and role boundaries.
+
+2. Phase 2: Operations metrics domain
+- Add performance and waste endpoints with consistent filtering and reporting conventions.
+
+3. Phase 3: Procurement workflows
+- Introduce supplier and purchase order lifecycle with audit-ready status transitions.
+
+4. Phase 4: Loyalty domain expansion
+- Move Brasa Points membership and campaign operations to first-class backend modules.
+
+Definition of done for each phase:
+- Routes documented and versioned.
+- Domain policies tested at unit level.
+- Integration and contract tests passing.
+- No cross-layer dependency violations introduced.
+
+## 10. Final Recommendation
+
+Brasaland should start with a domain-oriented layered modular monolith in FastAPI.
+
+This provides the best balance of:
+- business-rule clarity,
+- delivery speed,
+- low operational overhead,
+- and migration readiness for future scale.
+
+The proposal intentionally prioritizes explicit ownership boundaries and contract discipline so any team member can understand where logic belongs, why decisions were made, and what risks emerge if the structure is not respected.
