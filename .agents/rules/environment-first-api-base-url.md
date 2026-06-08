@@ -1,6 +1,6 @@
 # Environment-First API Base URL
 
-**Scope:** All API client configuration and environment variable usage (e.g., `apps/talent-pipeline-tracker/lib/api.ts`).
+**Scope:** All API client configuration and environment variable usage (e.g., `uis/backoffice/lib/api.ts`).
 
 **Rationale:** Prevents accidental calls to unintended APIs by enforcing explicit environment configuration.
 

@@ -5,8 +5,8 @@ import {
   Country,
   DietaryPreference,
   DiscoveryChannel,
-} from "../types/models.js";
-import { calculateAge } from "./validations.js";
+} from "../types/models";
+import { calculateAge } from "./validations";
 
 export interface RegistrationFilterCriteria {
   country?: Country;

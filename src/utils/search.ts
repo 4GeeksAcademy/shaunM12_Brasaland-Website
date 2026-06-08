@@ -1,4 +1,4 @@
-import { BrasaLocation, BrasaPointsRegistration } from "../types/models.js";
+import { BrasaLocation, BrasaPointsRegistration } from "../types/models";
 
 function normalize(value: string): string {
   return value.trim().toLowerCase();

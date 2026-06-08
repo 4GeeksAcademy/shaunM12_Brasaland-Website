@@ -2,9 +2,9 @@
 
 ## Tech Stack
 - **Frontend:**
-  - Next.js (v16.2.6) and React (v19.2.4) for the Talent Pipeline Tracker app
+  - Next.js (v16.2.6) and React (v19.2.4) for `uis/website` and `uis/backoffice`
   - Tailwind CSS (v4) for styling
-  - Vanilla TypeScript/JavaScript for static site (brasaland-webpage)
+  - Static Brasa Points registration assets served from `uis/website/public`
 - **Backend/API:**
   - API integration via REST endpoints (environment-configurable)
 - **Tooling:**
@@ -15,7 +15,8 @@
 
 ## Architectural Decisions
 - **Canonical Directory Structure:**
-  - All new code, tests, and configs use `brasaland-webpage` as the canonical path, eliminating legacy naming.
+  - Active UI apps are `uis/website` (public) and `uis/backoffice` (internal).
+  - Legacy duplicate app folders are retired when not part of active runtime paths.
 - **Centralized Validation:**
   - Validation logic is shared in dedicated modules to prevent duplication and drift.
 - **Type Safety:**

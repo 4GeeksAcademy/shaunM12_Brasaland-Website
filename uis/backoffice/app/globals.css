@@ -1,0 +1,18 @@
+@import "tailwindcss";
+
+:root {
+  --bo-bg: #020617;
+  --bo-panel: #0f172a;
+  --bo-border: #1e293b;
+  --bo-accent: #22c55e;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  background: radial-gradient(circle at top right, #14532d 0%, var(--bo-bg) 42%);
+  color: #e2e8f0;
+}

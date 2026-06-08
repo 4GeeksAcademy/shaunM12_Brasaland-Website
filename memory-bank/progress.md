@@ -2,7 +2,8 @@
 
 ## Current State of Development
 - **Repository Structure:**
-  - Legacy and canonical directories merged; all new work uses `brasaland-webpage` as the canonical path.
+  - Active UI runtime is consolidated to `uis/website` and `uis/backoffice`.
+  - Legacy duplicate app code has been removed from runtime paths.
   - Context, rules, and technical documentation consolidated in the `memory-bank` and `.agents` directories.
 - **Validation:**
   - Validation logic is centralized and deduplicated; all forms and business logic use shared validators.
@@ -17,6 +18,10 @@
   - Comprehensive, actionable ruleset created and refined; rules are now directly connected to real workflows and enforced in reviews.
 - **Documentation:**
   - Business, technical, and ruleset documentation is up to date and accessible in `memory-bank`.
+- **Agent Governance:**
+  - Root `agents.md` now exists with required startup memory reads, pre-commit workflow steps, and protected path rules.
+- **Milestone 2 Visibility in Backoffice:**
+  - Backoffice dashboard now renders a visible shared-business-logic snapshot alongside live API KPI cards.
 
 ## Planned Next Steps
 - **Path Consistency Cleanup:**

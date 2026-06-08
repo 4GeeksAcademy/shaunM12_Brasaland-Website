@@ -1,23 +1,23 @@
 import {
   BrasaLocation,
   BrasaPointsRegistration,
-} from "./types/models.js";
+} from "./types/models";
 import {
   buildLocationDistributionReport,
   buildRegistrationReport,
-} from "./utils/transformations.js";
+} from "./utils/transformations";
 import {
   filterLocationsByCriteria,
   filterRegistrationsByCriteria,
   sortLocationsByFields,
-} from "./utils/collections.js";
+} from "./utils/collections";
 import {
   binarySearchLocationByName,
   binarySearchRegistrationByEmail,
   findLocationByName,
   findRegistrationByEmail,
-} from "./utils/search.js";
-import { validateBrasaPointsRegistration } from "./utils/validations.js";
+} from "./utils/search";
+import { validateBrasaPointsRegistration } from "./utils/validations";
 
 const sampleLocations: BrasaLocation[] = [
   {
