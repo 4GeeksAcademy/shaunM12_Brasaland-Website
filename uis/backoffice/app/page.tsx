@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import CandidateCard from "@/components/candidates/CandidateCard";
 import CandidateForm from "@/components/candidates/CandidateForm";
 import { useApiState } from "@/hooks/useApiState";
@@ -183,7 +184,15 @@ export default function Page(): React.JSX.Element {
     <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="rounded-2xl border border-amber-200/10 bg-stone-950/95 p-6 text-amber-300 shadow-2xl shadow-black/20">
-          <p className="text-sm uppercase tracking-wider">Brasaland Digital</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm uppercase tracking-wider">Brasaland Digital</p>
+            <Link
+              href="/data-processing"
+              className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
+            >
+              Data processing
+            </Link>
+          </div>
           <h1 className="mt-1 text-2xl font-extrabold md:text-3xl">
             Executive Assistant Talent Pipeline
           </h1>
