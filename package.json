@@ -17,6 +17,10 @@
     "functions:run": "node scripts/functions-cli.cjs",
     "functions:all": "node scripts/functions-cli.cjs --all",
     "functions:pick": "node scripts/functions-cli.cjs --pick",
+    "cli": "node scripts/brasaland-cli.cjs",
+    "cli:list": "node scripts/brasaland-cli.cjs list",
+    "cli:filters": "node scripts/brasaland-cli.cjs filters",
+    "cli:health": "node scripts/brasaland-cli.cjs health",
     "test": "vitest run",
     "test:watch": "vitest"
   },
