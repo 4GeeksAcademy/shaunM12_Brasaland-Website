@@ -5,21 +5,45 @@ import {
   CandidatePatchInput,
 } from "@/types/api";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_TRACKER_API_BASE_URL;
+const DEV_TRACKER_API_FALLBACK = "https://playground.4geeks.com/tracker/api/v1";
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  if (!API_BASE_URL) {
+function resolveApiBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_TRACKER_API_BASE_URL?.trim();
+
+  if (configured && !configured.includes("example.com")) {
+    return configured.replace(/\/$/, "");
+  }
+
+  if (process.env.NODE_ENV === "development") {
+    // Dev fallback for local testing only (4Geeks shared mock API).
+    return DEV_TRACKER_API_FALLBACK;
+  }
+
+  if (!configured) {
     throw new Error("Missing NEXT_PUBLIC_TRACKER_API_BASE_URL environment variable");
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
-    cache: "no-store",
-  });
+  return configured.replace(/\/$/, "");
+}
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const API_BASE_URL = resolveApiBaseUrl();
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...init,
+      headers: {
+        "Content-Type": "application/json",
+        ...(init?.headers ?? {}),
+      },
+      cache: "no-store",
+    });
+  } catch {
+    throw new Error(
+      "NetworkError when attempting to fetch resource. Check that the Tracker API is running and reachable.",
+    );
+  }
 
   if (!response.ok) {
     const errorText = await response.text();

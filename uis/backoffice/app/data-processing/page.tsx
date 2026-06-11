@@ -50,12 +50,20 @@ export default async function DataProcessingPage({
         <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm uppercase tracking-[0.12em] text-amber-300">Brasaland Data Processing</p>
-            <Link
-              href="/"
-              className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
-            >
-              Back to candidate tracker
-            </Link>
+            <div className="flex flex-wrap gap-2">
+              <Link
+                href="/incidents"
+                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
+              >
+                Incidents
+              </Link>
+              <Link
+                href="/"
+                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
+              >
+                Back to candidate tracker
+              </Link>
+            </div>
           </div>
           <h1 className="mt-2 text-2xl font-extrabold text-amber-100 md:text-3xl">
             Operations Aggregated Reports
