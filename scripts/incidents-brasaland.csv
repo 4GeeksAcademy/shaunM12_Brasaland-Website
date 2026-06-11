@@ -1,0 +1,101 @@
+incident_id,date,location_id,category,description,status,customer_id,satisfaction_score,reporter_id
+BRS-000001,2024-01-14,COL-07,FOOD_QUALITY,Portion served below menu standard,CLOSED,CLI-471507,5,MGR-01
+BRS-000002,2024-01-04,COL-01,SUPPLY,"Low charcoal stock for grills, urgent order placed",DISCARDED,CLI-777568,,MGR-06
+BRS-000003,2024-01-08,COL-04,SUPPLY,Sauce supplier did not deliver weekly order,OPEN,CLI-214576,,MGR-08
+BRS-000004,2024-01-06,COL-05,CUSTOMER_COMPLAINT,Complaint about excessive noise in dining area,CLOSED,,2,MGR-04
+BRS-000005,2024-01-15,FLA-03,EQUIPMENT,Industrial dishwasher water leak detected,OPEN,CLI-179046,,MGR-02
+BRS-000006,2024-01-18,FLA-04,CUSTOMER_COMPLAINT,Customer dissatisfied with table wait time,CLOSED,,5,MGR-02
+BRS-000007,2024-01-08,COL-03,CUSTOMER_COMPLAINT,Claim for reservation not found on arrival,CLOSED,CLI-989921,4,MGR-08
+BRS-000008,2024-01-29,COL-01,FOOD_QUALITY,Customer reports cold food at serving time,OPEN,CLI-520521,,MGR-07
+BRS-000009,2024-01-13,COL-05,CUSTOMER_COMPLAINT,Complaint about excessive noise in dining area,CLOSED,,2,MGR-05
+BRS-000010,2024-01-26,COL-09,SUPPLY,Shortage of imported beverages on menu,CLOSED,CLI-865990,5,MGR-08
+BRS-000011,2024-01-10,COL-04,SUPPLY,Shortage of beef for main menu cuts,OPEN,,,MGR-01
+BRS-000012,2024-01-02,COL-10,CUSTOMER_COMPLAINT,Complaint about excessive noise in dining area,OPEN,CLI-159942,,MGR-03
+BRS-000013,2024-01-17,COL-02,SUPPLY,Delay in cleaning supply delivery,OPEN,,,MGR-03
+BRS-000014,2024-01-03,FLA-01,FOOD_QUALITY,Customer reports cold food at serving time,DISCARDED,,,MGR-07
+BRS-000015,2024-01-29,COL-10,SUPPLY,Sauce supplier did not deliver weekly order,OPEN,,,MGR-01
+BRS-000016,2024-01-22,COL-10,STAFF,Employee did not follow uniform protocol,CLOSED,CLI-539589,2,MGR-06
+BRS-000017,2024-01-22,FLA-02,SUPPLY,Shortage of takeout packaging,OPEN,CLI-314181,,MGR-04
+BRS-000018,2024-01-05,FLA-01,EQUIPMENT,Venue music system off without response,DISCARDED,,,MGR-05
+BRS-000019,2024-01-30,COL-02,SUPPLY,Shortage of beef for main menu cuts,OPEN,CLI-888387,,MGR-08
+BRS-000020,2024-01-04,COL-02,EQUIPMENT,Beverage refrigerator not cooling properly,OPEN,CLI-690341,,MGR-04
+BRS-000021,2024-01-30,COL-06,SUPPLY,Shortage of beef for main menu cuts,OPEN,CLI-238890,,MGR-04
+BRS-000022,2024-01-15,FLA-04,FOOD_QUALITY,Expired product found during inventory review,CLOSED,CLI-265409,3,MGR-05
+BRS-000023,2024-01-21,COL-09,EQUIPMENT,Main kitchen grill failure,DISCARDED,CLI-946305,,MGR-05
+BRS-000024,2024-01-31,COL-03,EQUIPMENT,POS terminal error processing card payments,CLOSED,CLI-208618,5,MGR-02
+BRS-000025,2024-01-18,COL-03,FOOD_QUALITY,House sauce tastes different than usual,CLOSED,CLI-878480,3,MGR-05
+BRS-000026,2024-01-11,COL-04,SUPPLY,Shortage of imported beverages on menu,CLOSED,CLI-852470,2,MGR-05
+BRS-000027,2024-01-29,FLA-04,STAFF,Employee arrived late for opening shift,CLOSED,CLI-363319,1,MGR-02
+BRS-000028,2024-01-09,COL-01,CUSTOMER_COMPLAINT,Customer dissatisfied with table wait time,OPEN,CLI-969634,,MGR-06
+BRS-000029,2024-01-09,COL-03,EQUIPMENT,Venue music system off without response,CLOSED,CLI-768061,4,MGR-08
+BRS-000030,2024-01-18,COL-01,FOOD_QUALITY,Meat served at incorrect doneness per order,CLOSED,CLI-548462,4,MGR-02
+BRS-000031,2024-01-29,COL-03,FOOD_QUALITY,Expired product found during inventory review,OPEN,CLI-824586,,MGR-01
+BRS-000032,2024-01-18,COL-03,SUPPLY,"Low charcoal stock for grills, urgent order placed",OPEN,CLI-710805,,MGR-03
+BRS-000033,2024-01-12,FLA-03,EQUIPMENT,Industrial dishwasher water leak detected,CLOSED,,4,MGR-01
+BRS-000034,2024-01-22,COL-04,EQUIPMENT,Venue music system off without response,CLOSED,CLI-320281,4,MGR-02
+BRS-000035,2024-01-29,FLA-04,STAFF,Customer complaint about server behavior,CLOSED,CLI-687080,5,MGR-03
+BRS-000036,2024-01-28,COL-03,SUPPLY,Delay in cleaning supply delivery,CLOSED,CLI-348237,3,MGR-03
+BRS-000037,2024-01-06,FLA-02,FOOD_QUALITY,House sauce tastes different than usual,CLOSED,CLI-125990,4,MGR-07
+BRS-000038,2024-01-26,COL-04,CUSTOMER_COMPLAINT,Complaint about inadequate venue temperature,CLOSED,CLI-870763,4,MGR-03
+BRS-000039,2024-01-13,FLA-04,EQUIPMENT,Main kitchen grill failure,CLOSED,CLI-213346,4,MGR-08
+BRS-000040,2024-01-27,COL-08,CUSTOMER_COMPLAINT,Customer reports order took over 40 minutes,CLOSED,,4,MGR-05
+BRS-000041,2024-01-08,COL-01,EQUIPMENT,Venue music system off without response,CLOSED,CLI-338651,3,MGR-04
+BRS-000042,2024-01-28,COL-02,EQUIPMENT,Industrial dishwasher water leak detected,OPEN,CLI-392136,,MGR-05
+BRS-000043,2024-01-13,FLA-01,CUSTOMER_COMPLAINT,Customer reports order took over 40 minutes,DISCARDED,CLI-634150,,MGR-01
+BRS-000044,2024-01-08,,CUSTOMER_COMPLAINT,Customer dissatisfied with service received,OPEN,,,MGR-03
+BRS-000045,2024-01-09,COL-03,FOOD_QUALITY,Expired product found during inventory review,DISCARDED,,,MGR-05
+BRS-000046,2024-01-20,COL-07,FOOD_QUALITY,House sauce tastes different than usual,CLOSED,,4,MGR-06
+BRS-000047,2024-01-04,COL-07,SUPPLY,Daily fresh vegetable order not received,OPEN,CLI-636265,,MGR-04
+BRS-000048,2024-01-23,COL-07,CUSTOMER_COMPLAINT,Customer dissatisfied with table wait time,CLOSED,,1,MGR-04
+BRS-000049,2024-01-25,COL-03,,Uncategorized incident reported by supervisor,OPEN,,,MGR-05
+BRS-000050,2024-01-31,FLA-01,EQUIPMENT,POS terminal error processing card payments,DISCARDED,CLI-173372,,MGR-06
+BRS-000051,2024-01-24,COL-05,FOOD_QUALITY,Expired product found during inventory review,CLOSED,CLI-230679,1,MGR-05
+BRS-000052,2024-01-13,FLA-02,SUPPLY,Shortage of takeout packaging,CLOSED,CLI-442027,4,MGR-03
+BRS-000053,2024-01-22,COL-07,CUSTOMER_COMPLAINT,Customer reports billing error,CLOSED,,4,MGR-05
+BRS-000054,2024-01-01,COL-05,CUSTOMER_COMPLAINT,Complaint about inadequate venue temperature,OPEN,CLI-974224,,MGR-04
+BRS-000055,2024-01-20,FLA-01,EQUIPMENT,POS terminal error processing card payments,CLOSED,CLI-708158,4,MGR-08
+BRS-000056,2024-01-07,COL-09,SUPPLY,"Low charcoal stock for grills, urgent order placed",CLOSED,CLI-808446,3,MGR-03
+BRS-000057,2024-01-17,FLA-01,CUSTOMER_COMPLAINT,Customer reports order took over 40 minutes,OPEN,CLI-397571,,MGR-02
+BRS-000058,2024-01-08,FLA-01,SUPPLY,Shortage of takeout packaging,CLOSED,CLI-887625,3,MGR-04
+BRS-000059,2024-01-01,COL-01,CUSTOMER_COMPLAINT,Refund request for incorrect order delivered,CLOSED,CLI-254511,1,MGR-08
+BRS-000060,2024-01-03,COL-08,CUSTOMER_COMPLAINT,Claim for reservation not found on arrival,OPEN,CLI-905819,,MGR-04
+BRS-000061,2024-01-16,COL-07,CUSTOMER_COMPLAINT,Refund request for incorrect order delivered,CLOSED,CLI-502630,3,MGR-03
+BRS-000062,2024-01-29,FLA-03,CUSTOMER_COMPLAINT,Complaint about disrespectful floor staff behavior,OPEN,CLI-105814,,MGR-07
+BRS-000063,2024-01-26,FLA-02,SUPPLY,Daily fresh vegetable order not received,CLOSED,,2,MGR-08
+BRS-000064,2024-01-08,FLA-04,SUPPLY,Shortage of beef for main menu cuts,CLOSED,,3,MGR-08
+BRS-000065,2024-01-15,FLA-01,STAFF,Employee did not follow uniform protocol,OPEN,,,MGR-06
+BRS-000066,2024-01-20,FLA-04,CUSTOMER_COMPLAINT,Claim for reservation not found on arrival,OPEN,CLI-564071,,MGR-08
+BRS-000067,2024-01-28,COL-08,FOOD_QUALITY,Portion served below menu standard,CLOSED,CLI-879779,3,MGR-05
+BRS-000068,2024-01-21,COL-05,EQUIPMENT,Industrial dishwasher water leak detected,OPEN,CLI-980660,,MGR-08
+BRS-000069,2024-01-15,COL-02,FOOD_QUALITY,Side dish served undercooked,OPEN,CLI-387936,,MGR-05
+BRS-000070,2024-01-11,COL-06,CUSTOMER_COMPLAINT,Complaint about disrespectful floor staff behavior,OPEN,,,MGR-03
+BRS-000071,2024-01-13,FLA-02,CUSTOMER_COMPLAINT,Customer reports billing error,OPEN,,,MGR-04
+BRS-000072,2024-01-14,COL-06,STAFF,Employee did not follow uniform protocol,OPEN,,,MGR-08
+BRS-000073,2024-01-27,COL-07,SUPPLY,"Low charcoal stock for grills, urgent order placed",DISCARDED,CLI-316881,,MGR-01
+BRS-000074,2024-01-19,COL-07,STAFF,Customer complaint about server behavior,CLOSED,CLI-902784,2,MGR-01
+BRS-000075,2024-01-25,COL-07,SUPPLY,Delay in cleaning supply delivery,DISCARDED,CLI-413118,,MGR-07
+BRS-000076,2024-01-18,FLA-03,STAFF,Employee did not follow uniform protocol,OPEN,CLI-870319,,MGR-04
+BRS-000077,2024-01-14,COL-08,CUSTOMER_COMPLAINT,Customer dissatisfied with table wait time,CLOSED,CLI-386193,4,MGR-07
+BRS-000078,2024-01-22,FLA-03,FOOD_QUALITY,Portion served below menu standard,CLOSED,,4,MGR-03
+BRS-000079,2024-01-15,FLA-02,EQUIPMENT,nan,OPEN,,,MGR-07
+BRS-000080,2024-01-20,COL-09,STAFF,Employee arrived late for opening shift,CLOSED,CLI-233827,4,MGR-07
+BRS-000081,2024-01-01,COL-02,SUPPLY,Shortage of imported beverages on menu,CLOSED,CLI-795205,4,MGR-07
+BRS-000082,2024-01-15,COL-03,EQUIPMENT,Main kitchen grill failure,CLOSED,,5,MGR-05
+BRS-000083,2024-01-15,COL-06,CUSTOMER_COMPLAINT,Customer reports order took over 40 minutes,DISCARDED,CLI-321941,,MGR-07
+BRS-000084,2024-01-31,FLA-04,FOOD_QUALITY,Portion served below menu standard,CLOSED,,5,MGR-05
+BRS-000085,2024-01-01,FLA-02,STAFF,Employee did not follow uniform protocol,CLOSED,CLI-593152,4,MGR-01
+BRS-000086,2024-01-19,COL-07,FOOD_QUALITY,Temperature review completed without issues,CLOSED,,,MGR-02
+BRS-000087,2024-01-08,FLA-01,CUSTOMER_COMPLAINT,Complaint about disrespectful floor staff behavior,OPEN,CLI-466960,,MGR-01
+BRS-000088,2024-01-07,FLA-04,SUPPLY,Shortage of beef for main menu cuts,OPEN,CLI-359295,,MGR-03
+BRS-000089,2024-01-16,FLA-01,FOOD_QUALITY,Meat served at incorrect doneness per order,CLOSED,,3,MGR-04
+BRS-000090,2024-01-25,COL-06,CUSTOMER_COMPLAINT,Customer reports billing error,OPEN,CLI-368690,,MGR-02
+BRS-000091,2024-01-31,COL-05,FOOD_QUALITY,Meat served at incorrect doneness per order,CLOSED,CLI-271720,3,MGR-01
+BRS-000092,2024-01-22,COL-07,FOOD_QUALITY,Portion served below menu standard,DISCARDED,CLI-703766,,MGR-04
+BRS-000093,2024-01-23,FLA-04,CUSTOMER_COMPLAINT,Refund request for incorrect order delivered,CLOSED,,5,MGR-02
+BRS-000094,2024-01-28,FLA-01,CUSTOMER_COMPLAINT,Complaint about disrespectful floor staff behavior,CLOSED,CLI-416232,5,MGR-01
+BRS-000095,2024-01-14,FLA-01,CUSTOMER_COMPLAINT,Customer reports order took over 40 minutes,DISCARDED,,,MGR-02
+BRS-000096,2024-01-01,FLA-04,EQUIPMENT,Vent hood operating poorly,DISCARDED,CLI-457806,,MGR-08
+BRS-000097,2024-01-31,COL-06,EQUIPMENT,Venue music system off without response,CLOSED,,4,MGR-08
+BRS-000098,2024-01-06,FLA-02,CUSTOMER_COMPLAINT,Complaint about inadequate venue temperature,DISCARDED,CLI-556641,,MGR-08
+BRS-000099,2024-01-24,COL-10,CUSTOMER_COMPLAINT,Complaint about inadequate venue temperature,CLOSED,CLI-965845,3,MGR-06
+BRS-000100,2024-01-30,COL-02,FOOD_QUALITY,House sauce tastes different than usual,OPEN,CLI-971084,,MGR-08

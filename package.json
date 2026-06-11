@@ -21,6 +21,8 @@
     "cli:list": "node scripts/brasaland-cli.cjs list",
     "cli:filters": "node scripts/brasaland-cli.cjs filters",
     "cli:health": "node scripts/brasaland-cli.cjs health",
+    "api:install": "pip install -r services/api/requirements.txt",
+    "api:dev": "uvicorn main:app --app-dir services/api --reload --port 8000",
     "test": "vitest run",
     "test:watch": "vitest"
   },

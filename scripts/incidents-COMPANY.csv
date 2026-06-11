@@ -1,0 +1,101 @@
+incidentId,reportedAt,locationId,country,city,category,severity,status,reportedBy,description,affectedGuests,satisfactionIndex
+BRS-000001,2024-01-14T00:00:00Z,COL-07,Colombia,Bogotá,Food,Medium,Resolved,MGR-01,Portion served below menu standard,,5.0
+BRS-000002,2024-01-04T00:00:00Z,COL-01,Colombia,Medellín,Service,Low,Discarded,MGR-06,"Low charcoal stock for grills, urgent order placed",,
+BRS-000003,2024-01-08T00:00:00Z,COL-04,Colombia,Medellín,Service,Low,Open,MGR-08,Sauce supplier did not deliver weekly order,,
+BRS-000004,2024-01-06T00:00:00Z,COL-05,Colombia,Bogotá,Service,Low,Resolved,MGR-04,Complaint about excessive noise in dining area,,2.0
+BRS-000005,2024-01-15T00:00:00Z,FLA-03,USA,Orlando,Equipment,High,Open,MGR-02,Industrial dishwasher water leak detected,,
+BRS-000006,2024-01-18T00:00:00Z,FLA-04,USA,Orlando,Service,Low,Resolved,MGR-02,Customer dissatisfied with table wait time,,5.0
+BRS-000007,2024-01-08T00:00:00Z,COL-03,Colombia,Medellín,Service,Low,Resolved,MGR-08,Claim for reservation not found on arrival,,4.0
+BRS-000008,2024-01-29T00:00:00Z,COL-01,Colombia,Medellín,Food,Medium,Open,MGR-07,Customer reports cold food at serving time,,
+BRS-000009,2024-01-13T00:00:00Z,COL-05,Colombia,Bogotá,Service,Low,Resolved,MGR-05,Complaint about excessive noise in dining area,,2.0
+BRS-000010,2024-01-26T00:00:00Z,COL-09,Colombia,Cali,Service,Low,Resolved,MGR-08,Shortage of imported beverages on menu,,5.0
+BRS-000011,2024-01-10T00:00:00Z,COL-04,Colombia,Medellín,Service,Low,Open,MGR-01,Shortage of beef for main menu cuts,,
+BRS-000012,2024-01-02T00:00:00Z,COL-10,Colombia,Cali,Service,Low,Open,MGR-03,Complaint about excessive noise in dining area,,
+BRS-000013,2024-01-17T00:00:00Z,COL-02,Colombia,Medellín,Service,Low,Open,MGR-03,Delay in cleaning supply delivery,,
+BRS-000014,2024-01-03T00:00:00Z,FLA-01,USA,Miami,Food,Medium,Discarded,MGR-07,Customer reports cold food at serving time,,
+BRS-000015,2024-01-29T00:00:00Z,COL-10,Colombia,Cali,Service,Low,Open,MGR-01,Sauce supplier did not deliver weekly order,,
+BRS-000016,2024-01-22T00:00:00Z,COL-10,Colombia,Cali,Safety,Medium,Resolved,MGR-06,Employee did not follow uniform protocol,,2.0
+BRS-000017,2024-01-22T00:00:00Z,FLA-02,USA,Miami,Service,Low,Open,MGR-04,Shortage of takeout packaging,,
+BRS-000018,2024-01-05T00:00:00Z,FLA-01,USA,Miami,Equipment,High,Discarded,MGR-05,Venue music system off without response,,
+BRS-000019,2024-01-30T00:00:00Z,COL-02,Colombia,Medellín,Service,Low,Open,MGR-08,Shortage of beef for main menu cuts,,
+BRS-000020,2024-01-04T00:00:00Z,COL-02,Colombia,Medellín,Equipment,High,Open,MGR-04,Beverage refrigerator not cooling properly,,
+BRS-000021,2024-01-30T00:00:00Z,COL-06,Colombia,Bogotá,Service,Low,Open,MGR-04,Shortage of beef for main menu cuts,,
+BRS-000022,2024-01-15T00:00:00Z,FLA-04,USA,Orlando,Food,Medium,Resolved,MGR-05,Expired product found during inventory review,,3.0
+BRS-000023,2024-01-21T00:00:00Z,COL-09,Colombia,Cali,Equipment,High,Discarded,MGR-05,Main kitchen grill failure,,
+BRS-000024,2024-01-31T00:00:00Z,COL-03,Colombia,Medellín,Equipment,High,Resolved,MGR-02,POS terminal error processing card payments,,5.0
+BRS-000025,2024-01-18T00:00:00Z,COL-03,Colombia,Medellín,Food,Medium,Resolved,MGR-05,House sauce tastes different than usual,,3.0
+BRS-000026,2024-01-11T00:00:00Z,COL-04,Colombia,Medellín,Service,Low,Resolved,MGR-05,Shortage of imported beverages on menu,,2.0
+BRS-000027,2024-01-29T00:00:00Z,FLA-04,USA,Orlando,Safety,Medium,Resolved,MGR-02,Employee arrived late for opening shift,,1.0
+BRS-000028,2024-01-09T00:00:00Z,COL-01,Colombia,Medellín,Service,Low,Open,MGR-06,Customer dissatisfied with table wait time,,
+BRS-000029,2024-01-09T00:00:00Z,COL-03,Colombia,Medellín,Equipment,High,Resolved,MGR-08,Venue music system off without response,,4.0
+BRS-000030,2024-01-18T00:00:00Z,COL-01,Colombia,Medellín,Food,Medium,Resolved,MGR-02,Meat served at incorrect doneness per order,,4.0
+BRS-000031,2024-01-29T00:00:00Z,COL-03,Colombia,Medellín,Food,Medium,Open,MGR-01,Expired product found during inventory review,,
+BRS-000032,2024-01-18T00:00:00Z,COL-03,Colombia,Medellín,Service,Low,Open,MGR-03,"Low charcoal stock for grills, urgent order placed",,
+BRS-000033,2024-01-12T00:00:00Z,FLA-03,USA,Orlando,Equipment,High,Resolved,MGR-01,Industrial dishwasher water leak detected,,4.0
+BRS-000034,2024-01-22T00:00:00Z,COL-04,Colombia,Medellín,Equipment,High,Resolved,MGR-02,Venue music system off without response,,4.0
+BRS-000035,2024-01-29T00:00:00Z,FLA-04,USA,Orlando,Safety,Medium,Resolved,MGR-03,Customer complaint about server behavior,,5.0
+BRS-000036,2024-01-28T00:00:00Z,COL-03,Colombia,Medellín,Service,Low,Resolved,MGR-03,Delay in cleaning supply delivery,,3.0
+BRS-000037,2024-01-06T00:00:00Z,FLA-02,USA,Miami,Food,Medium,Resolved,MGR-07,House sauce tastes different than usual,,4.0
+BRS-000038,2024-01-26T00:00:00Z,COL-04,Colombia,Medellín,Service,Low,Resolved,MGR-03,Complaint about inadequate venue temperature,,4.0
+BRS-000039,2024-01-13T00:00:00Z,FLA-04,USA,Orlando,Equipment,High,Resolved,MGR-08,Main kitchen grill failure,,4.0
+BRS-000040,2024-01-27T00:00:00Z,COL-08,Colombia,Cali,Service,Low,Resolved,MGR-05,Customer reports order took over 40 minutes,,4.0
+BRS-000041,2024-01-08T00:00:00Z,COL-01,Colombia,Medellín,Equipment,High,Resolved,MGR-04,Venue music system off without response,,3.0
+BRS-000042,2024-01-28T00:00:00Z,COL-02,Colombia,Medellín,Equipment,High,Open,MGR-05,Industrial dishwasher water leak detected,,
+BRS-000043,2024-01-13T00:00:00Z,FLA-01,USA,Miami,Service,Low,Discarded,MGR-01,Customer reports order took over 40 minutes,,
+BRS-000044,2024-01-08T00:00:00Z,,,,Service,Low,Open,MGR-03,Customer dissatisfied with service received,,
+BRS-000045,2024-01-09T00:00:00Z,COL-03,Colombia,Medellín,Food,Medium,Discarded,MGR-05,Expired product found during inventory review,,
+BRS-000046,2024-01-20T00:00:00Z,COL-07,Colombia,Bogotá,Food,Medium,Resolved,MGR-06,House sauce tastes different than usual,,4.0
+BRS-000047,2024-01-04T00:00:00Z,COL-07,Colombia,Bogotá,Service,Low,Open,MGR-04,Daily fresh vegetable order not received,,
+BRS-000048,2024-01-23T00:00:00Z,COL-07,Colombia,Bogotá,Service,Low,Resolved,MGR-04,Customer dissatisfied with table wait time,,1.0
+BRS-000049,2024-01-25T00:00:00Z,COL-03,Colombia,Medellín,,,Open,MGR-05,Uncategorized incident reported by supervisor,,
+BRS-000050,2024-01-31T00:00:00Z,FLA-01,USA,Miami,Equipment,High,Discarded,MGR-06,POS terminal error processing card payments,,
+BRS-000051,2024-01-24T00:00:00Z,COL-05,Colombia,Bogotá,Food,Medium,Resolved,MGR-05,Expired product found during inventory review,,1.0
+BRS-000052,2024-01-13T00:00:00Z,FLA-02,USA,Miami,Service,Low,Resolved,MGR-03,Shortage of takeout packaging,,4.0
+BRS-000053,2024-01-22T00:00:00Z,COL-07,Colombia,Bogotá,Service,Low,Resolved,MGR-05,Customer reports billing error,,4.0
+BRS-000054,2024-01-01T00:00:00Z,COL-05,Colombia,Bogotá,Service,Low,Open,MGR-04,Complaint about inadequate venue temperature,,
+BRS-000055,2024-01-20T00:00:00Z,FLA-01,USA,Miami,Equipment,High,Resolved,MGR-08,POS terminal error processing card payments,,4.0
+BRS-000056,2024-01-07T00:00:00Z,COL-09,Colombia,Cali,Service,Low,Resolved,MGR-03,"Low charcoal stock for grills, urgent order placed",,3.0
+BRS-000057,2024-01-17T00:00:00Z,FLA-01,USA,Miami,Service,Low,Open,MGR-02,Customer reports order took over 40 minutes,,
+BRS-000058,2024-01-08T00:00:00Z,FLA-01,USA,Miami,Service,Low,Resolved,MGR-04,Shortage of takeout packaging,,3.0
+BRS-000059,2024-01-01T00:00:00Z,COL-01,Colombia,Medellín,Service,Low,Resolved,MGR-08,Refund request for incorrect order delivered,,1.0
+BRS-000060,2024-01-03T00:00:00Z,COL-08,Colombia,Cali,Service,Low,Open,MGR-04,Claim for reservation not found on arrival,,
+BRS-000061,2024-01-16T00:00:00Z,COL-07,Colombia,Bogotá,Service,Low,Resolved,MGR-03,Refund request for incorrect order delivered,,3.0
+BRS-000062,2024-01-29T00:00:00Z,FLA-03,USA,Orlando,Service,Low,Open,MGR-07,Complaint about disrespectful floor staff behavior,,
+BRS-000063,2024-01-26T00:00:00Z,FLA-02,USA,Miami,Service,Low,Resolved,MGR-08,Daily fresh vegetable order not received,,2.0
+BRS-000064,2024-01-08T00:00:00Z,FLA-04,USA,Orlando,Service,Low,Resolved,MGR-08,Shortage of beef for main menu cuts,,3.0
+BRS-000065,2024-01-15T00:00:00Z,FLA-01,USA,Miami,Safety,Medium,Open,MGR-06,Employee did not follow uniform protocol,,
+BRS-000066,2024-01-20T00:00:00Z,FLA-04,USA,Orlando,Service,Low,Open,MGR-08,Claim for reservation not found on arrival,,
+BRS-000067,2024-01-28T00:00:00Z,COL-08,Colombia,Cali,Food,Medium,Resolved,MGR-05,Portion served below menu standard,,3.0
+BRS-000068,2024-01-21T00:00:00Z,COL-05,Colombia,Bogotá,Equipment,High,Open,MGR-08,Industrial dishwasher water leak detected,,
+BRS-000069,2024-01-15T00:00:00Z,COL-02,Colombia,Medellín,Food,Medium,Open,MGR-05,Side dish served undercooked,,
+BRS-000070,2024-01-11T00:00:00Z,COL-06,Colombia,Bogotá,Service,Low,Open,MGR-03,Complaint about disrespectful floor staff behavior,,
+BRS-000071,2024-01-13T00:00:00Z,FLA-02,USA,Miami,Service,Low,Open,MGR-04,Customer reports billing error,,
+BRS-000072,2024-01-14T00:00:00Z,COL-06,Colombia,Bogotá,Safety,Medium,Open,MGR-08,Employee did not follow uniform protocol,,
+BRS-000073,2024-01-27T00:00:00Z,COL-07,Colombia,Bogotá,Service,Low,Discarded,MGR-01,"Low charcoal stock for grills, urgent order placed",,
+BRS-000074,2024-01-19T00:00:00Z,COL-07,Colombia,Bogotá,Safety,Medium,Resolved,MGR-01,Customer complaint about server behavior,,2.0
+BRS-000075,2024-01-25T00:00:00Z,COL-07,Colombia,Bogotá,Service,Low,Discarded,MGR-07,Delay in cleaning supply delivery,,
+BRS-000076,2024-01-18T00:00:00Z,FLA-03,USA,Orlando,Safety,Medium,Open,MGR-04,Employee did not follow uniform protocol,,
+BRS-000077,2024-01-14T00:00:00Z,COL-08,Colombia,Cali,Service,Low,Resolved,MGR-07,Customer dissatisfied with table wait time,,4.0
+BRS-000078,2024-01-22T00:00:00Z,FLA-03,USA,Orlando,Food,Medium,Resolved,MGR-03,Portion served below menu standard,,4.0
+BRS-000079,2024-01-15T00:00:00Z,FLA-02,USA,Miami,Equipment,High,Open,MGR-07,nan,,
+BRS-000080,2024-01-20T00:00:00Z,COL-09,Colombia,Cali,Safety,Medium,Resolved,MGR-07,Employee arrived late for opening shift,,4.0
+BRS-000081,2024-01-01T00:00:00Z,COL-02,Colombia,Medellín,Service,Low,Resolved,MGR-07,Shortage of imported beverages on menu,,4.0
+BRS-000082,2024-01-15T00:00:00Z,COL-03,Colombia,Medellín,Equipment,High,Resolved,MGR-05,Main kitchen grill failure,,5.0
+BRS-000083,2024-01-15T00:00:00Z,COL-06,Colombia,Bogotá,Service,Low,Discarded,MGR-07,Customer reports order took over 40 minutes,,
+BRS-000084,2024-01-31T00:00:00Z,FLA-04,USA,Orlando,Food,Medium,Resolved,MGR-05,Portion served below menu standard,,5.0
+BRS-000085,2024-01-01T00:00:00Z,FLA-02,USA,Miami,Safety,Medium,Resolved,MGR-01,Employee did not follow uniform protocol,,4.0
+BRS-000086,2024-01-19T00:00:00Z,COL-07,Colombia,Bogotá,Food,Medium,Resolved,MGR-02,Temperature review completed without issues,,
+BRS-000087,2024-01-08T00:00:00Z,FLA-01,USA,Miami,Service,Low,Open,MGR-01,Complaint about disrespectful floor staff behavior,,
+BRS-000088,2024-01-07T00:00:00Z,FLA-04,USA,Orlando,Service,Low,Open,MGR-03,Shortage of beef for main menu cuts,,
+BRS-000089,2024-01-16T00:00:00Z,FLA-01,USA,Miami,Food,Medium,Resolved,MGR-04,Meat served at incorrect doneness per order,,3.0
+BRS-000090,2024-01-25T00:00:00Z,COL-06,Colombia,Bogotá,Service,Low,Open,MGR-02,Customer reports billing error,,
+BRS-000091,2024-01-31T00:00:00Z,COL-05,Colombia,Bogotá,Food,Medium,Resolved,MGR-01,Meat served at incorrect doneness per order,,3.0
+BRS-000092,2024-01-22T00:00:00Z,COL-07,Colombia,Bogotá,Food,Medium,Discarded,MGR-04,Portion served below menu standard,,
+BRS-000093,2024-01-23T00:00:00Z,FLA-04,USA,Orlando,Service,Low,Resolved,MGR-02,Refund request for incorrect order delivered,,5.0
+BRS-000094,2024-01-28T00:00:00Z,FLA-01,USA,Miami,Service,Low,Resolved,MGR-01,Complaint about disrespectful floor staff behavior,,5.0
+BRS-000095,2024-01-14T00:00:00Z,FLA-01,USA,Miami,Service,Low,Discarded,MGR-02,Customer reports order took over 40 minutes,,
+BRS-000096,2024-01-01T00:00:00Z,FLA-04,USA,Orlando,Equipment,High,Discarded,MGR-08,Vent hood operating poorly,,
+BRS-000097,2024-01-31T00:00:00Z,COL-06,Colombia,Bogotá,Equipment,High,Resolved,MGR-08,Venue music system off without response,,4.0
+BRS-000098,2024-01-06T00:00:00Z,FLA-02,USA,Miami,Service,Low,Discarded,MGR-08,Complaint about inadequate venue temperature,,
+BRS-000099,2024-01-24T00:00:00Z,COL-10,Colombia,Cali,Service,Low,Resolved,MGR-06,Complaint about inadequate venue temperature,,3.0
+BRS-000100,2024-01-30T00:00:00Z,COL-02,Colombia,Medellín,Food,Medium,Open,MGR-08,House sauce tastes different than usual,,
