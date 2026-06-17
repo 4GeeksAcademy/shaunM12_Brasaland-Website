@@ -22,6 +22,10 @@
   - Root `agents.md` now exists with required startup memory reads, pre-commit workflow steps, and protected path rules.
 - **Milestone 2 Visibility in Backoffice:**
   - Backoffice dashboard now renders a visible shared-business-logic snapshot alongside live API KPI cards.
+- **Milestone 09 Supplier Directory (context-6):**
+  - FastAPI supplier CRUD with TinyDB persistence, Pydantic validation, and English category seed data aligned to context-6.
+  - Backoffice `/suppliers` page with filters, registration form, rate updates, and status toggles.
+  - Incident analyzer endpoints and CLI remain unchanged on the shared API service.
 
 ## Planned Next Steps
 - **Path Consistency Cleanup:**

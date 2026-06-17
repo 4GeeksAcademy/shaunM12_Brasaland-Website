@@ -18,7 +18,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "services" / "api"))
 
-from incident_analyzer.core import (  # noqa: E402
+from incident_analyzer import (  # noqa: E402
     analyze_dataframe,
     build_results_rows,
     format_summary,

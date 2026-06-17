@@ -21,8 +21,10 @@
     "cli:list": "node scripts/brasaland-cli.cjs list",
     "cli:filters": "node scripts/brasaland-cli.cjs filters",
     "cli:health": "node scripts/brasaland-cli.cjs health",
-    "api:install": "pip install -r services/api/requirements.txt",
-    "api:dev": "uvicorn main:app --app-dir services/api --reload --port 8000",
+    "api:install": ".venv/bin/pip install -r services/api/requirements.txt",
+    "api:dev": ".venv/bin/uvicorn main:app --app-dir services/api --reload --port 8000",
+    "api:sync": "sh -c 'cd services/api && uv sync'",
+    "api:seed": "sh -c 'cd services/api && uv run seed'",
     "test": "vitest run",
     "test:watch": "vitest"
   },

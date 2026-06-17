@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from .schemas import AnalysisResult
 
-_last_result: dict[str, Any] | None = None
+_last_result: AnalysisResult | None = None
 
 
-def save_result(result: dict[str, Any]) -> None:
+def save_result(result: AnalysisResult) -> None:
     global _last_result
     _last_result = result
 
 
-def get_result() -> dict[str, Any] | None:
+def get_result() -> AnalysisResult | None:
     return _last_result
