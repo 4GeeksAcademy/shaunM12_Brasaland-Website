@@ -9,48 +9,45 @@ FastAPI service for Brasaland backoffice tools: incident CSV analysis and the pr
 - `database.py` — TinyDB initialisation
 - `seed.py` — initial supplier seed loader
 
+This service uses **[uv](https://docs.astral.sh/uv/)**. The virtual environment lives in `services/api/.venv` and is created/managed by `uv` from `pyproject.toml`. Never commit `.venv`.
+
 ## Setup
 
-Using **uv** (recommended for seeding):
+Install dependencies (creates `services/api/.venv`):
 
 ```bash
 cd services/api
 uv sync
-uv run seed
 ```
 
 Or from the repo root:
 
 ```bash
-npm run api:sync
-npm run api:seed
-```
-
-Using **pip** (legacy):
-
-```bash
-pip install -r services/api/requirements.txt
+npm run api:install   # alias for: cd services/api && uv sync
 ```
 
 ## Run
 
-```bash
-npm run api:dev
-```
-
-Seed suppliers manually (skips duplicates):
+From the repo root:
 
 ```bash
-cd services/api && uv run seed
+npm run api:dev       # http://127.0.0.1:8000
 ```
 
-Or:
+Or directly:
 
 ```bash
-npm run api:seed
+cd services/api
+uv run uvicorn main:app --reload --port 8000
 ```
 
-On first API startup, suppliers are auto-seeded when the database is empty.
+## Seed
+
+On first API startup, suppliers are auto-seeded when the database is empty. To seed manually (skips duplicates):
+
+```bash
+npm run api:seed      # or: cd services/api && uv run seed
+```
 
 ## Incident endpoints
 
@@ -73,5 +70,5 @@ Mounted at both `/api/suppliers` and `/suppliers`:
 ## Tests
 
 ```bash
-cd services/api && python -m pytest tests/ -q
+npm run api:test      # or: cd services/api && uv run pytest tests/ -q
 ```
