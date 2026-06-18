@@ -58,6 +58,12 @@ export default async function DataProcessingPage({
                 Incidents
               </Link>
               <Link
+                href="/suppliers"
+                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
+              >
+                Suppliers
+              </Link>
+              <Link
                 href="/"
                 className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
               >

@@ -42,7 +42,7 @@ Status values are normalized to `OPEN`, `CLOSED`, or `DISCARDED` before reportin
 
 ### API integration (Phase 2)
 
-The analysis logic lives in `services/api/incident_analyzer/` and is also exposed via:
+The analysis logic lives in `services/api/incident_analyzer/` (`constants`, `schemas`, `validators`, `analyzer`, `reporting`) and is also exposed via:
 
 - `POST /api/incidents/analyze`
 - `GET /api/incidents/results/export`

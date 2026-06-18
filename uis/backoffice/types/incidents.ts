@@ -7,6 +7,18 @@ export type IncidentCategory =
 
 export type IncidentStatus = "OPEN" | "CLOSED" | "DISCARDED";
 
+/** Validated incident row shape produced by the Python analyzer. */
+export interface NormalizedIncidentRecord {
+  incidentId?: string;
+  reportedAt?: string;
+  locationId: string;
+  category: IncidentCategory;
+  status: IncidentStatus;
+  reportedBy: string;
+  description: string;
+  satisfactionIndex?: number;
+}
+
 export interface IncidentAnalysisResult {
   sourcePath: string;
   schemaError: string | null;

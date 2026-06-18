@@ -11,7 +11,7 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "services" / "api"))
 
-from incident_analyzer.core import normalize_category, normalize_status  # noqa: E402
+from incident_analyzer import normalize_category, normalize_status  # noqa: E402
 
 SOURCE = Path(__file__).parent / "source-incidents-spanish.csv"
 OUTPUT = Path(__file__).parent / "incidents-brasaland.csv"

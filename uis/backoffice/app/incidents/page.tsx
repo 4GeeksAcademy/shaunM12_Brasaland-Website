@@ -59,6 +59,12 @@ export default function IncidentsPage(): React.JSX.Element {
                 Candidate tracker
               </Link>
               <Link
+                href="/suppliers"
+                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
+              >
+                Suppliers
+              </Link>
+              <Link
                 href="/data-processing"
                 className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
               >

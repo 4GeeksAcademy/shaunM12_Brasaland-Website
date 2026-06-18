@@ -1,16 +1,32 @@
 from __future__ import annotations
 
 import io
+from contextlib import asynccontextmanager
 
 import pandas as pd
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from incident_analyzer.core import analyze_from_bytes, build_results_rows
+from database import get_suppliers_table
+from incident_analyzer import analyze_from_bytes, build_results_rows
 from incident_analyzer.store import get_result, save_result
+from suppliers.routes import router as suppliers_router
+from suppliers.repository import seed_suppliers
 
-app = FastAPI(title="Brasaland Incident Analyzer API", version="1.0.0")
+
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    if not get_suppliers_table().all():
+        seed_suppliers()
+    yield
+
+
+app = FastAPI(
+    title="Brasaland API",
+    version="1.1.0",
+    lifespan=lifespan,
+)
 
 app.add_middleware(
     CORSMiddleware,
@@ -19,6 +35,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(suppliers_router, prefix="/api/suppliers")
+app.include_router(suppliers_router, prefix="/suppliers")
 
 
 @app.get("/api/health")
