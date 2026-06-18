@@ -2,3 +2,14 @@
 node_modules/
 .env.local
 **/.env.local
+
+# Python virtual environment and caches
+.venv/
+**/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+
+# Next.js build output
+.next/
+**/.next/
