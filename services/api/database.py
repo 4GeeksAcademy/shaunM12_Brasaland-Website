@@ -28,3 +28,11 @@ def get_suppliers_table():
 
 def get_users_table():
     return get_db().table("users")
+
+
+def get_refresh_tokens_table():
+    return get_db().table("refresh_tokens")
+
+
+def get_email_verifications_table():
+    return get_db().table("email_verifications")

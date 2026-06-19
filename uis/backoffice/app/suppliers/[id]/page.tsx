@@ -149,28 +149,12 @@ export default function SupplierDetailPage(): React.JSX.Element {
     <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
       <div className="mx-auto max-w-4xl space-y-6">
         <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link
-              href="/suppliers"
-              className="text-sm font-semibold text-amber-300 transition hover:text-amber-200"
-            >
-              ← Back to directory
-            </Link>
-            <nav className="flex flex-wrap gap-2">
-              <Link
-                href="/"
-                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
-              >
-                Candidate tracker
-              </Link>
-              <Link
-                href="/incidents"
-                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
-              >
-                Incidents
-              </Link>
-            </nav>
-          </div>
+          <Link
+            href="/suppliers"
+            className="text-sm font-semibold text-amber-300 transition hover:text-amber-200"
+          >
+            ← Back to directory
+          </Link>
         </header>
 
         {loading ? (

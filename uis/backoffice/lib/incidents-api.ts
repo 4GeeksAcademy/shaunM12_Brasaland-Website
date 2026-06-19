@@ -1,4 +1,5 @@
 import { IncidentAnalysisResult } from "@/types/incidents";
+import { authorizedFetch } from "@/lib/http";
 
 function getBaseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_INCIDENTS_API_BASE_URL?.trim();
@@ -15,12 +16,14 @@ export async function analyzeIncidentFile(file: File): Promise<IncidentAnalysisR
 
   let response: Response;
   try {
-    response = await fetch(`${getBaseUrl()}/api/incidents/analyze`, {
+    response = await authorizedFetch(`${getBaseUrl()}/api/incidents/analyze`, {
       method: "POST",
       body: formData,
-      cache: "no-store",
     });
-  } catch {
+  } catch (caught) {
+    if (caught instanceof Error && caught.message.toLowerCase().includes("session")) {
+      throw caught;
+    }
     throw new Error(
       "Cannot reach the incident analyzer API. Start it with: npm run api:dev",
     );
@@ -46,10 +49,11 @@ export async function analyzeIncidentFile(file: File): Promise<IncidentAnalysisR
 export async function downloadIncidentResults(): Promise<Blob> {
   let response: Response;
   try {
-    response = await fetch(`${getBaseUrl()}/api/incidents/results/export`, {
-      cache: "no-store",
-    });
-  } catch {
+    response = await authorizedFetch(`${getBaseUrl()}/api/incidents/results/export`);
+  } catch (caught) {
+    if (caught instanceof Error && caught.message.toLowerCase().includes("session")) {
+      throw caught;
+    }
     throw new Error(
       "Cannot reach the incident analyzer API. Start it with: npm run api:dev",
     );

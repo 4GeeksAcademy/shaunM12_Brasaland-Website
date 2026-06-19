@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import SupplierDirectory from "@/components/suppliers/SupplierDirectory";
 import { SupplierCreateInput } from "@/lib/supplier-constants";
@@ -60,31 +59,9 @@ export default function SuppliersPage(): React.JSX.Element {
     <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm uppercase tracking-[0.12em] text-amber-300">
-              Brasaland Supplier Directory
-            </p>
-            <nav className="flex flex-wrap gap-2">
-              <Link
-                href="/"
-                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
-              >
-                Candidate tracker
-              </Link>
-              <Link
-                href="/incidents"
-                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
-              >
-                Incidents
-              </Link>
-              <Link
-                href="/data-processing"
-                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
-              >
-                Data processing
-              </Link>
-            </nav>
-          </div>
+          <p className="text-sm uppercase tracking-[0.12em] text-amber-300">
+            Brasaland Supplier Directory
+          </p>
           <h1 className="mt-2 text-2xl font-extrabold text-amber-100 md:text-3xl">
             Procurement Supplier Directory
           </h1>

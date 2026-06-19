@@ -1,6 +1,5 @@
 import {
   buildLocationDistributionReport,
-  buildRegistrationReport,
   calculateAverageTicket,
   calculateCountryComparison,
   calculateDailyRevenue,
@@ -17,7 +16,6 @@ import {
   groupWasteByReason,
   rankLocationsByPerformance,
   sortLocationsByCapacity,
-  summarizeNumbers,
   validateLocation,
   validateMenuItem,
   validateSaleTransaction,
@@ -26,7 +24,6 @@ import {
   SAMPLE_LOCATIONS,
   SAMPLE_MENU_ITEMS,
   SAMPLE_OPERATIONS_LOCATIONS,
-  SAMPLE_REGISTRATIONS,
   SAMPLE_SALES,
   SAMPLE_WASTE,
 } from "../app/data-processing/data-processing-core";
@@ -44,20 +41,9 @@ export interface ChartDatum {
 export interface DataProcessingDashboard {
   countryFilter: CountryFilter;
   referenceDate: string;
-  totalRegistrations: number;
   totalLocations: number;
-  emailOptInCount: number;
-  emailOptInRate: number;
-  ageAverage: number;
-  ageMinimum: number;
-  ageMaximum: number;
-  registrationsByCountry: ChartDatum[];
-  registrationsByCity: ChartDatum[];
-  registrationsByDiscoveryChannel: ChartDatum[];
-  dietaryPreferenceSelections: ChartDatum[];
   locationsByCountry: ChartDatum[];
   locationsByCity: ChartDatum[];
-  cityRegistrationSummary: ChartDatum[];
   dailyRevenueUSD: number;
   dailyRevenueCOP: number;
   averageTicketUSD: number;
@@ -129,14 +115,9 @@ export function buildDataProcessingDashboard(options?: {
 }): DataProcessingDashboard {
   const countryFilter = normalizeCountryFilter(options?.country);
   const referenceDate = normalizeReferenceDate(options?.referenceDate);
-  const registrations = filterByCountry(SAMPLE_REGISTRATIONS, countryFilter);
   const locations = filterByCountry(SAMPLE_LOCATIONS, countryFilter);
 
-  const registrationReport = buildRegistrationReport(registrations, referenceDate);
   const locationReport = buildLocationDistributionReport(locations);
-
-  const cityCounts = Object.values(registrationReport.registrationsByCity);
-  const citySummary = summarizeNumbers(cityCounts);
 
   const reportDate = new Date(`${referenceDate.toISOString().slice(0, 10)}T00:00:00.000Z`);
   const rankedLocations = rankLocationsByPerformance(
@@ -158,32 +139,9 @@ export function buildDataProcessingDashboard(options?: {
   return {
     countryFilter,
     referenceDate: referenceDate.toISOString().slice(0, 10),
-    totalRegistrations: registrationReport.totalRegistrations,
     totalLocations: locationReport.totalLocations,
-    emailOptInCount: registrationReport.emailOptInCount,
-    emailOptInRate:
-      registrationReport.totalRegistrations === 0
-        ? 0
-        : Number(
-            ((registrationReport.emailOptInCount / registrationReport.totalRegistrations) * 100).toFixed(
-              2,
-            ),
-          ),
-    ageAverage: registrationReport.ageSummary.average,
-    ageMinimum: registrationReport.ageSummary.minimum,
-    ageMaximum: registrationReport.ageSummary.maximum,
-    registrationsByCountry: toChartData(registrationReport.registrationsByCountry, true),
-    registrationsByCity: toChartData(registrationReport.registrationsByCity),
-    registrationsByDiscoveryChannel: toChartData(registrationReport.registrationsByDiscoveryChannel),
-    dietaryPreferenceSelections: toChartData(registrationReport.dietaryPreferenceSelections),
     locationsByCountry: toChartData(locationReport.locationsByCountry, true),
     locationsByCity: toChartData(locationReport.locationsByCity),
-    cityRegistrationSummary: [
-      { label: "City registrations total", value: citySummary.total },
-      { label: "City registrations average", value: citySummary.average },
-      { label: "City registrations min", value: citySummary.minimum },
-      { label: "City registrations max", value: citySummary.maximum },
-    ],
     dailyRevenueUSD: calculateDailyRevenue(SAMPLE_SALES, reportDate, "USD"),
     dailyRevenueCOP: calculateDailyRevenue(SAMPLE_SALES, reportDate, "COP"),
     averageTicketUSD: calculateAverageTicket(SAMPLE_SALES, "USD"),

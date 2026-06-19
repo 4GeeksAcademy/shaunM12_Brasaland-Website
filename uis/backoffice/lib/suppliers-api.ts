@@ -1,9 +1,10 @@
 import {
-  ApiValidationError,
   Supplier,
   SupplierCreateInput,
   SupplierStatus,
 } from "@/types/suppliers";
+import { formatApiError } from "@/lib/api-error";
+import { authorizedFetch } from "@/lib/http";
 
 function getBaseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_SUPPLIERS_API_BASE_URL?.trim();
@@ -13,34 +14,18 @@ function getBaseUrl(): string {
   return "";
 }
 
-function formatApiError(status: number, body: string): string {
-  try {
-    const parsed = JSON.parse(body) as ApiValidationError;
-    if (Array.isArray(parsed.detail)) {
-      return parsed.detail
-        .map((item) => item.msg ?? "Validation error")
-        .join("; ");
-    }
-    if (typeof parsed.detail === "string") {
-      return parsed.detail;
-    }
-  } catch {
-    // keep raw body
-  }
-  return body || `Request failed (${status})`;
-}
-
 async function request<T>(
   path: string,
   init?: RequestInit,
 ): Promise<T> {
   let response: Response;
   try {
-    response = await fetch(`${getBaseUrl()}${path}`, {
-      ...init,
-      cache: "no-store",
-    });
-  } catch {
+    response = await authorizedFetch(`${getBaseUrl()}${path}`, init);
+  } catch (caught) {
+    // authorizedFetch throws (after redirecting) when the session is gone.
+    if (caught instanceof Error && caught.message.toLowerCase().includes("session")) {
+      throw caught;
+    }
     throw new Error(
       "Cannot reach the supplier directory API. Start it with: npm run api:dev",
     );

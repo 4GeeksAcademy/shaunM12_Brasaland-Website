@@ -1,36 +1,12 @@
 import Link from "next/link";
+import { DataList } from "@/components/data-list";
 import {
   buildDataProcessingDashboard,
-  ChartDatum,
   DATA_PROCESSING_COUNTRY_OPTIONS,
 } from "@/lib/data-processing";
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-US").format(value);
-}
-
-function DataList({ title, rows }: { title: string; rows: ChartDatum[] }): React.JSX.Element {
-  return (
-    <article className="rounded-2xl border border-amber-200/20 bg-stone-950/70 p-5 shadow-xl shadow-black/20">
-      <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-amber-300">{title}</h3>
-
-      {rows.length === 0 ? (
-        <p className="mt-4 rounded-md bg-stone-900/70 p-3 text-sm text-stone-300">No data available.</p>
-      ) : (
-        <ul className="mt-4 space-y-2">
-          {rows.map((row) => (
-            <li
-              key={row.label}
-              className="flex items-center justify-between rounded-lg border border-stone-700/60 bg-stone-900/80 px-3 py-2 text-sm"
-            >
-              <span className="text-stone-200">{row.label}</span>
-              <span className="font-semibold text-amber-200">{formatNumber(row.value)}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </article>
-  );
 }
 
 export default async function DataProcessingPage({
@@ -48,29 +24,7 @@ export default async function DataProcessingPage({
     <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
       <div className="mx-auto max-w-6xl space-y-6">
         <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm uppercase tracking-[0.12em] text-amber-300">Brasaland Data Processing</p>
-            <div className="flex flex-wrap gap-2">
-              <Link
-                href="/incidents"
-                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
-              >
-                Incidents
-              </Link>
-              <Link
-                href="/suppliers"
-                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
-              >
-                Suppliers
-              </Link>
-              <Link
-                href="/"
-                className="rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
-              >
-                Back to candidate tracker
-              </Link>
-            </div>
-          </div>
+          <p className="text-sm uppercase tracking-[0.12em] text-amber-300">Brasaland Data Processing</p>
           <h1 className="mt-2 text-2xl font-extrabold text-amber-100 md:text-3xl">
             Operations Aggregated Reports
           </h1>
@@ -125,32 +79,10 @@ export default async function DataProcessingPage({
         </section>
 
         <section className="grid gap-4 md:grid-cols-4">
-          <article className="rounded-xl border border-emerald-500/30 bg-emerald-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-emerald-200">Total registrations</p>
-            <p className="mt-1 text-3xl font-extrabold text-emerald-100">{dashboard.totalRegistrations}</p>
-          </article>
-
           <article className="rounded-xl border border-cyan-500/30 bg-cyan-900/20 p-4">
             <p className="text-xs uppercase tracking-[0.12em] text-cyan-200">Total locations</p>
             <p className="mt-1 text-3xl font-extrabold text-cyan-100">{dashboard.totalLocations}</p>
           </article>
-
-          <article className="rounded-xl border border-amber-500/30 bg-amber-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-amber-200">Email opt-in rate</p>
-            <p className="mt-1 text-3xl font-extrabold text-amber-100">{dashboard.emailOptInRate}%</p>
-            <p className="text-xs text-amber-200/80">{dashboard.emailOptInCount} registrations opted in</p>
-          </article>
-
-          <article className="rounded-xl border border-fuchsia-500/30 bg-fuchsia-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-fuchsia-200">Average age</p>
-            <p className="mt-1 text-3xl font-extrabold text-fuchsia-100">{dashboard.ageAverage}</p>
-            <p className="text-xs text-fuchsia-200/80">
-              Min {dashboard.ageMinimum} / Max {dashboard.ageMaximum}
-            </p>
-          </article>
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-3">
           <article className="rounded-xl border border-sky-500/30 bg-sky-900/20 p-4">
             <p className="text-xs uppercase tracking-[0.12em] text-sky-200">Daily revenue (USD)</p>
             <p className="mt-1 text-3xl font-extrabold text-sky-100">${dashboard.dailyRevenueUSD}</p>
@@ -208,16 +140,6 @@ export default async function DataProcessingPage({
         </section>
 
         <section className="grid gap-4 lg:grid-cols-3">
-          <DataList title="Registrations by country" rows={dashboard.registrationsByCountry} />
-          <DataList title="Registrations by city" rows={dashboard.registrationsByCity} />
-          <DataList
-            title="Discovery channels"
-            rows={dashboard.registrationsByDiscoveryChannel}
-          />
-          <DataList
-            title="Dietary preference selections"
-            rows={dashboard.dietaryPreferenceSelections}
-          />
           <DataList title="Locations by country" rows={dashboard.locationsByCountry} />
           <DataList title="Locations by city" rows={dashboard.locationsByCity} />
           <DataList title="Payment method mix" rows={dashboard.paymentMethodMix} />
@@ -228,24 +150,10 @@ export default async function DataProcessingPage({
         </section>
 
         <section className="rounded-2xl border border-amber-200/20 bg-stone-950/70 p-5">
-          <h2 className="text-lg font-bold text-amber-200">City registration summary</h2>
-          <p className="mt-1 text-sm text-stone-300">
-            Numeric summary generated with shared utility functions for deterministic reporting.
-          </p>
+          <h2 className="text-lg font-bold text-amber-200">Currency conversion</h2>
           <p className="mt-1 text-sm text-stone-400">
             Daily USD revenue converted at fixed rate to COP: {formatNumber(dashboard.revenueUsdAsCop)}.
           </p>
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {dashboard.cityRegistrationSummary.map((item) => (
-              <div
-                key={item.label}
-                className="rounded-lg border border-stone-700/80 bg-stone-900/80 p-3"
-              >
-                <p className="text-xs uppercase tracking-[0.12em] text-stone-400">{item.label}</p>
-                <p className="mt-1 text-2xl font-semibold text-amber-100">{item.value}</p>
-              </div>
-            ))}
-          </div>
         </section>
       </div>
     </main>
