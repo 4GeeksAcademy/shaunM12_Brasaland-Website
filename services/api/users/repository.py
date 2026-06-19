@@ -112,6 +112,16 @@ def update_user(user_id: int, payload: UserUpdate) -> UserResponse | None:
     return _to_response(updated) if updated else None
 
 
+def set_password(user_id: int, new_password: str) -> UserResponse | None:
+    """Hash and store a new password (used by the password-reset flow)."""
+    table = database.get_users_table()
+    if table.get(doc_id=user_id) is None:
+        return None
+    table.update({"hashed_password": hash_password(new_password)}, doc_ids=[user_id])
+    updated = table.get(doc_id=user_id)
+    return _to_response(updated) if updated else None
+
+
 def mark_verified(user_id: int) -> UserResponse | None:
     """Flag a user's email as verified."""
     table = database.get_users_table()

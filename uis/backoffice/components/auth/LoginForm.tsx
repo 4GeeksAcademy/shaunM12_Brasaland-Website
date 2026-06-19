@@ -25,6 +25,8 @@ export default function LoginForm(): React.JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
+  const justReset = searchParams.get("reset") === "success";
+
   const handleSubmit = async (
     event: React.FormEvent<HTMLFormElement>,
   ): Promise<void> => {
@@ -48,6 +50,15 @@ export default function LoginForm(): React.JSX.Element {
         </p>
         <h1 className="text-2xl font-extrabold text-amber-100">Sign in</h1>
       </div>
+
+      {justReset ? (
+        <p
+          role="status"
+          className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200"
+        >
+          Your password has been reset. Please sign in with your new password.
+        </p>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="space-y-4" noValidate>
         <label className="block text-sm text-stone-200">
@@ -91,6 +102,15 @@ export default function LoginForm(): React.JSX.Element {
           {submitting ? "Signing in..." : "Sign in"}
         </button>
       </form>
+
+      <p className="text-center text-sm text-stone-400">
+        <Link
+          href="/forgot-password"
+          className="font-semibold text-amber-300 hover:text-amber-200"
+        >
+          Forgot your password?
+        </Link>
+      </p>
 
       <p className="text-center text-sm text-stone-400">
         No account?{" "}

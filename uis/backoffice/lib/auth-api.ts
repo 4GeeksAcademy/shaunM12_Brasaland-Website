@@ -142,3 +142,30 @@ export async function resendVerification(): Promise<void> {
     throw await readError(response);
   }
 }
+
+export async function forgotPassword(email: string): Promise<void> {
+  const response = await fetch("/auth/forgot-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw await readError(response);
+  }
+}
+
+export async function resetPassword(
+  token: string,
+  newPassword: string,
+): Promise<void> {
+  const response = await fetch("/auth/reset-password", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, new_password: newPassword }),
+    cache: "no-store",
+  });
+  if (!response.ok) {
+    throw await readError(response);
+  }
+}

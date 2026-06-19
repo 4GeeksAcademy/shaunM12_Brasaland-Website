@@ -45,6 +45,38 @@ def decode_access_token(token: str) -> dict:
     return jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
 
 
+# --- Password-reset tokens ---------------------------------------------------
+# Signed JWTs carrying a unique ``jti``. The jti is stored server-side (see
+# auth/password_resets.py) with a single-use flag, so a reset link can be
+# invalidated and cannot be replayed. The JWT itself is never persisted.
+
+PASSWORD_RESET_TOKEN_TYPE = "password_reset"
+
+
+def create_password_reset_token(
+    user_id: int | str, jti: str, expires_minutes: int | None = None
+) -> str:
+    """Sign a short-lived reset JWT (``sub``/``exp``/``type``/``jti``)."""
+    minutes = (
+        expires_minutes
+        if expires_minutes is not None
+        else config.PASSWORD_RESET_EXPIRES_MINUTES
+    )
+    expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    payload = {
+        "sub": str(user_id),
+        "exp": expire,
+        "type": PASSWORD_RESET_TOKEN_TYPE,
+        "jti": jti,
+    }
+    return jwt.encode(payload, config.JWT_SECRET_KEY, algorithm=config.JWT_ALGORITHM)
+
+
+def decode_password_reset_token(token: str) -> dict:
+    """Decode/validate a reset JWT (signature + expiry); raises ``JWTError``."""
+    return jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
+
+
 # --- Opaque tokens (refresh / email verification) ---------------------------
 # These are high-entropy random strings, not JWTs. We store only their SHA-256
 # hash so a database leak does not expose usable tokens.
@@ -63,10 +95,13 @@ def hash_opaque_token(raw_token: str) -> str:
 __all__ = [
     "JWTError",
     "BCRYPT_MAX_BYTES",
+    "PASSWORD_RESET_TOKEN_TYPE",
     "hash_password",
     "verify_password",
     "create_access_token",
     "decode_access_token",
+    "create_password_reset_token",
+    "decode_password_reset_token",
     "generate_opaque_token",
     "hash_opaque_token",
 ]
