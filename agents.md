@@ -7,10 +7,9 @@ At the start of every coding session, the agent must read these files before pro
 1. `memory-bank/projectbrief.md`
 2. `memory-bank/techContext.md`
 3. `memory-bank/progress.md`
-4. `memory-bank/historical-reference/context-4-milestone-4.md`
-5. `memory-bank/historical-reference/context-6-supplier-directory.md`
-6. `memory-bank/historical-reference/context-7-authentication-and-route-restriction.md`
-7. `CONTEXT.md`
+4. `CONTEXT.md`
+
+Do not read files under `memory-bank/historical-reference/` as part of startup. Those documents capture point-in-time context that may have since changed and can conflict with current work. The developer will explicitly tell the agent which historical-reference file (if any) is relevant to the task at hand.
 
 ## Mandatory pre-commit workflow
 
@@ -34,4 +33,4 @@ The agent must not modify the following paths unless the developer explicitly co
 
 ## Alignment requirement
 
-All implementation and documentation decisions must stay aligned with Brasaland data/process constraints captured in milestone context references, including `context-4-milestone-4.md`, `context-6-supplier-directory.md`, `context-7-authentication-and-route-restriction.md`, and memory-bank historical records.
+All implementation and documentation decisions must stay aligned with the current Brasaland data/process constraints captured in `CONTEXT.md` and the `memory-bank/` files listed under "Required session startup reads". Historical-reference documents are not authoritative by default — the agent should consult a `memory-bank/historical-reference/` file only when the developer explicitly designates it for the current task, and current sources take precedence on any conflict.

@@ -27,6 +27,7 @@ def _validate_password(value: str) -> str:
 class UserCreate(BaseModel):
     email: EmailStr
     password: str
+    name: str | None = None
 
     @field_validator("password")
     @classmethod
@@ -37,6 +38,7 @@ class UserCreate(BaseModel):
 class UserUpdate(BaseModel):
     email: EmailStr | None = None
     password: str | None = None
+    name: str | None = None
     is_active: bool | None = None
     is_admin: bool | None = None
 
@@ -51,8 +53,10 @@ class UserUpdate(BaseModel):
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
+    name: str | None = None
     is_active: bool
     is_admin: bool
+    is_verified: bool = False
     created_at: datetime
 
 
@@ -62,13 +66,18 @@ class UserInDB(BaseModel):
     This is the internal/database model. It must never be used as a response
     model — `hashed_password` is kept out of `UserResponse` so it is never
     returned by the API.
+
+    ``name`` and ``is_verified`` carry defaults so user records created before
+    these fields existed still validate when read back.
     """
 
     id: int
     email: EmailStr
+    name: str | None = None
     hashed_password: str
     is_active: bool
     is_admin: bool
+    is_verified: bool = False
     created_at: datetime
 
 

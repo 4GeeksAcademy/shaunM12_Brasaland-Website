@@ -5,6 +5,8 @@ Settings come from ``config.py`` so the signing secret is never hardcoded.
 
 from __future__ import annotations
 
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 
 from jose import JWTError, jwt
@@ -43,6 +45,21 @@ def decode_access_token(token: str) -> dict:
     return jwt.decode(token, config.JWT_SECRET_KEY, algorithms=[config.JWT_ALGORITHM])
 
 
+# --- Opaque tokens (refresh / email verification) ---------------------------
+# These are high-entropy random strings, not JWTs. We store only their SHA-256
+# hash so a database leak does not expose usable tokens.
+
+
+def generate_opaque_token() -> str:
+    """Return a new URL-safe random token to hand to the client."""
+    return secrets.token_urlsafe(32)
+
+
+def hash_opaque_token(raw_token: str) -> str:
+    """Hash an opaque token for storage/lookup (constant for a given input)."""
+    return hashlib.sha256(raw_token.encode("utf-8")).hexdigest()
+
+
 __all__ = [
     "JWTError",
     "BCRYPT_MAX_BYTES",
@@ -50,4 +67,6 @@ __all__ = [
     "verify_password",
     "create_access_token",
     "decode_access_token",
+    "generate_opaque_token",
+    "hash_opaque_token",
 ]

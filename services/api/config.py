@@ -29,3 +29,23 @@ if not JWT_SECRET_KEY:
 
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRES_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRES_MINUTES", "30"))
+
+
+def _as_bool(value: str | None, default: bool = False) -> bool:
+    if value is None:
+        return default
+    return value.strip().lower() in {"1", "true", "yes", "on"}
+
+
+# --- Refresh tokens & auth cookie -------------------------------------------
+REFRESH_TOKEN_EXPIRES_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRES_DAYS", "7"))
+REFRESH_COOKIE_NAME = os.getenv("REFRESH_COOKIE_NAME", "brasaland_refresh")
+# Set COOKIE_SECURE=true in production (HTTPS). Left false for local http dev.
+COOKIE_SECURE = _as_bool(os.getenv("COOKIE_SECURE"), default=False)
+
+# --- Email verification ------------------------------------------------------
+EMAIL_VERIFICATION_EXPIRES_HOURS = int(
+    os.getenv("EMAIL_VERIFICATION_EXPIRES_HOURS", "24")
+)
+# Base URL of the backoffice, used to build links in (stubbed) emails.
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000").rstrip("/")

@@ -14,6 +14,11 @@ import os
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-pytest-only")
 os.environ.setdefault("ACCESS_TOKEN_EXPIRES_MINUTES", "30")
 os.environ.setdefault("JWT_ALGORITHM", "HS256")
+os.environ.setdefault("REFRESH_TOKEN_EXPIRES_DAYS", "7")
+os.environ.setdefault("REFRESH_COOKIE_NAME", "brasaland_refresh")
+os.environ.setdefault("COOKIE_SECURE", "false")
+os.environ.setdefault("EMAIL_VERIFICATION_EXPIRES_HOURS", "24")
+os.environ.setdefault("FRONTEND_BASE_URL", "http://localhost:3000")
 
 import importlib
 from pathlib import Path
@@ -58,13 +63,18 @@ def client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     main = _build_app(monkeypatch, tmp_path)
 
     from auth.dependencies import get_current_user
+    from users.models import UserResponse
+    from datetime import datetime, timezone
 
-    main.app.dependency_overrides[get_current_user] = lambda: {
-        "id": 1,
-        "email": "tester@brasaland.com",
-        "is_active": True,
-        "is_admin": True,
-    }
+    main.app.dependency_overrides[get_current_user] = lambda: UserResponse(
+        id=1,
+        email="tester@brasaland.com",
+        name="Tester",
+        is_active=True,
+        is_admin=True,
+        is_verified=True,
+        created_at=datetime.now(timezone.utc),
+    )
     with TestClient(main.app) as test_client:
         yield test_client
 

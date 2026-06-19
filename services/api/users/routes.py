@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, status
 
-from auth.dependencies import get_current_user
+from auth.dependencies import get_current_user, require_admin
 from .models import UserCreate, UserResponse, UserUpdate
 from .repository import (
     EmailAlreadyExistsError,
@@ -27,7 +27,7 @@ def register_user(payload: UserCreate) -> UserResponse:
 
 
 @router.get("", response_model=list[UserResponse])
-def get_users(_: UserResponse = Depends(get_current_user)) -> list[UserResponse]:
+def get_users(_: UserResponse = Depends(require_admin)) -> list[UserResponse]:
     return list_users()
 
 

@@ -58,9 +58,11 @@ def create_user(payload: UserCreate, *, is_admin: bool = False) -> UserResponse:
 
     record = {
         "email": email,
+        "name": payload.name,
         "hashed_password": hash_password(payload.password),
         "is_active": True,
         "is_admin": is_admin,
+        "is_verified": False,
         "created_at": _utc_now_iso(),
     }
     doc_id = table.insert(record)
@@ -97,6 +99,8 @@ def update_user(user_id: int, payload: UserUpdate) -> UserResponse | None:
         changes["email"] = new_email
     if payload.password is not None:
         changes["hashed_password"] = hash_password(payload.password)
+    if payload.name is not None:
+        changes["name"] = payload.name
     if payload.is_active is not None:
         changes["is_active"] = payload.is_active
     if payload.is_admin is not None:
@@ -104,6 +108,16 @@ def update_user(user_id: int, payload: UserUpdate) -> UserResponse | None:
 
     if changes:
         table.update(changes, doc_ids=[user_id])
+    updated = table.get(doc_id=user_id)
+    return _to_response(updated) if updated else None
+
+
+def mark_verified(user_id: int) -> UserResponse | None:
+    """Flag a user's email as verified."""
+    table = database.get_users_table()
+    if table.get(doc_id=user_id) is None:
+        return None
+    table.update({"is_verified": True}, doc_ids=[user_id])
     updated = table.get(doc_id=user_id)
     return _to_response(updated) if updated else None
 

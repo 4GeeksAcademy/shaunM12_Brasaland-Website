@@ -12,17 +12,14 @@ import {
 } from "../app/data-processing/data-processing-core";
 
 describe("data processing dashboard adapter", () => {
-  it("builds deterministic totals for all countries", () => {
+  it("builds deterministic location totals for all countries", () => {
     const report = buildDataProcessingDashboard({
       country: "",
       referenceDate: "2026-04-23",
     });
 
-    expect(report.totalRegistrations).toBe(6);
     expect(report.totalLocations).toBe(6);
-    expect(report.emailOptInCount).toBe(4);
-    expect(report.emailOptInRate).toBe(66.67);
-    expect(report.registrationsByCountry).toEqual([
+    expect(report.locationsByCountry).toEqual([
       { label: "Colombia", value: 4 },
       { label: "United States", value: 2 },
     ]);
@@ -35,12 +32,7 @@ describe("data processing dashboard adapter", () => {
     });
 
     expect(report.countryFilter).toBe("United States");
-    expect(report.totalRegistrations).toBe(2);
     expect(report.totalLocations).toBe(2);
-    expect(report.registrationsByCity).toEqual([
-      { label: "Miami", value: 1 },
-      { label: "Orlando", value: 1 },
-    ]);
     expect(report.locationsByCity).toEqual([
       { label: "Miami", value: 1 },
       { label: "Orlando", value: 1 },

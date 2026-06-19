@@ -26,6 +26,19 @@ const nextConfig = {
         source: "/api/suppliers/:path*",
         destination: `${apiOrigin}/api/suppliers/:path*`,
       },
+      // Same-origin proxy for auth so the HttpOnly refresh cookie is first-party.
+      {
+        source: "/auth/:path*",
+        destination: `${apiOrigin}/auth/:path*`,
+      },
+      {
+        source: "/users",
+        destination: `${apiOrigin}/users`,
+      },
+      {
+        source: "/users/:path*",
+        destination: `${apiOrigin}/users/:path*`,
+      },
     ];
   },
 };
