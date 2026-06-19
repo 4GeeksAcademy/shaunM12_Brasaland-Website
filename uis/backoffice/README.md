@@ -17,14 +17,13 @@ The data-processing page renders computed outputs (reports, filters, searches) i
 
 ## Development
 
-Backoffice pages that call incidents or suppliers need the Python API running on port 8000.
+Backoffice pages that call incidents or suppliers need the Python API (uv) running on port 8000.
 
 **Terminal 1 — from repo root:**
 
 ```bash
-npm run api:install   # once
-npm run api:seed      # once
-npm run api:dev       # http://127.0.0.1:8000
+npm run api:install   # once (cd services/api && uv sync)
+npm run api:dev       # http://127.0.0.1:8000 (auto-seeds an empty DB)
 ```
 
 **Terminal 2 — backoffice:**
