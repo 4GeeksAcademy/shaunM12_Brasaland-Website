@@ -24,7 +24,6 @@
     "api:install": "sh -c 'cd services/api && uv sync'",
     "api:dev": "sh -c 'cd services/api && uv run uvicorn main:app --reload --port 8000'",
     "api:sync": "sh -c 'cd services/api && uv sync'",
-    "api:dev": "sh -c 'cd services/api && uv run uvicorn main:app --reload --port 8000'",
     "api:seed": "sh -c 'cd services/api && uv run seed'",
     "api:test": "sh -c 'cd services/api && uv run pytest -q'",
     "test": "vitest run",

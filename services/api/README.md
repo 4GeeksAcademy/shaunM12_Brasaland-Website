@@ -12,15 +12,14 @@ FastAPI service for Brasaland backoffice tools: incident CSV analysis and the pr
 - `database.py` — TinyDB initialisation
 - `seed.py` — initial supplier seed loader
 
-This service uses **[uv](https://docs.astral.sh/uv/)**. The virtual environment lives in `services/api/.venv` and is created/managed by `uv` from `pyproject.toml`. Never commit `.venv`.
-
 ## Setup
 
-Install dependencies (creates `services/api/.venv`):
+Using **uv** (recommended for seeding):
 
 ```bash
 cd services/api
 uv sync
+uv run seed
 ```
 
 ### Environment
@@ -39,30 +38,32 @@ python -c "import secrets; print(secrets.token_hex(32))"
 Or from the repo root:
 
 ```bash
-npm run api:install   # alias for: cd services/api && uv sync
+npm run api:sync
+npm run api:seed
+```
+
+Using **pip** (legacy):
+
+```bash
+pip install -r services/api/requirements.txt
 ```
 
 ## Run
 
-From the repo root:
-
 ```bash
-npm run api:dev       # http://127.0.0.1:8000
+npm run api:dev
 ```
 
-Or directly:
+Seed suppliers manually (skips duplicates):
 
 ```bash
-cd services/api
-uv run uvicorn main:app --reload --port 8000
+cd services/api && uv run seed
 ```
 
-## Seed
-
-On first API startup, suppliers are auto-seeded when the database is empty. To seed manually (skips duplicates):
+Or:
 
 ```bash
-npm run api:seed      # or: cd services/api && uv run seed
+npm run api:seed
 ```
 
 On first API startup, suppliers are auto-seeded when the database is empty.
