@@ -1,38 +1,11 @@
-"""Supplier directory API tests."""
+"""Supplier directory API tests.
+
+The ``client`` fixture (with authentication bypassed) lives in ``conftest.py``.
+"""
 
 from __future__ import annotations
 
-import importlib
-from pathlib import Path
-
-import pytest
 from fastapi.testclient import TestClient
-
-
-@pytest.fixture()
-def client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
-    db_path = tmp_path / "suppliers.json"
-    monkeypatch.setenv("SUPPLIERS_DB_PATH", str(db_path))
-
-    import database
-
-    importlib.reload(database)
-    database._db = None
-    database.DB_PATH = db_path
-    database.DATA_DIR = tmp_path
-
-    import suppliers.repository as repository
-
-    importlib.reload(repository)
-
-    import main
-
-    importlib.reload(main)
-
-    with TestClient(main.app) as test_client:
-        yield test_client
-
-    database._db = None
 
 
 def test_seed_loads_fifteen_suppliers(client: TestClient):

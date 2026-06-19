@@ -9,7 +9,8 @@ At the start of every coding session, the agent must read these files before pro
 3. `memory-bank/progress.md`
 4. `memory-bank/historical-reference/context-4-milestone-4.md`
 5. `memory-bank/historical-reference/context-6-supplier-directory.md`
-6. `CONTEXT.md`
+6. `memory-bank/historical-reference/context-7-authentication-and-route-restriction.md`
+7. `CONTEXT.md`
 
 ## Mandatory pre-commit workflow
 
@@ -33,4 +34,4 @@ The agent must not modify the following paths unless the developer explicitly co
 
 ## Alignment requirement
 
-All implementation and documentation decisions must stay aligned with Brasaland data/process constraints captured in milestone context references, including `context-4-milestone-4.md`, `context-6-supplier-directory.md`, and memory-bank historical records.
+All implementation and documentation decisions must stay aligned with Brasaland data/process constraints captured in milestone context references, including `context-4-milestone-4.md`, `context-6-supplier-directory.md`, `context-7-authentication-and-route-restriction.md`, and memory-bank historical records.

@@ -6,6 +6,9 @@ FastAPI service for Brasaland backoffice tools: incident CSV analysis and the pr
 
 - `incident_analyzer/` — milestone 5 incident CSV analysis
 - `suppliers/` — Milestone 09 supplier directory (Pydantic models, TinyDB repository, routes)
+- `auth/` — JWT authentication (password hashing, token encode/decode, `get_current_user`)
+- `users/` — user management (models, TinyDB repository, CRUD routes)
+- `config.py` — loads `.env` and exposes JWT settings (fails closed if the secret is missing)
 - `database.py` — TinyDB initialisation
 - `seed.py` — initial supplier seed loader
 
@@ -18,6 +21,19 @@ cd services/api
 uv sync
 uv run seed
 ```
+
+### Environment
+
+Authentication needs a signing secret. Copy the template and set a strong value:
+
+```bash
+cd services/api
+cp .env.example .env
+# then edit .env, e.g.:
+python -c "import secrets; print(secrets.token_hex(32))"
+```
+
+`.env` is gitignored; the API refuses to start if `JWT_SECRET_KEY` is unset.
 
 Or from the repo root:
 
@@ -52,6 +68,23 @@ npm run api:seed
 
 On first API startup, suppliers are auto-seeded when the database is empty.
 
+## Authentication
+
+JWT bearer auth. All supplier, incident, and (non-registration) user routes
+require a valid token; only `GET /api/health` and the public auth routes are open.
+
+Mounted at `/auth` (per the AUTH-01 spec):
+
+- `POST /auth/register` — JSON `{email, password}`, creates a user and returns a token
+- `POST /auth/login` — form-encoded (`username` = email, `password`), returns a token
+- `GET /auth/me` — current user's profile (requires token)
+
+User management at `/users`; `POST` is public, the rest require a token.
+`PUT /users/{id}` is allowed only for the user themselves or an admin.
+
+In Swagger (`/docs`), click **Authorize**, log in with email/password, then call
+protected routes. Without a token, protected routes return `401`.
+
 ## Incident endpoints
 
 - `POST /api/incidents/analyze` — multipart CSV upload, returns JSON summary
@@ -60,7 +93,7 @@ On first API startup, suppliers are auto-seeded when the database is empty.
 
 ## Supplier endpoints
 
-Mounted at both `/api/suppliers` and `/suppliers`:
+Mounted at `/api/suppliers` (matches the Next.js proxy):
 
 - `POST /api/suppliers` — register supplier (422 on invalid input)
 - `GET /api/suppliers?country=&category=` — list with optional filters
@@ -73,5 +106,7 @@ Mounted at both `/api/suppliers` and `/suppliers`:
 ## Tests
 
 ```bash
-cd services/api && python -m pytest tests/ -q
+cd services/api && uv run pytest -q
 ```
+
+Or from the repo root: `npm run api:test`.
