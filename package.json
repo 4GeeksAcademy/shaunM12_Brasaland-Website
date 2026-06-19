@@ -22,10 +22,11 @@
     "cli:filters": "node scripts/brasaland-cli.cjs filters",
     "cli:health": "node scripts/brasaland-cli.cjs health",
     "api:install": "sh -c 'cd services/api && uv sync'",
+    "api:dev": "sh -c 'cd services/api && uv run uvicorn main:app --reload --port 8000'",
     "api:sync": "sh -c 'cd services/api && uv sync'",
     "api:dev": "sh -c 'cd services/api && uv run uvicorn main:app --reload --port 8000'",
     "api:seed": "sh -c 'cd services/api && uv run seed'",
-    "api:test": "sh -c 'cd services/api && uv run pytest tests/ -q'",
+    "api:test": "sh -c 'cd services/api && uv run pytest -q'",
     "test": "vitest run",
     "test:watch": "vitest"
   },
