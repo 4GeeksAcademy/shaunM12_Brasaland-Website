@@ -19,6 +19,9 @@ os.environ.setdefault("REFRESH_COOKIE_NAME", "brasaland_refresh")
 os.environ.setdefault("COOKIE_SECURE", "false")
 os.environ.setdefault("EMAIL_VERIFICATION_EXPIRES_HOURS", "24")
 os.environ.setdefault("FRONTEND_BASE_URL", "http://localhost:3000")
+os.environ.setdefault("PASSWORD_RESET_EXPIRES_MINUTES", "30")
+os.environ.setdefault("RESET_REQUESTS_PER_HOUR", "10")
+os.environ.setdefault("EMAIL_PROVIDER", "console")
 
 import importlib
 from pathlib import Path
@@ -28,12 +31,16 @@ from fastapi.testclient import TestClient
 
 
 def _build_app(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
-    monkeypatch.setenv("SUPPLIERS_DB_PATH", str(tmp_path / "api.json"))
+    monkeypatch.setenv("SUPPLIERS_DB_PATH", str(tmp_path / "suppliers.json"))
+    monkeypatch.setenv("USERS_DB_PATH", str(tmp_path / "users.json"))
+    monkeypatch.setenv("AUTH_DB_PATH", str(tmp_path / "auth.json"))
 
     import database
 
     importlib.reload(database)
     database._db = None
+    database._users_db = None
+    database._auth_db = None
 
     import suppliers.repository
 
@@ -55,6 +62,8 @@ def anon_client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     import database
 
     database._db = None
+    database._users_db = None
+    database._auth_db = None
 
 
 @pytest.fixture()
@@ -83,6 +92,8 @@ def client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     import database
 
     database._db = None
+    database._users_db = None
+    database._auth_db = None
 
 
 @pytest.fixture()
@@ -104,3 +115,5 @@ def auth_client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     import database
 
     database._db = None
+    database._users_db = None
+    database._auth_db = None

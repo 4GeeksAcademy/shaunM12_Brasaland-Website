@@ -1,1 +1,3 @@
-suppliers.json
+# Runtime TinyDB stores (live data / PII) and backups
+*.json
+*.bak*

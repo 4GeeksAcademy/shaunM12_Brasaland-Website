@@ -14,7 +14,13 @@ export const LOGIN_PATH = "/login";
 export const HOME_PATH = "/";
 
 /** Routes reachable without a session. Everything else is gated. */
-export const PUBLIC_PATHS = ["/login", "/register", "/verify-email"] as const;
+export const PUBLIC_PATHS = [
+  "/login",
+  "/register",
+  "/verify-email",
+  "/forgot-password",
+  "/reset-password",
+] as const;
 
 export function isPublicPath(pathname: string): boolean {
   return PUBLIC_PATHS.some(

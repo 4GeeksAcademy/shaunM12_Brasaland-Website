@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 import config
@@ -13,17 +13,26 @@ from users.repository import (
     get_user_record,
     get_user_record_by_email,
     mark_verified,
+    set_password,
 )
-from . import refresh_tokens, verifications
+from . import audit, password_resets, refresh_tokens, verifications
 from .dependencies import get_current_user
 from .models import (
+    ForgotPasswordRequest,
     MessageResponse,
     RegisterRequest,
+    ResetPasswordRequest,
     TokenResponse,
     VerifyEmailRequest,
 )
-from .security import create_access_token, verify_password
-from mailer import send_verification_email
+from .security import (
+    JWTError,
+    PASSWORD_RESET_TOKEN_TYPE,
+    create_access_token,
+    decode_password_reset_token,
+    verify_password,
+)
+from mailer import send_password_reset_email, send_verification_email
 
 router = APIRouter(tags=["auth"])
 
@@ -176,3 +185,89 @@ def resend_verification(
     raw_token = verifications.issue_verification_token(current_user.id)
     send_verification_email(current_user.email, raw_token)
     return MessageResponse(message="Verification email sent")
+
+
+def _client_ip(request: Request) -> str:
+    """Best-effort client IP, honouring a proxy's X-Forwarded-For first hop."""
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "unknown"
+
+
+# Generic confirmation copy: identical regardless of whether the email exists,
+# to prevent account enumeration.
+_RESET_REQUESTED_MESSAGE = "If that address is registered, you'll receive a link shortly."
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+def forgot_password(
+    payload: ForgotPasswordRequest, request: Request
+) -> MessageResponse:
+    email = payload.email.strip().lower()
+    ip = _client_ip(request)
+
+    # Rate limit per submitted email (not per existence) to curb abuse while
+    # leaking as little as possible about which addresses are registered.
+    if audit.recent_request_count(email) >= config.RESET_REQUESTS_PER_HOUR:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many reset requests. Please try again later.",
+        )
+
+    user = get_user_record_by_email(email)
+    audit.record_event(
+        audit.REQUESTED, email, user.id if user is not None else None, ip
+    )
+
+    if user is not None:
+        # A provider failure must never change the response (anti-enumeration).
+        try:
+            password_resets.supersede_user_tokens(user.id)
+            token = password_resets.issue_reset_token(user.id)
+            send_password_reset_email(user.email, token)
+        except Exception:  # pragma: no cover - defensive; console stub never raises
+            pass
+
+    return MessageResponse(message=_RESET_REQUESTED_MESSAGE)
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+def reset_password(
+    payload: ResetPasswordRequest, request: Request
+) -> MessageResponse:
+    invalid = HTTPException(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        detail="Invalid or expired reset token",
+    )
+
+    try:
+        claims = decode_password_reset_token(payload.token)
+    except JWTError:
+        raise invalid
+
+    if claims.get("type") != PASSWORD_RESET_TOKEN_TYPE:
+        raise invalid
+    subject = claims.get("sub")
+    jti = claims.get("jti")
+    if subject is None or jti is None:
+        raise invalid
+    try:
+        user_id = int(subject)
+    except (TypeError, ValueError):
+        raise invalid
+
+    user = get_user_record(user_id)
+    if user is None:
+        raise invalid
+
+    # Single-use: consuming the jti flips its stored `used` flag.
+    if not password_resets.consume_reset_token(jti):
+        raise invalid
+
+    set_password(user_id, payload.new_password)
+    # A reset is a security event: drop every existing session.
+    refresh_tokens.revoke_all_for_user(user_id)
+    audit.record_event(audit.COMPLETED, user.email, user_id, _client_ip(request))
+
+    return MessageResponse(message="Password updated. You can now sign in.")

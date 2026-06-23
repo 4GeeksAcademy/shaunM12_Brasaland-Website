@@ -7,7 +7,6 @@ import { useAuth } from "@/context/AuthProvider";
 import { isPublicPath, LOGIN_PATH } from "@/lib/auth-config";
 import BackofficeTabs from "@/components/backoffice-tabs";
 import AuthGuard from "./AuthGuard";
-import EmailVerificationBanner from "./EmailVerificationBanner";
 
 function SessionBar(): React.JSX.Element {
   const { user, logout } = useAuth();
@@ -49,7 +48,7 @@ function SessionBar(): React.JSX.Element {
 
 /**
  * Wraps the whole app. Public auth pages render bare; every other route is
- * gated by AuthGuard and gets the session bar + email-verification banner.
+ * gated by AuthGuard and gets the session bar + navigation tabs.
  */
 export default function ProtectedShell({
   children,
@@ -68,7 +67,6 @@ export default function ProtectedShell({
       <div className="border-b border-amber-200/10 bg-stone-950 px-4 py-2">
         <BackofficeTabs />
       </div>
-      <EmailVerificationBanner />
       {children}
     </AuthGuard>
   );

@@ -49,3 +49,19 @@ EMAIL_VERIFICATION_EXPIRES_HOURS = int(
 )
 # Base URL of the backoffice, used to build links in (stubbed) emails.
 FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://localhost:3000").rstrip("/")
+
+# --- Password reset ----------------------------------------------------------
+# Short-lived reset tokens: 15-60 minutes is standard.
+PASSWORD_RESET_EXPIRES_MINUTES = int(os.getenv("PASSWORD_RESET_EXPIRES_MINUTES", "30"))
+# Max reset requests accepted per email address per rolling hour (then 429).
+RESET_REQUESTS_PER_HOUR = int(os.getenv("RESET_REQUESTS_PER_HOUR", "10"))
+
+# --- Transactional email -----------------------------------------------------
+# Provider backend: "console" (dev default, logs/prints), "resend", or "sendgrid".
+EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "console").strip().lower()
+# Verified/onboarding sender address. Resend's onboarding sender works without a
+# custom domain but only delivers to the Resend account owner's address in dev.
+EMAIL_FROM = os.getenv("EMAIL_FROM", "onboarding@resend.dev")
+# API keys are read from the environment only — never hardcode them.
+RESEND_API_KEY = os.getenv("RESEND_API_KEY")
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
