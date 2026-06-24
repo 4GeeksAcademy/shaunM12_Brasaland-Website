@@ -63,15 +63,23 @@ async def analyze_incidents(file: UploadFile = File(...)) -> dict:
 
     payload = await file.read()
     if not payload.strip():
-        raise HTTPException(status_code=400, detail="Empty file: CSV has no content")
+        raise HTTPException(
+            status_code=400, detail="Empty file: the CSV has no content."
+        )
 
     try:
         result = analyze_from_bytes(payload, source_path=file.filename)
     except ValueError as exc:
-        message = str(exc)
-        if "empty" in message.lower():
-            raise HTTPException(status_code=400, detail=f"Empty file: {message}") from exc
-        raise HTTPException(status_code=400, detail=f"Incorrect format: {message}") from exc
+        # `analyze_from_bytes` raises only curated, user-safe messages (the raw
+        # parser error is logged inside the analyzer, never surfaced here).
+        if "empty" in str(exc).lower():
+            raise HTTPException(
+                status_code=400, detail="Empty file: the CSV has no content."
+            ) from exc
+        raise HTTPException(
+            status_code=400,
+            detail="Incorrect format: the file could not be read as a valid CSV.",
+        ) from exc
 
     save_result(result)
     return result

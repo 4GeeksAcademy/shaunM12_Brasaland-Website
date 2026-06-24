@@ -22,7 +22,7 @@ pip install -r scripts/requirements.txt
 ### Usage
 
 ```bash
-python scripts/analyze.py incidents-brasaland.csv
+python scripts/analyze.py data/incidents-brasaland.csv
 ```
 
 - **Input**: path to an incident CSV (positional argument).
@@ -37,7 +37,7 @@ Status values are normalized to `OPEN`, `CLOSED`, or `DISCARDED` before reportin
 
 ### Test file
 
-- `incidents-brasaland.csv` — English context-5 dataset generated from `source-incidents-spanish.csv`
+- `data/incidents-brasaland.csv` — English context-5 dataset generated from `data/source-incidents-spanish.csv`
 - Regenerate with: `python scripts/build_incidents_csv.py`
 
 ### API integration (Phase 2)

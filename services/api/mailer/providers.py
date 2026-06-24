@@ -27,6 +27,15 @@ _TIMEOUT = 10.0
 
 
 def _send_console(to: str, subject: str, text: str, html: str | None) -> None:
+    # The body contains reset/verification links + tokens. Only echo it in
+    # development; outside dev the console provider is fail-closed so secrets
+    # never reach stdout/logs (and the recipient address is never logged).
+    if not config.IS_DEV:
+        logger.warning(
+            "Console email provider active outside development: message suppressed. "
+            "Configure EMAIL_PROVIDER (resend/sendgrid) to deliver mail."
+        )
+        return
     message = (
         "\n=== [DEV EMAIL — not actually sent] ===\n"
         f"To: {to}\n"
@@ -34,27 +43,32 @@ def _send_console(to: str, subject: str, text: str, html: str | None) -> None:
         f"{text}\n"
         "=======================================\n"
     )
-    logger.info("Outgoing email to %s: %s", to, subject)
     print(message)
 
 
 def _send_resend(to: str, subject: str, text: str, html: str | None) -> None:
     if not config.RESEND_API_KEY:
         raise RuntimeError("RESEND_API_KEY is not set")
-    response = httpx.post(
-        _RESEND_ENDPOINT,
-        headers={"Authorization": f"Bearer {config.RESEND_API_KEY}"},
-        json={
-            "from": config.EMAIL_FROM,
-            "to": [to],
-            "subject": subject,
-            "html": html or text,
-            "text": text,
-        },
-        timeout=_TIMEOUT,
-    )
-    response.raise_for_status()
-    logger.info("Sent email via Resend to %s: %s", to, subject)
+    try:
+        response = httpx.post(
+            _RESEND_ENDPOINT,
+            headers={"Authorization": f"Bearer {config.RESEND_API_KEY}"},
+            json={
+                "from": config.EMAIL_FROM,
+                "to": [to],
+                "subject": subject,
+                "html": html or text,
+                "text": text,
+            },
+            timeout=_TIMEOUT,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        # Log diagnostics server-side; surface a clean, generic error to callers
+        # (the provider response may echo recipient data and is never re-raised).
+        logger.error("Resend delivery failed", exc_info=exc)
+        raise RuntimeError("Email provider request failed") from exc
+    logger.info("Sent email via Resend")
 
 
 def _send_sendgrid(to: str, subject: str, text: str, html: str | None) -> None:
@@ -63,22 +77,26 @@ def _send_sendgrid(to: str, subject: str, text: str, html: str | None) -> None:
     content = [{"type": "text/plain", "value": text}]
     if html:
         content.append({"type": "text/html", "value": html})
-    response = httpx.post(
-        _SENDGRID_ENDPOINT,
-        headers={
-            "Authorization": f"Bearer {config.SENDGRID_API_KEY}",
-            "Content-Type": "application/json",
-        },
-        json={
-            "personalizations": [{"to": [{"email": to}]}],
-            "from": {"email": config.EMAIL_FROM},
-            "subject": subject,
-            "content": content,
-        },
-        timeout=_TIMEOUT,
-    )
-    response.raise_for_status()
-    logger.info("Sent email via SendGrid to %s: %s", to, subject)
+    try:
+        response = httpx.post(
+            _SENDGRID_ENDPOINT,
+            headers={
+                "Authorization": f"Bearer {config.SENDGRID_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "personalizations": [{"to": [{"email": to}]}],
+                "from": {"email": config.EMAIL_FROM},
+                "subject": subject,
+                "content": content,
+            },
+            timeout=_TIMEOUT,
+        )
+        response.raise_for_status()
+    except httpx.HTTPError as exc:
+        logger.error("SendGrid delivery failed", exc_info=exc)
+        raise RuntimeError("Email provider request failed") from exc
+    logger.info("Sent email via SendGrid")
 
 
 def send(to: str, subject: str, text: str, html: str | None = None) -> None:

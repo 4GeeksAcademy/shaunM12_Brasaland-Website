@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useMemo, useState } from "react";
+import ErrorState from "@/components/ui/ErrorState";
 import {
   CATEGORY_LABELS,
   COUNTRY_OPTIONS,
@@ -18,6 +19,7 @@ interface SupplierDirectoryProps {
   suppliers: Supplier[];
   loading: boolean;
   error: string | null;
+  onRetry?: () => void;
   countryFilter: string;
   categoryFilter: string;
   onCountryFilterChange: (value: string) => void;
@@ -46,6 +48,7 @@ export default function SupplierDirectory({
   suppliers,
   loading,
   error,
+  onRetry,
   countryFilter,
   categoryFilter,
   onCountryFilterChange,
@@ -291,9 +294,11 @@ export default function SupplierDirectory({
       </section>
 
       {error ? (
-        <p className="rounded-xl border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
-          {error}
-        </p>
+        <ErrorState
+          message={error}
+          onRetry={onRetry}
+          showHomeLink={false}
+        />
       ) : null}
 
       <section className="overflow-hidden rounded-xl border border-amber-200/20 bg-stone-900/85">

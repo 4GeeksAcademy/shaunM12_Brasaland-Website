@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 
 import AdminGuard from "@/components/auth/AdminGuard";
+import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
 import { useAuth } from "@/context/AuthProvider";
 import { deleteUser, listUsers, updateUser } from "@/lib/users-api";
 import { AuthUser } from "@/types/auth";
@@ -67,16 +69,11 @@ function UsersTable(): React.JSX.Element {
   return (
     <div className="space-y-4">
       {error ? (
-        <p
-          role="alert"
-          className="rounded-md bg-rose-500/10 px-3 py-2 text-sm text-rose-200"
-        >
-          {error}
-        </p>
+        <ErrorState message={error} onRetry={() => void load()} showHomeLink={false} />
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-stone-300">Loading users...</p>
+        <LoadingState label="Loading users..." />
       ) : (
         <div className="overflow-x-auto rounded-2xl border border-amber-200/15 bg-stone-950/95">
           <table className="w-full text-left text-sm">

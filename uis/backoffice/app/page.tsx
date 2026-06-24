@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import CandidateCard from "@/components/candidates/CandidateCard";
 import CandidateForm from "@/components/candidates/CandidateForm";
+import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
 import { useApiState } from "@/hooks/useApiState";
 import { createRecord, getRecords } from "@/lib/api";
 import { STAGE_OPTIONS, STATUS_OPTIONS } from "@/lib/constants";
@@ -265,12 +267,14 @@ export default function Page(): React.JSX.Element {
         <section className="space-y-3">
           <h2 className="text-xl font-extrabold text-amber-300">Candidate list</h2>
 
-          {fetchState === "loading" && (
-            <p className="rounded-md bg-stone-950/80 p-3 text-sm text-stone-100">Loading candidates...</p>
-          )}
+          {fetchState === "loading" && <LoadingState label="Loading candidates..." />}
 
           {fetchState === "error" && (
-            <p className="rounded-md bg-red-300/10 p-3 text-sm text-red-300">{fetchError}</p>
+            <ErrorState
+              message={fetchError || "We couldn't load the candidate list."}
+              onRetry={() => void fetchCandidates()}
+              showHomeLink={false}
+            />
           )}
 
           {fetchState === "success" && visibleRecords.length === 0 && (

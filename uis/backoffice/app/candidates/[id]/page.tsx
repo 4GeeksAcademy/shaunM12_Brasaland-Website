@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CandidateForm from "@/components/candidates/CandidateForm";
 import NotesPanel from "@/components/candidates/NotesPanel";
+import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
 import { useApiState } from "@/hooks/useApiState";
 import {
   addNote,
@@ -182,13 +184,14 @@ export default function CandidateDetailPage(): React.JSX.Element {
         </Link>
 
         {candidateState === "loading" && (
-          <p className="rounded-xl border border-stone-700 bg-stone-900/85 p-3 text-sm">
-            Loading candidate details...
-          </p>
+          <LoadingState label="Loading candidate details..." />
         )}
 
         {candidateState === "error" && (
-          <p className="rounded-xl bg-red-300/10 p-3 text-sm text-red-300">{candidateError}</p>
+          <ErrorState
+            message={candidateError || "We couldn't load this candidate."}
+            onRetry={() => void fetchCandidate()}
+          />
         )}
 
         {candidateState === "success" && candidate && (

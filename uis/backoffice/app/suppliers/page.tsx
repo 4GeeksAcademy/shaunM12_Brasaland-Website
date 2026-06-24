@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import SupplierDirectory from "@/components/suppliers/SupplierDirectory";
+import { useApiState } from "@/hooks/useApiState";
 import { SupplierCreateInput } from "@/lib/supplier-constants";
 import {
   createSupplier,
@@ -12,28 +13,32 @@ import {
 import { Supplier } from "@/types/suppliers";
 
 export default function SuppliersPage(): React.JSX.Element {
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: suppliersData,
+    state,
+    error,
+    execute,
+  } = useApiState<Supplier[]>([]);
   const [countryFilter, setCountryFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
 
+  const suppliers = suppliersData ?? [];
+  // Treat the initial "idle" paint as loading so the table never flashes an
+  // empty/"no results" state before the first fetch resolves.
+  const loading = state === "idle" || state === "loading";
+
   const loadSuppliers = useCallback(async () => {
-    setLoading(true);
-    setError(null);
     try {
-      const rows = await fetchSuppliers({
-        country: countryFilter || undefined,
-        category: categoryFilter || undefined,
-      });
-      setSuppliers(rows);
-    } catch (caught) {
-      setSuppliers([]);
-      setError(caught instanceof Error ? caught.message : "Failed to load suppliers");
-    } finally {
-      setLoading(false);
+      await execute(() =>
+        fetchSuppliers({
+          country: countryFilter || undefined,
+          category: categoryFilter || undefined,
+        }),
+      );
+    } catch {
+      // Error state is captured by useApiState; surfaced via ErrorState below.
     }
-  }, [categoryFilter, countryFilter]);
+  }, [categoryFilter, countryFilter, execute]);
 
   useEffect(() => {
     void loadSuppliers();
@@ -75,7 +80,8 @@ export default function SuppliersPage(): React.JSX.Element {
         <SupplierDirectory
           suppliers={suppliers}
           loading={loading}
-          error={error}
+          error={error || null}
+          onRetry={loadSuppliers}
           countryFilter={countryFilter}
           categoryFilter={categoryFilter}
           onCountryFilterChange={setCountryFilter}

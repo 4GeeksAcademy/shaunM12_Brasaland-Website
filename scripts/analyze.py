@@ -34,10 +34,15 @@ def load_incidents(path: Path) -> pd.DataFrame:
     return load_csv_bytes(payload)
 
 
-def export_results(result: dict, output_path: Path) -> None:
+def export_results(result: dict, output_path: Path) -> bool:
     rows = build_results_rows(result)
-    pd.DataFrame(rows).to_csv(output_path, index=False)
+    try:
+        pd.DataFrame(rows).to_csv(output_path, index=False)
+    except OSError as exc:
+        print(f"Error: could not write results to {output_path}: {exc}", file=sys.stderr)
+        return False
     print(f"Results exported to {output_path}")
+    return True
 
 
 def main() -> int:
@@ -66,7 +71,8 @@ def main() -> int:
         answer = "n"
 
     if answer in {"y", "yes"}:
-        export_results(result, Path("results.csv"))
+        if not export_results(result, Path("results.csv")):
+            return 1
 
     return 0
 

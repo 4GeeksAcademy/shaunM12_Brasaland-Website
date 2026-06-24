@@ -1,8 +1,8 @@
 {
-  "name": "brasaland-programming-fundamentals",
+  "name": "brasaland-website",
   "version": "1.0.0",
   "private": true,
-  "description": "Milestone 2 TypeScript utilities for Brasaland operations",
+  "description": "Brasaland monorepo: FastAPI backend (services/api), Next.js backoffice and public website (uis/), shared TypeScript utilities (src/), and supporting tooling (scripts/).",
   "scripts": {
     "start": "npm run serve",
     "typecheck": "tsc --noEmit",
