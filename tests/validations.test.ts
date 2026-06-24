@@ -32,7 +32,7 @@ describe("validation utilities", () => {
   });
 
   test("returns exact required messages for invalid required fields", () => {
-    const invalidRegistration = {
+    const invalidRegistration: BrasaPointsRegistration = {
       ...validRegistration,
       fullName: "Ana",
       email: "anaexample.com",

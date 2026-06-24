@@ -9,7 +9,16 @@
       content="Register for Brasa Points and start earning rewards at Brasaland's 14 locations in Colombia and the United States."
     />
     <link rel="canonical" href="https://brasaland.com/application.html" />
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!--
+      Tailwind via CDN is intentional for this standalone static page served from public/
+      (no build step). The Next.js website itself uses build-time Tailwind
+      (@tailwindcss/postcss). If the CDN fails to load, the onerror handler shows a
+      recovery message instead of a broken page.
+    -->
+    <script
+      src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"
+      onerror="document.documentElement.innerHTML='<body style=&quot;font-family:sans-serif;padding:2rem&quot;><h1>Styles failed to load</h1><p>Please check your connection and reload the page.</p></body>'"
+    ></script>
   </head>
   <body class="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 text-stone-100 antialiased">
     <header class="border-b border-amber-200/10 bg-stone-950/95" role="banner">

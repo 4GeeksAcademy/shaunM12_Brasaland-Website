@@ -1,0 +1,32 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Legacy path scan
+        run: |
+          ! grep -rn "Brasaland webpage" --include='*.ts' --include='*.tsx' --include='*.json' src tests uis vercel.json
+      - name: Root typecheck
+        run: npm run typecheck
+      - name: Unit tests
+        run: npm test
+      - name: Backoffice build (typecheck)
+        run: |
+          cd uis/backoffice
+          npm ci
+          npm run build
+      - name: Website build (typecheck)
+        run: |
+          cd uis/website
+          npm ci
+          npm run build

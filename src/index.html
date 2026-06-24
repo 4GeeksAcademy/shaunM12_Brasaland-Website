@@ -4,7 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Brasaland Operations Interface | Milestone 2</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <!--
+      Tailwind via CDN is intentional for this standalone static demo page (no build step).
+      The Next.js apps in uis/ use build-time Tailwind (@tailwindcss/postcss). If the CDN
+      fails to load, the onerror handler shows a recovery message instead of a broken page.
+    -->
+    <script
+      src="https://cdn.tailwindcss.com"
+      onerror="document.documentElement.innerHTML='<body style=&quot;font-family:sans-serif;padding:2rem&quot;><h1>Styles failed to load</h1><p>Please check your connection and reload the page.</p></body>'"
+    ></script>
   </head>
   <body class="min-h-screen bg-[radial-gradient(circle_at_10%_10%,#3f1f12_0%,#140f0b_45%,#090909_100%)] text-stone-100">
     <main class="mx-auto w-[94%] max-w-7xl py-8">
