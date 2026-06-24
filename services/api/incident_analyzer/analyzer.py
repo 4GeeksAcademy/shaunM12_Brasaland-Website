@@ -8,9 +8,12 @@ from typing import Any
 
 import pandas as pd
 
+from errors import get_logger
 from .constants import INVALID_RULE_LABELS, VALID_CATEGORIES, VALID_STATUSES
 from .schemas import AnalysisResult, NormalizedIncidentRecord
 from .validators import preprocess_dataframe, resolve_columns, validate_record
+
+logger = get_logger("incident_analyzer")
 
 
 def load_csv_bytes(payload: bytes) -> pd.DataFrame:
@@ -19,7 +22,10 @@ def load_csv_bytes(payload: bytes) -> pd.DataFrame:
     try:
         df = pd.read_csv(io.BytesIO(payload))
     except Exception as exc:
-        raise ValueError(f"Incorrect CSV format: {exc}") from exc
+        # Keep the raw parser detail in the server log only; the message that
+        # propagates to the API/CLI is generic (no library internals leaked).
+        logger.error("Failed to parse uploaded CSV", exc_info=exc)
+        raise ValueError("Incorrect CSV format") from exc
     if df.empty:
         raise ValueError("CSV file is empty")
     df.columns = [str(col).strip() for col in df.columns]

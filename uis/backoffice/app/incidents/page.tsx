@@ -3,32 +3,36 @@
 import { useState } from "react";
 import IncidentSummary from "@/components/incidents/IncidentSummary";
 import IncidentUpload from "@/components/incidents/IncidentUpload";
+import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
+import { useApiState } from "@/hooks/useApiState";
 import { analyzeIncidentFile, downloadIncidentResults } from "@/lib/incidents-api";
 import { IncidentAnalysisResult } from "@/types/incidents";
 
 export default function IncidentsPage(): React.JSX.Element {
-  const [result, setResult] = useState<IncidentAnalysisResult | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const {
+    data: result,
+    state,
+    error,
+    execute,
+  } = useApiState<IncidentAnalysisResult>(null);
   const [downloading, setDownloading] = useState(false);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+
+  const loading = state === "loading";
 
   const handleAnalyze = async (file: File): Promise<void> => {
-    setLoading(true);
-    setError(null);
+    setDownloadError(null);
     try {
-      const analysis = await analyzeIncidentFile(file);
-      setResult(analysis);
-    } catch (caught) {
-      setResult(null);
-      setError(caught instanceof Error ? caught.message : "Analysis failed");
-    } finally {
-      setLoading(false);
+      await execute(() => analyzeIncidentFile(file));
+    } catch {
+      // Error state is captured by useApiState; surfaced via ErrorState below.
     }
   };
 
   const handleDownload = async (): Promise<void> => {
     setDownloading(true);
-    setError(null);
+    setDownloadError(null);
     try {
       const blob = await downloadIncidentResults();
       const url = URL.createObjectURL(blob);
@@ -38,7 +42,9 @@ export default function IncidentsPage(): React.JSX.Element {
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Download failed");
+      setDownloadError(
+        caught instanceof Error ? caught.message : "Download failed. Please try again.",
+      );
     } finally {
       setDownloading(false);
     }
@@ -58,23 +64,23 @@ export default function IncidentsPage(): React.JSX.Element {
 
         <IncidentUpload onFileSelected={handleAnalyze} disabled={loading} />
 
-        {loading ? (
-          <p className="rounded-xl border border-stone-700 bg-stone-900/80 px-4 py-3 text-sm text-stone-300">
-            Analyzing file...
-          </p>
-        ) : null}
+        {loading ? <LoadingState label="Analyzing file..." /> : null}
 
         {error ? (
-          <p className="rounded-xl border border-rose-500/40 bg-rose-950/30 px-4 py-3 text-sm text-rose-100">
-            {error}
-          </p>
+          <ErrorState
+            message={error}
+            showHomeLink={false}
+          />
         ) : null}
 
         {result ? (
           <>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-stone-300">
-                Last analyzed file: <span className="font-semibold text-amber-100">{result.sourcePath}</span>
+                Last analyzed file:{" "}
+                <span className="font-semibold text-amber-100">
+                  {result?.sourcePath ?? "Unknown file"}
+                </span>
               </p>
               <button
                 type="button"
@@ -85,6 +91,13 @@ export default function IncidentsPage(): React.JSX.Element {
                 {downloading ? "Preparing download..." : "Download results CSV"}
               </button>
             </div>
+            {downloadError ? (
+              <ErrorState
+                message={downloadError}
+                onRetry={() => void handleDownload()}
+                showHomeLink={false}
+              />
+            ) : null}
             <IncidentSummary result={result} />
           </>
         ) : null}

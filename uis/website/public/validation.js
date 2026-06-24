@@ -427,6 +427,12 @@ if (form && messageBox && countrySelect && citySelect && favoriteLocationSelect 
       return;
     }
 
+    // NOTE: this form performs client-side validation only — it does not yet
+    // submit to a backend, so there is no network request and no failure path.
+    // When a real POST is added, wrap it in try/catch: show a human-readable
+    // error (with a retry) on failure and only show the success message after
+    // the request actually succeeds (move showSuccessMessage() into the
+    // resolved branch). Do not surface raw errors/status codes to the user.
     showSuccessMessage();
   });
 }

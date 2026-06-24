@@ -19,44 +19,36 @@ This repository is the **starter template** for transversal projects. You will w
 
 ---
 
-## Current status of the template
-
-The repository currently provides a **base folder structure and documentation skeleton**. It does not include runnable apps or global scripts yet.
-
-- `CONTEXT.md` is a placeholder and must be replaced with your assigned company context.
-- There is no root `AGENTS.md` yet.
-- Shared package metadata exists in `packages/shared/package.json` (`@repo/shared-types`), but no workspace runner is configured at root.
-
----
-
 ## Repository structure
 
 ```text
-ai-engineering-company-project-template/
+brasaland-website/
 ├── README.md
 ├── README.es.md
-├── CONTEXT.md                # Placeholder to be replaced with assigned context
+├── CONTEXT.md                # Brasaland business context
+├── package.json             # Root tooling (TypeScript utils, scripts, tests)
+├── services/
+│   └── api/                  # FastAPI backend (auth, suppliers, incidents, mailer)
+├── uis/
+│   ├── backoffice/           # Next.js internal operations app
+│   └── website/              # Next.js public website
+├── src/                      # Shared TypeScript utilities (types + data helpers)
+├── tests/                    # Tests for src/ utilities
+├── scripts/                  # Node + Python tooling (CLIs, data generation)
+├── data/                     # Datasets (incident CSVs, etc.)
 ├── agents/                   # Agent patterns/templates and tools docs
-├── uis/                      # Product apps (web, APIs, dashboards)
-├── data/                     # raw, process, pipelines, eval
 ├── docs/                     # Project and architecture documentation
-├── packages/
-│   └── shared/               # Shared package (@repo/shared-types)
-├── scripts/                  # Script conventions/documentation
-├── shared/                   # Shared assets/conventions at repo level
-├── skills/                   # Reusable agent skills
-└── workflows/                # Automation/orchestration documentation
+└── skills/                   # Reusable agent skills
 ```
 
 ---
 
 ## How to start
 
-1. **Use this repository as a template** and create your own project repo.
-2. **Clone** your repository (or open it in Codespaces).
-3. **Replace** `CONTEXT.md` with the full context for your assigned company.
-4. **Review** each top-level folder `README.md` to understand intended responsibilities (`uis/`, `data/`, `skills/`, etc.).
-5. **Start implementing** milestone deliverables in `uis/`, reusing `packages/shared/` and `data/` as needed.
+1. **Clone** your repository (or open it in Codespaces).
+2. **Install** root dependencies with `npm install`; backend deps with `npm run api:install`.
+3. **Review** each top-level folder `README.md` to understand intended responsibilities.
+4. **Run** the backend (`npm run api:dev`) and a frontend (`cd uis/backoffice && npm run dev`).
 
 ---
 

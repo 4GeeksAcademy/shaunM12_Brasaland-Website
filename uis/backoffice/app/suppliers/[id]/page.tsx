@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import SupplierDeletePanel from "@/components/suppliers/SupplierDeletePanel";
+import ErrorState from "@/components/ui/ErrorState";
+import LoadingState from "@/components/ui/LoadingState";
 import {
   CATEGORY_LABELS,
   STATUS_LABELS,
@@ -157,16 +159,14 @@ export default function SupplierDetailPage(): React.JSX.Element {
           </Link>
         </header>
 
-        {loading ? (
-          <p className="rounded-xl border border-amber-200/20 bg-stone-900/85 px-4 py-8 text-center text-stone-300">
-            Loading supplier...
-          </p>
-        ) : null}
+        {loading ? <LoadingState label="Loading supplier..." /> : null}
 
         {error ? (
-          <p className="rounded-xl border border-rose-500/40 bg-rose-950/40 px-4 py-3 text-sm text-rose-200">
-            {error}
-          </p>
+          <ErrorState
+            message={error}
+            onRetry={() => void loadSupplier()}
+            homeHref="/suppliers"
+          />
         ) : null}
 
         {supplier ? (

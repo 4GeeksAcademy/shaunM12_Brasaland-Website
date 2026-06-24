@@ -74,4 +74,4 @@
 | Run backoffice | `cd uis/backoffice && npm run dev` → `http://localhost:3000` |
 | Run public website | `cd uis/website && npm run dev -- -p 3001` |
 | Run supplier API tests | `cd services/api && ../../.venv/bin/python -m pytest tests/ -q` |
-| Run incident CSV analyzer CLI | `python scripts/analyze.py scripts/incidents-brasaland.csv` |
+| Run incident CSV analyzer CLI | `python scripts/analyze.py data/incidents-brasaland.csv` |

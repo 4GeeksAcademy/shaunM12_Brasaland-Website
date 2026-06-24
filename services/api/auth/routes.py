@@ -33,6 +33,9 @@ from .security import (
     verify_password,
 )
 from mailer import send_password_reset_email, send_verification_email
+from errors import get_logger, safe_http_error
+
+logger = get_logger("auth")
 
 router = APIRouter(tags=["auth"])
 
@@ -95,12 +98,13 @@ def register(payload: RegisterRequest, response: Response) -> TokenResponse:
     except EmailAlreadyExistsError as exc:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
-    # Fire off a (stubbed) verification email; failures must not block signup.
+    raw_token = verifications.issue_verification_token(user.id)
+    # Email delivery is best-effort: a provider failure must never block signup,
+    # but it is logged for ops instead of being silently swallowed.
     try:
-        raw_token = verifications.issue_verification_token(user.id)
         send_verification_email(user.email, raw_token)
-    except Exception:  # pragma: no cover - defensive; dev stub never raises
-        pass
+    except Exception as exc:  # noqa: BLE001 - best-effort send, logged below
+        logger.warning("Verification email failed during registration", exc_info=exc)
 
     return _issue_session(response, user.id)
 
@@ -183,7 +187,16 @@ def resend_verification(
     if current_user.is_verified:
         return MessageResponse(message="Email already verified")
     raw_token = verifications.issue_verification_token(current_user.id)
-    send_verification_email(current_user.email, raw_token)
+    try:
+        send_verification_email(current_user.email, raw_token)
+    except Exception as exc:  # noqa: BLE001 - external provider call
+        raise safe_http_error(
+            logger,
+            status.HTTP_502_BAD_GATEWAY,
+            "We couldn't send the verification email right now. Please try again later.",
+            exc=exc,
+            log_message="resend-verification email delivery failed",
+        )
     return MessageResponse(message="Verification email sent")
 
 
@@ -221,13 +234,15 @@ def forgot_password(
     )
 
     if user is not None:
-        # A provider failure must never change the response (anti-enumeration).
+        # The response must stay constant regardless of outcome (anti-enumeration),
+        # so this catch is intentionally broad — but failures are logged for ops
+        # rather than silently swallowed.
         try:
             password_resets.supersede_user_tokens(user.id)
             token = password_resets.issue_reset_token(user.id)
             send_password_reset_email(user.email, token)
-        except Exception:  # pragma: no cover - defensive; console stub never raises
-            pass
+        except Exception as exc:  # noqa: BLE001 - response stays constant, logged below
+            logger.warning("Password-reset request handling failed", exc_info=exc)
 
     return MessageResponse(message=_RESET_REQUESTED_MESSAGE)
 

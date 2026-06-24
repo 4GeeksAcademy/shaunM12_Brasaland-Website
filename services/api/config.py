@@ -30,6 +30,14 @@ if not JWT_SECRET_KEY:
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRES_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRES_MINUTES", "30"))
 
+# Runtime environment. "development" enables dev conveniences — notably the
+# console email provider echoing full message bodies (which contain reset and
+# verification links/tokens) to stdout. ANY other value is treated as non-dev:
+# the console provider then refuses to print tokens/links so secrets never leak
+# to logs. Set APP_ENV=production in deployments (and use a real EMAIL_PROVIDER).
+APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
+IS_DEV = APP_ENV == "development"
+
 
 def _as_bool(value: str | None, default: bool = False) -> bool:
     if value is None:

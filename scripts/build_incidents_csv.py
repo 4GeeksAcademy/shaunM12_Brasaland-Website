@@ -13,8 +13,8 @@ sys.path.insert(0, str(ROOT / "services" / "api"))
 
 from incident_analyzer import normalize_category, normalize_status  # noqa: E402
 
-SOURCE = Path(__file__).parent / "source-incidents-spanish.csv"
-OUTPUT = Path(__file__).parent / "incidents-brasaland.csv"
+SOURCE = ROOT / "data" / "source-incidents-spanish.csv"
+OUTPUT = ROOT / "data" / "incidents-brasaland.csv"
 
 DESCRIPTION_TRANSLATIONS = {
     "Porción servida menor a la estándar del menú": "Portion served below menu standard",
@@ -58,8 +58,29 @@ def translate_description(text: str) -> str:
     return DESCRIPTION_TRANSLATIONS.get(cleaned, cleaned)
 
 
-def build() -> None:
-    df = pd.read_csv(SOURCE)
+REQUIRED_COLUMNS = {"incident_id", "date", "reporter_id"}
+
+
+def build() -> int:
+    # Defensive input checks before any processing begins.
+    if not SOURCE.exists():
+        print(f"Error: source file not found: {SOURCE}", file=sys.stderr)
+        return 1
+
+    try:
+        df = pd.read_csv(SOURCE)
+    except (OSError, ValueError, pd.errors.ParserError) as exc:
+        print(f"Error: could not read {SOURCE}: {exc}", file=sys.stderr)
+        return 1
+
+    missing = REQUIRED_COLUMNS - set(df.columns)
+    if missing:
+        print(
+            f"Error: {SOURCE} is missing required columns: {', '.join(sorted(missing))}",
+            file=sys.stderr,
+        )
+        return 1
+
     rows: list[dict[str, object]] = []
 
     for _, row in df.iterrows():
@@ -90,9 +111,16 @@ def build() -> None:
             }
         )
 
-    pd.DataFrame(rows).to_csv(OUTPUT, index=False)
+    try:
+        OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+        pd.DataFrame(rows).to_csv(OUTPUT, index=False)
+    except OSError as exc:
+        print(f"Error: could not write {OUTPUT}: {exc}", file=sys.stderr)
+        return 1
+
     print(f"Wrote {OUTPUT} ({len(rows)} rows)")
+    return 0
 
 
 if __name__ == "__main__":
-    build()
+    raise SystemExit(build())

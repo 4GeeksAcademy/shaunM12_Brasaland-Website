@@ -17,3 +17,7 @@ __pycache__/
 # Next.js build output
 .next/
 **/.next/
+
+# Generated script output (analyze.py export) — never commit
+results.csv
+**/results.csv
