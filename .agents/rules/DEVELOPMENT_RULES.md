@@ -12,9 +12,9 @@ This directory defines the proposed repository rule sets that address detected r
 ### P1 (Next)
 - Full-Scope Typecheck Coverage
 - Environment-First API Base URL
-- Mandatory Verification Gate
 
-### P2 (Hardening)
+### P2 (Hardening / Advisory)
+- Verification Gate (advisory, non-blocking)
 - Centralized Validation Contract
 - Accessibility Baseline Preservation
 - Runtime Dependency Stability

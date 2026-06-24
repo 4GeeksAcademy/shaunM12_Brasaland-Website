@@ -9,6 +9,10 @@
 - Prefer build-time integration (npm, bundler) for core styling/logic dependencies (e.g., Tailwind, React).
 - If a runtime CDN dependency is retained, document the rationale and provide a fallback or warning for users.
 
+**Repository application:**
+- The Next.js apps (`uis/backoffice`, `uis/website`) use build-time Tailwind via `@tailwindcss/postcss` and are the canonical, build-integrated path.
+- The standalone static demo pages (`src/index.html`, `uis/website/public/application.html`) intentionally load Tailwind via CDN because they have no build step. Per this rule, each retains an inline rationale comment and an `onerror` fallback that renders a recovery message if the CDN fails. New standalone static pages must follow the same pattern.
+
 **How to Apply:**
 1. For each `<script src="...">` or external asset, ask: "If this fails, does the app still work?"
 2. For critical dependencies (e.g., Tailwind for layout), prefer installing via npm and bundling at build time.

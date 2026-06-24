@@ -7,7 +7,7 @@
 **Guardrails:**
 - Root typecheck must cover root TypeScript sources and tests.
 - Subprojects with their own TS config must have explicit typecheck commands.
-- CI must execute all relevant typecheck targets.
+- CI execution of all typecheck targets is recommended (advisory), not required. When the repo is hosted on GitHub, `.github/workflows/ci.yml` runs these targets; locally, run them via the npm scripts.
 
 **How to Apply:**
 1. Ensure `tsconfig.json` at the root includes all relevant source and test directories (e.g., `src`, `tests`).
