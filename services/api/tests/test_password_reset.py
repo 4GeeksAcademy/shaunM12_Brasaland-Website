@@ -228,6 +228,20 @@ def test_rate_limit_returns_429(anon_client: TestClient):
     )
 
 
+def test_forgot_password_records_forwarded_client_ip(anon_client: TestClient):
+    """The audit row should capture the first hop of ``X-Forwarded-For``."""
+    import database
+
+    _register(anon_client, "ipuser@brasaland.com")
+    anon_client.post(
+        "/auth/forgot-password",
+        json={"email": "ipuser@brasaland.com"},
+        headers={"X-Forwarded-For": "203.0.113.7, 10.0.0.1"},
+    )
+    ips = [row.get("ip") for row in database.get_auth_audit_table().all()]
+    assert "203.0.113.7" in ips
+
+
 def test_audit_log_records_events(
     anon_client: TestClient, monkeypatch: pytest.MonkeyPatch
 ):

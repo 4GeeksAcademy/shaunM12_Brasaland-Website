@@ -30,6 +30,15 @@ def test_unknown_verification_token_is_rejected(db):
     assert verifications.consume_verification_token("never-issued") is None
 
 
+def test_verification_token_with_corrupt_expiry_is_rejected(db):
+    """A row with an unparseable ``expires_at`` is treated as expired, not 500."""
+    raw = verifications.issue_verification_token(user_id=7)
+    table = db.get_email_verifications_table()
+    for row in table.all():
+        table.update({"expires_at": "not-a-date"}, doc_ids=[row.doc_id])
+    assert verifications.consume_verification_token(raw) is None
+
+
 def test_expired_verification_token_is_rejected(db, monkeypatch):
     monkeypatch.setattr(config, "EMAIL_VERIFICATION_EXPIRES_HOURS", -1)
     raw = verifications.issue_verification_token(user_id=7)
@@ -57,6 +66,16 @@ def test_reset_token_is_single_use(db):
 
 def test_unknown_reset_jti_is_rejected(db):
     assert password_resets.consume_reset_token("no-such-jti") is False
+
+
+def test_reset_token_with_corrupt_expiry_is_rejected(db):
+    """A row with an unparseable ``expires_at`` is treated as expired, not 500."""
+    table = db.get_password_resets_table()
+    password_resets.issue_reset_token(user_id=3)
+    jti = table.all()[0]["jti"]
+    for row in table.all():
+        table.update({"expires_at": "not-a-date"}, doc_ids=[row.doc_id])
+    assert password_resets.consume_reset_token(jti) is False
 
 
 def test_expired_reset_token_is_rejected(db, monkeypatch):

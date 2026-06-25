@@ -21,6 +21,10 @@ _credentials_exception = HTTPException(
 def get_current_user(token: str = Depends(oauth2_scheme)) -> UserResponse:
     try:
         payload = decode_access_token(token)
+        # Reject typed tokens (e.g. password-reset JWTs): they are signed with the
+        # same secret but must never be usable as an access/bearer token.
+        if payload.get("type") is not None:
+            raise _credentials_exception
         subject = payload.get("sub")
         if subject is None:
             raise _credentials_exception
