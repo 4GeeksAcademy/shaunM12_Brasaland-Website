@@ -27,10 +27,15 @@
     "api:seed": "sh -c 'cd services/api && uv run seed'",
     "api:test": "sh -c 'cd services/api && uv run pytest -q'",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:jest": "jest",
+    "test:jest:coverage": "jest --coverage"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^22.15.2",
+    "jest": "^30.4.2",
+    "ts-jest": "^29.4.11",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
     "vitest": "^3.1.2"

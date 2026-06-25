@@ -53,6 +53,33 @@ def _build_app(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 
 
 @pytest.fixture()
+def db(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """Throwaway TinyDB pointed at ``tmp_path``, with no app/HTTP layer.
+
+    For the pure-function unit tests that import ``auth`` helpers directly. The
+    auth modules resolve tables lazily via ``database.get_*_table()``, so
+    reloading ``database`` and clearing its cached handles is enough to isolate
+    each test from the real data files.
+    """
+    monkeypatch.setenv("SUPPLIERS_DB_PATH", str(tmp_path / "suppliers.json"))
+    monkeypatch.setenv("USERS_DB_PATH", str(tmp_path / "users.json"))
+    monkeypatch.setenv("AUTH_DB_PATH", str(tmp_path / "auth.json"))
+
+    import database
+
+    importlib.reload(database)
+    database._db = None
+    database._users_db = None
+    database._auth_db = None
+
+    yield database
+
+    database._db = None
+    database._users_db = None
+    database._auth_db = None
+
+
+@pytest.fixture()
 def anon_client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     """Unauthenticated client against the real app (auth enforced)."""
     main = _build_app(monkeypatch, tmp_path)
