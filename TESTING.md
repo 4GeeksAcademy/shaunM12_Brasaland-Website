@@ -90,6 +90,12 @@ up by neither Vitest nor the Next.js/`tsc` build.
 | `tests/test_password_reset.py` | `POST /auth/forgot-password`, `/auth/reset-password` |
 | `tests/test_users.py` | `GET /auth/me`, `/users`, `/users/{id}` (authz decisions) |
 
+### Security & authorization (bug-hunting)
+
+| Module | Focus |
+| --- | --- |
+| `tests/test_authorization.py` | privilege escalation, broken object-level authorization, token-type & algorithm confusion |
+
 ---
 
 ## Cases covered (planned before the tests were written)
@@ -162,6 +168,21 @@ per the ticket. The reasoning for each is given.
 - **Single-use & expiry** — verification, reset-jti, and refresh tokens each
   reject reuse and expiry at the store level.
 
+### Security & authorization (bug-hunting — several caught real bugs)
+- **Privilege escalation** — a non-admin must not grant themselves `is_admin`
+  (or flip `is_active`) via a self-`PUT /users/{id}`.
+- **Broken object-level authorization** — authentication alone must not permit
+  deleting an arbitrary account (`DELETE /users/{id}` is admin-or-self only).
+- **Token-type confusion** — a password-reset JWT (signed with the same secret)
+  must not authenticate as an access token at `/auth/me`.
+- **Algorithm confusion** — a forged `alg: none` token is rejected.
+- **Mass-assignment** — privileged fields in the register body (`is_admin`,
+  `is_verified`) are ignored.
+- **No-`sub` token** — a validly-signed token with no subject is rejected.
+- **Defensive robustness** — corrupt stored timestamps are treated as
+  expired/skipped (never a `500`); the `forgot-password` audit row captures the
+  first hop of `X-Forwarded-For`.
+
 ---
 
 ## TypeScript / Jest suite — what it covers
@@ -189,17 +210,46 @@ All specs live in `jest-tests/`:
 
 | Suite | Command | Result |
 | --- | --- | --- |
-| FastAPI | `uv run pytest --cov=auth` | **103 passed**, **96% coverage** on the `auth` module (gate is 70%) |
+| FastAPI | `uv run pytest --cov=auth` | **115 passed**, **98% coverage** on the `auth` module (gate is 70%) |
 | TypeScript | `npm run test:jest:coverage` | **20 passed**, **100%** statements/functions/lines on the three auth utilities |
 
-Per-file `auth` coverage (pytest): `security.py` 100%, `models.py` 100%,
-`dependencies.py` 96%, `refresh_tokens.py` 97%, `password_resets.py` 95%,
-`verifications.py` 94%, `routes.py` 95%, `audit.py` 92%.
+Per-file `auth` coverage (pytest): `security.py`, `models.py`, `audit.py`,
+`dependencies.py`, `password_resets.py`, `verifications.py` all 100%;
+`refresh_tokens.py` 97%; `routes.py` 96%.
 
 ## Bugs found & fixed
 
-_None._ Every planned case — including the previously-untested security
-branches (login by a deactivated user, refresh after deactivation,
-reset-token `type`/subject validation, non-numeric JWT subject) — was found to
-already behave correctly. The new tests lock that behaviour in against future
-regressions, which is the explicit purpose of this ticket.
+The bug-hunting tests in `tests/test_authorization.py` surfaced **three real
+broken-access-control / token-misuse bugs** in the auth-enforced routes. Each was
+fixed and is now locked in by a passing test.
+
+### 1. Privilege escalation via self-update (HIGH)
+- **Test:** `test_user_cannot_escalate_self_to_admin` (and the `is_active`
+  variant).
+- **Root cause:** `PUT /users/{id}` let a user edit their own record, and
+  `UserUpdate` includes `is_admin` / `is_active`, which were applied unchecked —
+  so any user could `PUT /users/{own_id}` with `{"is_admin": true}` and become
+  an admin.
+- **Fix:** `users/routes.py::update_user_by_id` now returns `403` if a non-admin
+  attempts to change `is_admin` or `is_active` (on any record, including their
+  own). Ordinary self-service fields (name, email, password) are unaffected.
+
+### 2. Broken object-level authorization on delete (HIGH)
+- **Test:** `test_non_admin_cannot_delete_another_user`.
+- **Root cause:** `DELETE /users/{id}` required only authentication — any
+  logged-in user could delete any account by id.
+- **Fix:** `users/routes.py::remove_user` now requires the caller to be an admin
+  or the account owner; otherwise `403`.
+
+### 3. Token-type confusion (MEDIUM)
+- **Test:** `test_password_reset_token_cannot_authenticate` (plus the
+  dependency-level `test_typed_token_is_rejected_as_access_token`).
+- **Root cause:** `get_current_user` validated only signature + expiry. Because
+  password-reset JWTs are signed with the same secret and carry a `sub`, a reset
+  token could be presented as a bearer token to authenticate.
+- **Fix:** `auth/dependencies.py::get_current_user` now rejects any token that
+  carries a `type` claim (reset tokens do; access tokens do not).
+
+> The `alg: none` forgery test passed against the original code — python-jose is
+> already pinned to `algorithms=["HS256"]`, so no fix was needed there; the test
+> locks that protection in.

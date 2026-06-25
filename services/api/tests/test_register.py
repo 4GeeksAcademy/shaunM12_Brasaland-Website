@@ -74,6 +74,22 @@ def test_password_over_72_bytes_is_rejected(anon_client: TestClient):
     assert resp.status_code == 422
 
 
+def test_register_ignores_privileged_fields(anon_client: TestClient):
+    """Extra privileged fields in the body must not grant admin/verified status."""
+    token = _register(
+        anon_client,
+        email="massassign@brasaland.com",
+        password="supersecret",
+        is_admin=True,
+        is_verified=True,
+    ).json()["access_token"]
+    me = anon_client.get(
+        "/auth/me", headers={"Authorization": f"Bearer {token}"}
+    ).json()
+    assert me["is_admin"] is False
+    assert me["is_verified"] is False
+
+
 def test_verification_email_failure_does_not_block_signup(
     anon_client: TestClient, monkeypatch: pytest.MonkeyPatch
 ):

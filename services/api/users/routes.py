@@ -53,6 +53,15 @@ def update_user_by_id(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not allowed to modify another user",
         )
+    # Privileged flags (admin/active) may only be changed by an admin — otherwise
+    # a user could escalate themselves via a self-update.
+    if not current_user.is_admin and (
+        payload.is_admin is not None or payload.is_active is not None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not allowed to change privileged fields",
+        )
     try:
         user = update_user(user_id, payload)
     except EmailAlreadyExistsError as exc:
@@ -65,7 +74,14 @@ def update_user_by_id(
 @router.delete("/{user_id}", status_code=204)
 def remove_user(
     user_id: int,
-    _: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_current_user),
 ) -> None:
+    # Authentication alone is not enough: only an admin, or the account owner,
+    # may delete a user.
+    if current_user.id != user_id and not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Not allowed to delete another user",
+        )
     if not delete_user(user_id):
         raise HTTPException(status_code=404, detail="User not found")

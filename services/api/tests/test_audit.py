@@ -51,3 +51,19 @@ def test_events_outside_the_window_are_excluded(db):
 
 def test_unknown_email_counts_zero(db):
     assert audit.recent_request_count("nobody@brasaland.com") == 0
+
+
+def test_rows_with_corrupt_timestamps_are_skipped(db):
+    """A malformed ``created_at`` must be skipped, not crash the count."""
+    db.get_auth_audit_table().insert(
+        {
+            "event": audit.REQUESTED,
+            "email": "a@brasaland.com",
+            "user_id": None,
+            "ip": None,
+            "created_at": "not-a-date",
+        }
+    )
+    audit.record_event(audit.REQUESTED, "a@brasaland.com")
+    # Only the well-formed recent row is counted.
+    assert audit.recent_request_count("a@brasaland.com") == 1

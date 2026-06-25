@@ -137,6 +137,30 @@ From `auth/routes.py` (mounted at `/auth`): `login`, `register`, `refresh`,
 - [ ] Update `.gitignore` to exclude coverage artifacts (`coverage/`,
       `.coverage`, `.pytest_cache/`).
 
+### FastAPI — bug-hunting tests (security & authorization)
+
+> Added after the core suite to actively probe for broken-access-control and
+> token-misuse bugs on the auth-enforced routes — the regression class this
+> ticket exists to prevent. Several of these revealed real bugs (see
+> `TESTING.md` → "Bugs found & fixed").
+
+- [ ] `tests/test_authorization.py`:
+  - **Privilege escalation** — a non-admin must not grant themselves `is_admin`
+    (or flip `is_active`) via a self-`PUT /users/{id}`.
+  - **Broken object-level authorization** — authentication alone must not permit
+    `DELETE /users/{id}` of an arbitrary account (admin-or-self only).
+  - **Token-type confusion** — a password-reset JWT (same secret, carries
+    `type`) must not authenticate as a bearer/access token at `/auth/me`.
+  - **Algorithm confusion** — a forged `alg: none` token must be rejected.
+- [ ] `tests/test_register.py` — extra privileged fields in the register body
+      (`is_admin`, `is_verified`) must be ignored (no mass-assignment).
+- [ ] `tests/test_dependencies.py` — a validly-signed token with **no `sub`** and
+      a **typed (reset) token** are both rejected by `get_current_user`.
+- [ ] Defensive robustness — corrupt stored timestamps (`expires_at` /
+      `created_at`) are treated as expired/skipped, never a `500`
+      (`test_token_stores.py`, `test_audit.py`); the `forgot-password` audit row
+      captures the first hop of `X-Forwarded-For` (`test_password_reset.py`).
+
 ---
 
 ## Key design decisions & deviations
@@ -175,9 +199,9 @@ From `auth/routes.py` (mounted at `/auth`): `login`, `register`, `refresh`,
 ## Deliverables
 
 - `TESTING.md` (repo root) — run instructions, per-endpoint case list (written
-  before the tests), deviation rationale, results.
-- `services/api/tests/` — 5 pure-function modules + 6 endpoint modules + `db`
-  fixture.
+  before the tests), deviation rationale, results, and the bugs found & fixed.
+- `services/api/tests/` — 5 pure-function modules + 6 endpoint modules + 1
+  security/authorization module (`test_authorization.py`) + `db` fixture.
 - `jest.config.ts` + `jest-tests/` — 3 auth utility specs; `test:jest` scripts.
 - This context document.
 

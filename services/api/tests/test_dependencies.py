@@ -8,11 +8,15 @@ clean ``401`` rather than an unhandled ``500``.
 
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 import pytest
 from fastapi import HTTPException
+from jose import jwt
 
+import config
 from auth.dependencies import get_current_user, require_admin
-from auth.security import create_access_token
+from auth.security import create_access_token, create_password_reset_token
 from users.models import UserCreate, UserUpdate
 from users.repository import create_user, update_user
 
@@ -83,6 +87,27 @@ def test_inactive_user_is_rejected(db):
         get_current_user(token)
     assert exc.value.status_code == 401
     assert exc.value.detail == "Inactive user"
+
+
+def test_token_without_subject_is_rejected(db):
+    """A validly-signed token with no ``sub`` claim must 401."""
+    token = jwt.encode(
+        {"exp": datetime.now(timezone.utc) + timedelta(minutes=5)},
+        config.JWT_SECRET_KEY,
+        algorithm=config.JWT_ALGORITHM,
+    )
+    with pytest.raises(HTTPException) as exc:
+        get_current_user(token)
+    assert exc.value.status_code == 401
+
+
+def test_typed_token_is_rejected_as_access_token(db):
+    """A password-reset JWT (carries ``type``) must not authenticate."""
+    user = _make_user("typed@brasaland.com")
+    reset = create_password_reset_token(user.id, "jti-1")
+    with pytest.raises(HTTPException) as exc:
+        get_current_user(reset)
+    assert exc.value.status_code == 401
 
 
 # --- require_admin -----------------------------------------------------------
