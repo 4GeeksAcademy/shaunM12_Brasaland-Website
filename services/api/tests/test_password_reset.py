@@ -93,6 +93,31 @@ def test_reset_password_invalid_token(anon_client: TestClient):
     assert resp.status_code == 400
 
 
+def test_reset_password_wrong_token_type_rejected(anon_client: TestClient):
+    """A validly-signed JWT that isn't a reset token (no ``type``) is refused."""
+    from auth.security import create_access_token
+
+    # An access token is signed with the same secret but lacks the reset ``type``.
+    bad = create_access_token(1)
+    resp = anon_client.post(
+        "/auth/reset-password",
+        json={"token": bad, "new_password": "brandnewpass"},
+    )
+    assert resp.status_code == 400
+
+
+def test_reset_password_unknown_user_rejected(anon_client: TestClient):
+    """A well-formed reset token whose subject is not a real user is refused."""
+    from auth.security import create_password_reset_token
+
+    token = create_password_reset_token(user_id=999999, jti="orphan-jti")
+    resp = anon_client.post(
+        "/auth/reset-password",
+        json={"token": token, "new_password": "brandnewpass"},
+    )
+    assert resp.status_code == 400
+
+
 def test_reset_password_expired_token(
     anon_client: TestClient, monkeypatch: pytest.MonkeyPatch
 ):

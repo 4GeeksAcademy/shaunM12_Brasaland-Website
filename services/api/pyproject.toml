@@ -37,3 +37,9 @@ packages = ["suppliers", "incident_analyzer", "auth", "users", "mailer"]
 "seed.py" = "seed.py"
 "database.py" = "database.py"
 "config.py" = "config.py"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest-cov>=7.1.0",
+]

@@ -21,3 +21,11 @@ __pycache__/
 # Generated script output (analyze.py export) — never commit
 results.csv
 **/results.csv
+
+# Test coverage artifacts
+coverage/
+**/coverage/
+.coverage
+**/.coverage
+.pytest_cache/
+**/.pytest_cache/
