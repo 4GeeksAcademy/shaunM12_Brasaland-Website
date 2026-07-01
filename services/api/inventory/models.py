@@ -22,6 +22,7 @@ class Ingredient(SQLModel, table=True):
     unit: str
     category: str
     country: str
+    is_active: bool = Field(default=True)
 
 
 class IngredientEntry(SQLModel, table=True):

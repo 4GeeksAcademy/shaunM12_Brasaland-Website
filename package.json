@@ -25,6 +25,7 @@
     "api:dev": "sh -c 'cd services/api && uv run uvicorn main:app --reload --port 8000'",
     "api:sync": "sh -c 'cd services/api && uv sync'",
     "api:seed": "sh -c 'cd services/api && uv run seed'",
+    "api:inventory-seed": "sh -c 'cd services/api && uv run python -m inventory.seed'",
     "api:test": "sh -c 'cd services/api && uv run pytest -q'",
     "test": "vitest run",
     "test:watch": "vitest",

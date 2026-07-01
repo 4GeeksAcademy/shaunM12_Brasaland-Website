@@ -15,11 +15,12 @@ from database import get_engine, get_suppliers_table
 from incident_analyzer import analyze_from_bytes, build_results_rows
 from incident_analyzer.store import get_result, save_result
 from inventory.routes import router as inventory_router
-from inventory.seed import seed_inventory_if_empty
+from inventory.seed import ensure_inventory_schema, seed_inventory_if_empty
 from suppliers.routes import router as suppliers_router
 from suppliers.repository import seed_suppliers
 from users.routes import router as users_router
 from sqlmodel import SQLModel
+from sqlmodel import Session
 
 import inventory.models  # noqa: F401 — register ORM tables with SQLModel metadata
 
@@ -30,6 +31,8 @@ async def lifespan(_: FastAPI):
         seed_suppliers()
     if config.DATABASE_URL:
         SQLModel.metadata.create_all(get_engine())
+        with Session(get_engine()) as session:
+            ensure_inventory_schema(session)
         seed_inventory_if_empty()
     yield
 

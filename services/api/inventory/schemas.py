@@ -20,7 +20,7 @@ from .constants import (
 )
 
 ProductCategory = Literal[
-    "meat", "produce", "sauce", "beverage", "packaging", "cleaning"
+    "meat", "seafood", "produce", "sauce", "beverage", "packaging", "cleaning"
 ]
 ProductCountry = Literal["CO", "US"]
 ExitReason = Literal["consumption", "waste"]
@@ -39,7 +39,8 @@ class ProductCreate(BaseModel):
     sku: str = Field(min_length=1)
     unit: str = Field(min_length=1)
     category: ProductCategory
-    country: ProductCountry
+    country: ProductCountry = "CO"
+    is_active: bool = True
 
     @field_validator("category")
     @classmethod
@@ -63,7 +64,12 @@ class ProductResponse(BaseModel):
     unit: str
     category: str
     country: str
+    is_active: bool
     current_stock: float
+
+
+class ProductUpdate(BaseModel):
+    is_active: bool
 
 
 class InboundOrderCreate(BaseModel):
