@@ -246,7 +246,7 @@ def test_list_orders_includes_inbound_and_outbound(anon_client: TestClient):
 
 def test_list_products_by_location_scopes_stock(anon_client: TestClient):
     resp_co = anon_client.get("/inventory/products", params={"location_id": 1})
-    resp_us = anon_client.get("/inventory/products", params={"location_id": 8})
+    resp_us = anon_client.get("/inventory/products", params={"location_id": 10})
     assert resp_co.status_code == 200
     assert resp_us.status_code == 200
     products_co = resp_co.json()
@@ -264,7 +264,7 @@ def test_list_products_by_location_scopes_stock(anon_client: TestClient):
 
 
 def test_inactive_products_hidden_by_default(anon_client: TestClient):
-    resp = anon_client.get("/inventory/products", params={"location_id": 8})
+    resp = anon_client.get("/inventory/products", params={"location_id": 10})
     assert resp.status_code == 200
     skus = {p["sku"] for p in resp.json()}
     assert "BRS-CRAB-001" not in skus
@@ -274,7 +274,7 @@ def test_inactive_products_hidden_by_default(anon_client: TestClient):
 def test_include_inactive_returns_discontinued(anon_client: TestClient):
     resp = anon_client.get(
         "/inventory/products",
-        params={"location_id": 8, "include_inactive": True},
+        params={"location_id": 10, "include_inactive": True},
     )
     assert resp.status_code == 200
     skus = {p["sku"] for p in resp.json()}

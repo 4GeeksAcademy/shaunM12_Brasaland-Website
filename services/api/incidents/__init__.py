@@ -1,0 +1,2 @@
+"""Incident manager domain package."""
+

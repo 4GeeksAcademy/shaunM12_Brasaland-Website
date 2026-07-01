@@ -14,6 +14,7 @@ import config
 from database import get_engine, get_suppliers_table
 from incident_analyzer import analyze_from_bytes, build_results_rows
 from incident_analyzer.store import get_result, save_result
+from incidents.routes import router as incidents_router
 from inventory.routes import router as inventory_router
 from inventory.seed import ensure_inventory_schema, seed_inventory_if_empty
 from suppliers.routes import router as suppliers_router
@@ -23,6 +24,7 @@ from sqlmodel import SQLModel
 from sqlmodel import Session
 
 import inventory.models  # noqa: F401 — register ORM tables with SQLModel metadata
+import incidents.models  # noqa: F401 — register ORM tables with SQLModel metadata
 
 
 @asynccontextmanager
@@ -59,6 +61,7 @@ app.include_router(auth_router, prefix="/auth")
 app.include_router(users_router, prefix="/users")
 app.include_router(suppliers_router, prefix="/api/suppliers", dependencies=_protected)
 app.include_router(inventory_router, prefix="/inventory")
+app.include_router(incidents_router, prefix="/api/incidents", dependencies=_protected)
 
 
 @app.get("/api/health")
