@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlmodel import Session, select, func
 
+from .constants import country_for_location
 from .models import Ingredient, IngredientEntry, IngredientExit
 from .schemas import (
     InboundOrderCreate,
@@ -13,6 +14,7 @@ from .schemas import (
     OutboundOrderResponse,
     ProductCreate,
     ProductResponse,
+    ProductUpdate,
 )
 
 
@@ -37,22 +39,32 @@ class InsufficientStockError(ValueError):
         )
 
 
-def compute_current_stock(session: Session, ingredient_id: int) -> float:
-    """Net stock = sum(inbound) − sum(outbound) for one ingredient."""
-    inbound = session.exec(
-        select(func.coalesce(func.sum(IngredientEntry.quantity), 0)).where(
-            IngredientEntry.ingredient_id == ingredient_id
-        )
-    ).one()
-    outbound = session.exec(
-        select(func.coalesce(func.sum(IngredientExit.quantity), 0)).where(
-            IngredientExit.ingredient_id == ingredient_id
-        )
-    ).one()
+def compute_current_stock(
+    session: Session,
+    ingredient_id: int,
+    location_id: int | None = None,
+) -> float:
+    """Net stock = sum(inbound) − sum(outbound), optionally scoped to one restaurant."""
+    inbound_query = select(func.coalesce(func.sum(IngredientEntry.quantity), 0)).where(
+        IngredientEntry.ingredient_id == ingredient_id
+    )
+    outbound_query = select(func.coalesce(func.sum(IngredientExit.quantity), 0)).where(
+        IngredientExit.ingredient_id == ingredient_id
+    )
+    if location_id is not None:
+        inbound_query = inbound_query.where(IngredientEntry.location_id == location_id)
+        outbound_query = outbound_query.where(IngredientExit.location_id == location_id)
+
+    inbound = session.exec(inbound_query).one()
+    outbound = session.exec(outbound_query).one()
     return float(inbound) - float(outbound)
 
 
-def _to_product_response(session: Session, ingredient: Ingredient) -> ProductResponse:
+def _to_product_response(
+    session: Session,
+    ingredient: Ingredient,
+    location_id: int | None = None,
+) -> ProductResponse:
     assert ingredient.id is not None
     return ProductResponse(
         id=ingredient.id,
@@ -61,7 +73,8 @@ def _to_product_response(session: Session, ingredient: Ingredient) -> ProductRes
         unit=ingredient.unit,
         category=ingredient.category,
         country=ingredient.country,
-        current_stock=compute_current_stock(session, ingredient.id),
+        is_active=ingredient.is_active,
+        current_stock=compute_current_stock(session, ingredient.id, location_id),
     )
 
 
@@ -79,16 +92,44 @@ def create_ingredient(session: Session, payload: ProductCreate) -> ProductRespon
     return _to_product_response(session, ingredient)
 
 
-def get_ingredient(session: Session, ingredient_id: int) -> ProductResponse | None:
+def get_ingredient(
+    session: Session,
+    ingredient_id: int,
+    location_id: int | None = None,
+) -> ProductResponse | None:
     ingredient = session.get(Ingredient, ingredient_id)
     if ingredient is None:
         return None
-    return _to_product_response(session, ingredient)
+    return _to_product_response(session, ingredient, location_id)
 
 
-def list_ingredients(session: Session) -> list[ProductResponse]:
-    ingredients = session.exec(select(Ingredient).order_by(Ingredient.sku)).all()
-    return [_to_product_response(session, item) for item in ingredients]
+def list_ingredients(
+    session: Session,
+    *,
+    location_id: int | None = None,
+    include_inactive: bool = False,
+) -> list[ProductResponse]:
+    query = select(Ingredient)
+    if not include_inactive:
+        query = query.where(Ingredient.is_active.is_(True))
+    if location_id is not None:
+        country_for_location(location_id)
+    ingredients = session.exec(query.order_by(Ingredient.sku)).all()
+    return [_to_product_response(session, item, location_id) for item in ingredients]
+
+
+def update_ingredient(
+    session: Session,
+    ingredient_id: int,
+    payload: ProductUpdate,
+    location_id: int | None = None,
+) -> ProductResponse:
+    ingredient = _require_ingredient(session, ingredient_id)
+    ingredient.is_active = payload.is_active
+    session.add(ingredient)
+    session.commit()
+    session.refresh(ingredient)
+    return _to_product_response(session, ingredient, location_id)
 
 
 def _require_ingredient(session: Session, ingredient_id: int) -> Ingredient:
@@ -135,7 +176,9 @@ def create_outbound_order(
 ) -> OutboundOrderResponse:
     ingredient = _require_ingredient(session, payload.ingredient_id)
     assert ingredient.id is not None
-    available = compute_current_stock(session, ingredient.id)
+    available = compute_current_stock(
+        session, ingredient.id, location_id=payload.location_id
+    )
     if payload.quantity > available:
         raise InsufficientStockError(ingredient.name, available, payload.quantity)
 

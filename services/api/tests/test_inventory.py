@@ -14,6 +14,17 @@ pytestmark = pytest.mark.skipif(
 )
 
 
+@pytest.fixture(scope="module", autouse=True)
+def _seed_inventory_catalogue():
+    """Fresh per-location demo data so stock and inactive flags match this suite."""
+    from inventory.seed import purge_test_ingredients, reset_and_seed_inventory
+
+    purge_test_ingredients()
+    reset_and_seed_inventory()
+    yield
+    purge_test_ingredients()
+
+
 def _unique_sku() -> str:
     return f"TEST-{uuid.uuid4().hex[:8].upper()}"
 
@@ -231,3 +242,93 @@ def test_list_orders_includes_inbound_and_outbound(anon_client: TestClient):
     assert len(body["inbound"]) >= 4
     assert len(body["outbound"]) >= 3
     assert body["inbound"][0]["ingredient_sku"]
+
+
+def test_list_products_by_location_scopes_stock(anon_client: TestClient):
+    resp_co = anon_client.get("/inventory/products", params={"location_id": 1})
+    resp_us = anon_client.get("/inventory/products", params={"location_id": 8})
+    assert resp_co.status_code == 200
+    assert resp_us.status_code == 200
+    products_co = resp_co.json()
+    products_us = resp_us.json()
+    assert len(products_co) == len(products_us)
+    assert len(products_co) >= 80
+    co_skus = {p["sku"] for p in products_co}
+    us_skus = {p["sku"] for p in products_us}
+    assert co_skus == us_skus
+    beef_co = next(p for p in products_co if p["sku"] == "BRS-BEEF-001")
+    beef_us = next(p for p in products_us if p["sku"] == "BRS-BEEF-001")
+    assert beef_co["current_stock"] == 50.0
+    assert beef_us["current_stock"] != beef_co["current_stock"]
+    assert beef_co["is_active"] is True
+
+
+def test_inactive_products_hidden_by_default(anon_client: TestClient):
+    resp = anon_client.get("/inventory/products", params={"location_id": 8})
+    assert resp.status_code == 200
+    skus = {p["sku"] for p in resp.json()}
+    assert "BRS-CRAB-001" not in skus
+    assert "BRS-FISH-007" not in skus
+
+
+def test_include_inactive_returns_discontinued(anon_client: TestClient):
+    resp = anon_client.get(
+        "/inventory/products",
+        params={"location_id": 8, "include_inactive": True},
+    )
+    assert resp.status_code == 200
+    skus = {p["sku"] for p in resp.json()}
+    assert "BRS-CRAB-001" in skus
+
+
+def test_patch_product_active_requires_auth(anon_client: TestClient):
+    resp = anon_client.patch(
+        "/inventory/products/1",
+        json={"is_active": False},
+    )
+    assert resp.status_code == 401
+
+
+def test_outbound_uses_location_stock_not_global(auth_client: TestClient):
+    sku = _unique_sku()
+    product = auth_client.post(
+        "/inventory/products",
+        json={
+            "name": "Location stock guard",
+            "sku": sku,
+            "unit": "kg",
+            "category": "meat",
+            "country": "CO",
+        },
+    ).json()
+    auth_client.post(
+        "/inventory/orders/inbound",
+        json={
+            "ingredient_id": product["id"],
+            "quantity": 10,
+            "supplier_name": "Carnes del Valle S.A.",
+            "location_id": 4,
+        },
+    )
+    ok = auth_client.post(
+        "/inventory/orders/outbound",
+        json={
+            "ingredient_id": product["id"],
+            "quantity": 5,
+            "reason": "consumption",
+            "location_id": 4,
+        },
+    )
+    assert ok.status_code == 201
+
+    blocked = auth_client.post(
+        "/inventory/orders/outbound",
+        json={
+            "ingredient_id": product["id"],
+            "quantity": 1,
+            "reason": "consumption",
+            "location_id": 5,
+        },
+    )
+    assert blocked.status_code == 400
+    assert "Insufficient stock" in blocked.json()["detail"]

@@ -39,6 +39,10 @@ const nextConfig = {
         source: "/users/:path*",
         destination: `${apiOrigin}/users/:path*`,
       },
+      {
+        source: "/api/inventory/:path*",
+        destination: `${apiOrigin}/inventory/:path*`,
+      },
     ];
   },
 };

@@ -244,7 +244,12 @@ services/api/
 
 ### Seed data (required for demo)
 
-**Ingredients (≥6):**
+The canonical catalogue lives in `inventory/seed_data.py` (**99 ingredients**):
+context-11 core six, Latin grill meats, seafood, produce, sauces, beverages,
+packaging (boxes S/M/L, cups, lids, cutlery, napkins), and cleaning supplies.
+A new **`seafood`** category is included alongside `meat`, `produce`, etc.
+
+**Context-11 minimum (still present in seed):**
 
 | name              | sku           | unit  | category  | country |
 | ----------------- | ------------- | ----- | --------- | ------- |
@@ -255,12 +260,13 @@ services/api/
 | Yuca (cassava)    | BRS-PROD-001  | kg    | produce   | CO      |
 | Takeaway box (M)  | BRS-PKG-001   | unit  | packaging | CO      |
 
-**Entries (≥4):** e.g. two deliveries for `BRS-BEEF-001` (50 kg + 30 kg); one
-each for two other SKUs. Suppliers: `"Carnes del Valle S.A."`,
-`"MiamiMeat Co."`, `"Salsas Artesanales Ltda."`.
+**Demo orders:** context-11 inbound/outbound on beef, pork, and chimichurri
+(beef net stock **50 kg** for tests). Remaining SKUs are auto-seeded for UI
+demos: **~81 healthy**, **~10 low** (≤10 units), **~8 out** (see
+`OUT_OF_STOCK_SKUS` / `LOW_STOCK_INBOUND` in `seed_data.py`).
 
-**Exits (≥3):** consumption that does not go negative; at least one `"waste"`.
-Use `user_uuid` values matching TinyDB users from your local seed.
+**Full reset (dev):** from repo root, `npm run api:inventory-seed` — wipes
+Supabase inventory tables and reloads the catalogue (requires `DATABASE_URL`).
 
 ---
 
