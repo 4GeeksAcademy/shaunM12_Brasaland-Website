@@ -21,6 +21,8 @@ dependencies = [
   "bcrypt>=4.0,<4.1",
   "python-dotenv>=1.0",
   "pytest>=8.0",
+  "sqlmodel>=0.0.39",
+  "psycopg2-binary>=2.9.12",
 ]
 
 [project.scripts]
@@ -31,7 +33,7 @@ pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["suppliers", "incident_analyzer", "auth", "users", "mailer"]
+packages = ["suppliers", "incident_analyzer", "auth", "users", "mailer", "inventory"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "seed.py" = "seed.py"

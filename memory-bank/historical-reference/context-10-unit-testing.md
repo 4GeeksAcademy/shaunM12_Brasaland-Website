@@ -71,70 +71,70 @@ From `auth/routes.py` (mounted at `/auth`): `login`, `register`, `refresh`,
 
 ### FastAPI — pure-function unit tests (no HTTP)
 
-- [ ] `tests/test_security.py` — `auth/security.py`: password hashing
+- `tests/test_security.py` — `auth/security.py`: password hashing
       (round-trip, wrong/empty password, salt, 72-byte bcrypt boundary), JWT
       create/decode (subject round-trip, **expired token rejected**, wrong
       secret, tampered token), reset-token `type`/`jti` claims, opaque-token
       uniqueness + hash determinism.
-- [ ] `tests/test_dependencies.py` — `auth/dependencies.py`: `get_current_user`
+- `tests/test_dependencies.py` — `auth/dependencies.py`: `get_current_user`
       happy path + **401 (not 500)** for missing/non-numeric `sub`, malformed
       token, unknown user, inactive user; `require_admin` allow/deny.
-- [ ] `tests/test_refresh_tokens.py` — `auth/refresh_tokens.py`: issue/rotate,
+- `tests/test_refresh_tokens.py` — `auth/refresh_tokens.py`: issue/rotate,
       rotated-token reuse rejected, unknown/expired rejected, **reuse revokes the
       whole family** (theft response), `revoke_all_for_user` count.
-- [ ] `tests/test_token_stores.py` — `auth/verifications.py` &
+- `tests/test_token_stores.py` — `auth/verifications.py` &
       `auth/password_resets.py`: single-use + expiry of verification tokens and
       reset `jti`s; `supersede_user_tokens`.
-- [ ] `tests/test_audit.py` — `auth/audit.py`: rolling-window
+- `tests/test_audit.py` — `auth/audit.py`: rolling-window
       `recent_request_count` (per-email scope, event-type filter, window edges).
 
 ### FastAPI — endpoint decision tests (TestClient, assert on outcomes)
 
-- [ ] `tests/test_register.py` — `POST /auth/register`: creates a usable session;
+- `tests/test_register.py` — `POST /auth/register`: creates a usable session;
       duplicate/normalised-email collision; 72-byte boundary; short/oversized
       password rejected; **verification-email failure does not block signup**.
-- [ ] `tests/test_login.py` — `POST /auth/login`: usable session + working
+- `tests/test_login.py` — `POST /auth/login`: usable session + working
       refresh; email normalisation; empty/wrong password & unknown email
       rejected; **inactive user refused despite correct password**.
-- [ ] `tests/test_token.py` — `refresh`/`logout`/`logout-all`: rotation; missing
+- `tests/test_token.py` — `refresh`/`logout`/`logout-all`: rotation; missing
       cookie rejected; **reused refresh token rejected**; logout revokes session;
       logout-all ends every session; **refresh refused after deactivation**.
-- [ ] `tests/test_verify_email.py` — `verify-email`/`resend-verification`: valid
+- `tests/test_verify_email.py` — `verify-email`/`resend-verification`: valid
       token flips `is_verified`; single-use; resend short-circuits when already
       verified; bogus/expired token rejected.
-- [ ] `tests/test_password_reset.py` — `forgot`/`reset`: full cycle; anti-
+- `tests/test_password_reset.py` — `forgot`/`reset`: full cycle; anti-
       enumeration; supersede; rate-limit boundary; invalid/expired/replayed
       token; **wrong token `type`**; **unknown subject**; weak password; reset
       revokes all sessions; audit events recorded.
-- [ ] `tests/test_users.py` — `GET /auth/me` (no password hash leaked) + authz:
+- `tests/test_users.py` — `GET /auth/me` (no password hash leaked) + authz:
       self-update allowed, cross-user update forbidden, non-admin list forbidden,
       protected route requires auth.
 
 ### FastAPI — fixtures
 
-- [ ] Add a `db` fixture to `tests/conftest.py` (throwaway TinyDB, no app/HTTP)
+- Add a `db` fixture to `tests/conftest.py` (throwaway TinyDB, no app/HTTP)
       for the pure-function tests; reuse the existing `anon_client` /
       `auth_client` fixtures for the endpoint layer.
-- [ ] Retire the consolidated `tests/test_auth.py` once its cases are distributed
+- Retire the consolidated `tests/test_auth.py` once its cases are distributed
       across the per-endpoint modules.
 
 ### TypeScript — Jest
 
-- [ ] `jest.config.ts` (repo root): `ts-jest` transform with an inline tsconfig,
+- `jest.config.ts` (repo root): `ts-jest` transform with an inline tsconfig,
       `node` environment, scoped to `jest-tests/*.auth.test.ts`, coverage limited
       to the three auth utility files.
-- [ ] `jest-tests/auth-config.auth.test.ts` — `isPublicPath`: public routes +
+- `jest-tests/auth-config.auth.test.ts` — `isPublicPath`: public routes +
       nested paths resolve public; gated routes and **look-alike prefixes**
       (`/loginx`, `/registered`) are not public.
-- [ ] `jest-tests/api-error.auth.test.ts` — `formatApiError` / `parseFieldErrors`:
+- `jest-tests/api-error.auth.test.ts` — `formatApiError` / `parseFieldErrors`:
       string + array detail formatting, default substitution, field-keying,
       first-wins dedupe; safe fallback for non-JSON/empty bodies.
-- [ ] `jest-tests/auth-storage.auth.test.ts` — token storage: set→get→clear
+- `jest-tests/auth-storage.auth.test.ts` — token storage: set→get→clear
       round-trip (stubbed `localStorage`); SSR (`window` undefined) returns
       `null` / no-ops without throwing.
-- [ ] Add `test:jest` and `test:jest:coverage` scripts; leave `npm test`
+- Add `test:jest` and `test:jest:coverage` scripts; leave `npm test`
       (Vitest) and CI unchanged.
-- [ ] Update `.gitignore` to exclude coverage artifacts (`coverage/`,
+- Update `.gitignore` to exclude coverage artifacts (`coverage/`,
       `.coverage`, `.pytest_cache/`).
 
 ### FastAPI — bug-hunting tests (security & authorization)
@@ -144,7 +144,7 @@ From `auth/routes.py` (mounted at `/auth`): `login`, `register`, `refresh`,
 > ticket exists to prevent. Several of these revealed real bugs (see
 > `TESTING.md` → "Bugs found & fixed").
 
-- [ ] `tests/test_authorization.py`:
+- `tests/test_authorization.py`:
   - **Privilege escalation** — a non-admin must not grant themselves `is_admin`
     (or flip `is_active`) via a self-`PUT /users/{id}`.
   - **Broken object-level authorization** — authentication alone must not permit
@@ -152,11 +152,11 @@ From `auth/routes.py` (mounted at `/auth`): `login`, `register`, `refresh`,
   - **Token-type confusion** — a password-reset JWT (same secret, carries
     `type`) must not authenticate as a bearer/access token at `/auth/me`.
   - **Algorithm confusion** — a forged `alg: none` token must be rejected.
-- [ ] `tests/test_register.py` — extra privileged fields in the register body
+- `tests/test_register.py` — extra privileged fields in the register body
       (`is_admin`, `is_verified`) must be ignored (no mass-assignment).
-- [ ] `tests/test_dependencies.py` — a validly-signed token with **no `sub`** and
+- `tests/test_dependencies.py` — a validly-signed token with **no `sub`** and
       a **typed (reset) token** are both rejected by `get_current_user`.
-- [ ] Defensive robustness — corrupt stored timestamps (`expires_at` /
+- Defensive robustness — corrupt stored timestamps (`expires_at` /
       `created_at`) are treated as expired/skipped, never a `500`
       (`test_token_stores.py`, `test_audit.py`); the `forgot-password` audit row
       captures the first hop of `X-Forwarded-For` (`test_password_reset.py`).
