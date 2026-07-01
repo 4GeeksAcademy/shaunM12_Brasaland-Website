@@ -33,7 +33,7 @@ pythonpath = ["."]
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["suppliers", "incident_analyzer", "auth", "users", "mailer", "inventory"]
+packages = ["suppliers", "incident_analyzer", "auth", "users", "mailer", "inventory", "incidents"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "seed.py" = "seed.py"

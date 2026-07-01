@@ -109,6 +109,11 @@ protected routes. Without a token, protected routes return `401`.
 
 ## Incident endpoints
 
+- `POST /api/incidents` — create a centralized incident
+- `GET /api/incidents` — list incidents with optional filters (`status`, `origin`, `branch`, `category`)
+- `GET /api/incidents/{id}` — incident detail
+- `PATCH /api/incidents/{id}/status` — lifecycle-safe status update
+- `GET /api/incidents/summary` — grouped totals by status/category/origin/branch
 - `POST /api/incidents/analyze` — multipart CSV upload, returns JSON summary
 - `GET /api/incidents/results/export` — downloads the last analysis as `results.csv`
 - `GET /api/health` — health check
