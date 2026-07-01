@@ -10,18 +10,27 @@ from fastapi.responses import StreamingResponse
 
 from auth.dependencies import get_current_user
 from auth.routes import router as auth_router
-from database import get_suppliers_table
+import config
+from database import get_engine, get_suppliers_table
 from incident_analyzer import analyze_from_bytes, build_results_rows
 from incident_analyzer.store import get_result, save_result
+from inventory.routes import router as inventory_router
+from inventory.seed import seed_inventory_if_empty
 from suppliers.routes import router as suppliers_router
 from suppliers.repository import seed_suppliers
 from users.routes import router as users_router
+from sqlmodel import SQLModel
+
+import inventory.models  # noqa: F401 — register ORM tables with SQLModel metadata
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     if not get_suppliers_table().all():
         seed_suppliers()
+    if config.DATABASE_URL:
+        SQLModel.metadata.create_all(get_engine())
+        seed_inventory_if_empty()
     yield
 
 
@@ -46,6 +55,7 @@ _protected = [Depends(get_current_user)]
 app.include_router(auth_router, prefix="/auth")
 app.include_router(users_router, prefix="/users")
 app.include_router(suppliers_router, prefix="/api/suppliers", dependencies=_protected)
+app.include_router(inventory_router, prefix="/inventory")
 
 
 @app.get("/api/health")

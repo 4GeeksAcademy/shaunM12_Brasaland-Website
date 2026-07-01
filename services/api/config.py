@@ -73,3 +73,8 @@ EMAIL_FROM = os.getenv("EMAIL_FROM", "onboarding@resend.dev")
 # API keys are read from the environment only — never hardcode them.
 RESEND_API_KEY = os.getenv("RESEND_API_KEY")
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
+
+# --- Supabase / PostgreSQL (SQLModel) ----------------------------------------
+# Optional. When set, code that opts into SQLModel can use this URI. TinyDB
+# paths and table accessors in ``database.py`` are unchanged.
+DATABASE_URL = os.getenv("DATABASE_URL")
