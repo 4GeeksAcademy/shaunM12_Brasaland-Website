@@ -25,16 +25,16 @@ uv sync
 
 ### Environment
 
-Authentication needs a signing secret. Copy the template and set a strong value:
+Authentication needs a signing secret. Copy the root template and set a strong value:
 
 ```bash
-cd services/api
+cd /workspaces/shaunM12_Brasaland-Website
 cp .env.example .env
 # then edit .env, e.g.:
 python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-`.env` is gitignored; the API refuses to start if `JWT_SECRET_KEY` is unset.
+`/.env` is gitignored; the API refuses to start if `JWT_SECRET_KEY` is unset.
 
 #### Email (password reset & verification)
 
