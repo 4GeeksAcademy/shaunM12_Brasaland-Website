@@ -92,7 +92,8 @@ Containerized scope:
 - mount:
   - `./services/api:/app`
   - `./packages:/app/packages`
-- run uvicorn with `--reload`
+- dependency/runtime management uses `uv` (`pyproject.toml` + `uv.lock`)
+- run backend with `uv run uvicorn ... --reload`
 
 ### Network policy
 
