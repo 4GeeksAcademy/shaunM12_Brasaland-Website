@@ -29,8 +29,10 @@ npm run api:dev       # http://127.0.0.1:8000 (auto-seeds an empty DB)
 **Terminal 2 — backoffice:**
 
 ```bash
+cd /workspaces/shaunM12_Brasaland-Website
+cp .env.example .env   # once (root env source of truth)
+cd uis/backoffice
 npm install
-cp .env.example .env.local
 npm run dev           # http://localhost:3000
 ```
 
@@ -45,7 +47,10 @@ The candidate tracker uses the external 4Geeks API by default in development. In
 
 ## Environment variables
 
-See [.env.example](./.env.example):
+Environment values are sourced from the repository root `.env` file (see
+`/.env.example`).
+
+Relevant variables include:
 
 - `NEXT_PUBLIC_TRACKER_API_BASE_URL` — candidate tracker API base URL
 - `BACKOFFICE_API_PROXY_TARGET` or `INCIDENTS_API_PROXY_TARGET` — FastAPI origin (default `http://127.0.0.1:8000`)

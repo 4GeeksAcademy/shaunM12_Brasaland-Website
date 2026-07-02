@@ -36,7 +36,14 @@ describe("auth-api password reset", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(forgotPassword("user@brasaland.com")).resolves.toBeUndefined();
-    const [url, init] = fetchMock.mock.calls[0];
+    const firstCall = fetchMock.mock.calls[0] as unknown as
+      | [RequestInfo | URL, RequestInit | undefined]
+      | undefined;
+    expect(firstCall).toBeDefined();
+    if (!firstCall) {
+      return;
+    }
+    const [url, init] = firstCall;
     expect(String(url)).toBe("/auth/forgot-password");
     expect(JSON.parse(String(init?.body))).toEqual({ email: "user@brasaland.com" });
   });
@@ -53,7 +60,14 @@ describe("auth-api password reset", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     await resetPassword("jwt-token", "brandnewpass");
-    const [url, init] = fetchMock.mock.calls[0];
+    const firstCall = fetchMock.mock.calls[0] as unknown as
+      | [RequestInfo | URL, RequestInit | undefined]
+      | undefined;
+    expect(firstCall).toBeDefined();
+    if (!firstCall) {
+      return;
+    }
+    const [url, init] = firstCall;
     expect(String(url)).toBe("/auth/reset-password");
     expect(JSON.parse(String(init?.body))).toEqual({
       token: "jwt-token",

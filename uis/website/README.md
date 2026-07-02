@@ -9,14 +9,11 @@ Public corporate website built with Next.js + TypeScript.
 ## Development
 
 ```bash
+cd /workspaces/shaunM12_Brasaland-Website
+cp .env.example .env   # once (root env source of truth)
+cd uis/website
 npm install
 npm run dev
-```
-
-Create a local environment file before running:
-
-```bash
-cp .env.example .env.local
 ```
 
 Available variable:

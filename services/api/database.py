@@ -94,7 +94,7 @@ def get_engine() -> Engine:
         if not config.DATABASE_URL:
             raise RuntimeError(
                 "DATABASE_URL is not set. Add your Supabase connection string to "
-                "services/api/.env (see .env.example)."
+                ".env at the repository root (see .env.example)."
             )
         _engine = create_engine(
             config.DATABASE_URL,
