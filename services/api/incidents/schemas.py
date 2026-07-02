@@ -11,9 +11,16 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from .constants import BRANCH_VALUES, CATEGORY_VALUES, ORIGIN_VALUES, STATUS_VALUES
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
+def _ensure_repo_root_on_path() -> None:
+    current = Path(__file__).resolve()
+    for candidate in (current.parent, *current.parents):
+        if (candidate / "packages" / "shared" / "incidents_validation.py").exists():
+            if str(candidate) not in sys.path:
+                sys.path.insert(0, str(candidate))
+            return
+
+
+_ensure_repo_root_on_path()
 
 from packages.shared.incidents_validation import validate_enum_value
 

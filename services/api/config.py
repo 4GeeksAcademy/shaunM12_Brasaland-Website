@@ -14,11 +14,17 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Canonical local config location: repo root ``.env``.
-# Real environment variables always win, so this is a no-op in deployments.
-_REPO_ROOT = Path(__file__).resolve().parents[2]
-_ROOT_ENV_PATH = _REPO_ROOT / ".env"
-load_dotenv(_ROOT_ENV_PATH)
+# Canonical source is the repository root ``.env``. For portability (docker
+# context paths, direct module runs), probe several likely locations and load
+# the first existing file. Real environment variables always win.
+_CONFIG_DIR = Path(__file__).resolve().parent
+_SEARCH_ROOTS = [_CONFIG_DIR]
+_SEARCH_ROOTS.extend(_CONFIG_DIR.parents)
+for _root in _SEARCH_ROOTS:
+    _candidate = _root / ".env"
+    if _candidate.exists():
+        load_dotenv(_candidate)
+        break
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not JWT_SECRET_KEY:

@@ -10,6 +10,17 @@ function getBaseUrl(): string {
   return "";
 }
 
+function toFriendlyIncidentMessage(message: string): string {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("unexpected end of json input")) {
+    return "The incident service returned an invalid response. Please try again.";
+  }
+  if (normalized.includes("failed to fetch")) {
+    return "Cannot reach the incident analyzer API. Please verify the API is running.";
+  }
+  return message;
+}
+
 export async function analyzeIncidentFile(file: File): Promise<IncidentAnalysisResult> {
   const formData = new FormData();
   formData.append("file", file);
@@ -31,19 +42,22 @@ export async function analyzeIncidentFile(file: File): Promise<IncidentAnalysisR
 
   if (!response.ok) {
     const errorText = await response.text();
-    let message = errorText || response.statusText;
+    let message = errorText || response.statusText || "Request failed.";
     try {
-      const parsed = JSON.parse(errorText) as { detail?: string };
+      const parsed = JSON.parse(errorText || "{}") as { detail?: string };
       if (parsed.detail) {
         message = parsed.detail;
       }
     } catch {
       // keep raw text
     }
-    throw new Error(message);
+    throw new Error(toFriendlyIncidentMessage(message));
   }
-
-  return (await response.json()) as IncidentAnalysisResult;
+  try {
+    return (await response.json()) as IncidentAnalysisResult;
+  } catch {
+    throw new Error("The incident analyzer returned an unreadable response. Please try again.");
+  }
 }
 
 export async function downloadIncidentResults(): Promise<Blob> {
@@ -61,16 +75,16 @@ export async function downloadIncidentResults(): Promise<Blob> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    let message = errorText || response.statusText;
+    let message = errorText || response.statusText || "Request failed.";
     try {
-      const parsed = JSON.parse(errorText) as { detail?: string };
+      const parsed = JSON.parse(errorText || "{}") as { detail?: string };
       if (parsed.detail) {
         message = parsed.detail;
       }
     } catch {
       // keep raw text
     }
-    throw new Error(message);
+    throw new Error(toFriendlyIncidentMessage(message));
   }
 
   return response.blob();
