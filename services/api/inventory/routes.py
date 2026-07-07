@@ -2,13 +2,21 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlmodel import Session
 
 from auth.dependencies import get_current_user
 from database import get_db
+from telemetry.constants import STOCK_MUTATION_FIELDS
+from telemetry.context import EmitContext
+from telemetry.emit import emit_event
 from users.models import UserResponse
 from . import repository
+from .supplier_validation import (
+    SupplierCountryMismatchError,
+    SupplierInactiveError,
+    SupplierNotFoundError,
+)
 from .constants import country_for_location
 from .schemas import (
     InboundOrderCreate,
@@ -22,6 +30,12 @@ from .schemas import (
 )
 
 router = APIRouter(tags=["inventory"])
+
+
+def _telemetry_ctx(current_user: UserResponse | None = None) -> EmitContext:
+    if current_user is None:
+        return EmitContext()
+    return EmitContext.for_user(current_user.id)
 
 
 @router.get("/products", response_model=list[ProductResponse])
@@ -72,18 +86,59 @@ def get_product(
 
 
 @router.patch("/products/{product_id}", response_model=ProductResponse)
-def update_product(
+async def update_product(
     product_id: int,
-    payload: ProductUpdate,
+    request: Request,
     location_id: int | None = Query(default=None),
     session: Session = Depends(get_db),
-    _: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_current_user),
 ) -> ProductResponse:
     if location_id is not None:
         try:
             country_for_location(location_id)
         except ValueError as exc:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    body = await request.json()
+    if not isinstance(body, dict):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Request body must be a JSON object",
+        )
+
+    blocked_fields = sorted(STOCK_MUTATION_FIELDS.intersection(body))
+    if blocked_fields:
+        field_name = blocked_fields[0]
+        emit_event(
+            "direct_stock_edit_rejected",
+            {
+                "ingredient_id": product_id,
+                "location_id": location_id,
+                "attempted_field": field_name,
+                "attempted_value": str(body[field_name]),
+                "rejection_reason": "direct_stock_mutation_forbidden",
+                "http_method": "PATCH",
+                "http_path": str(request.url.path),
+            },
+            ctx=_telemetry_ctx(current_user),
+            session=session,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                "Direct stock mutation is forbidden. "
+                "Use inbound or outbound orders to change stock levels."
+            ),
+        )
+
+    try:
+        payload = ProductUpdate.model_validate(body)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
     try:
         return repository.update_ingredient(
             session, product_id, payload, location_id=location_id
@@ -98,12 +153,88 @@ def log_inbound_order(
     session: Session = Depends(get_db),
     current_user: UserResponse = Depends(get_current_user),
 ) -> InboundOrderResponse:
+    ctx = _telemetry_ctx(current_user)
     try:
-        return repository.create_inbound_order(
-            session, payload, user_uuid=str(current_user.id)
+        order = repository.create_inbound_order(
+            session,
+            payload,
+            user_uuid=str(current_user.id),
+            telemetry_ctx=ctx,
         )
     except repository.IngredientNotFoundError as exc:
+        emit_event(
+            "supply_order_failed",
+            {
+                "ingredient_id": payload.ingredient_id,
+                "quantity_requested": payload.quantity,
+                "supplier_id": str(payload.supplier_id) if payload.supplier_id else None,
+                "location_id": payload.location_id,
+                "error_code": "ingredient_not_found",
+            },
+            ctx=ctx,
+            session=session,
+        )
         raise HTTPException(status_code=404, detail=str(exc))
+    except SupplierNotFoundError as exc:
+        emit_event(
+            "supply_order_failed",
+            {
+                "ingredient_id": payload.ingredient_id,
+                "quantity_requested": payload.quantity,
+                "supplier_id": str(payload.supplier_id) if payload.supplier_id else None,
+                "location_id": payload.location_id,
+                "error_code": "unknown_supplier",
+            },
+            ctx=ctx,
+            session=session,
+        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except SupplierInactiveError as exc:
+        emit_event(
+            "supply_order_failed",
+            {
+                "ingredient_id": payload.ingredient_id,
+                "quantity_requested": payload.quantity,
+                "supplier_id": str(payload.supplier_id) if payload.supplier_id else None,
+                "location_id": payload.location_id,
+                "error_code": "validation_error",
+            },
+            ctx=ctx,
+            session=session,
+        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    except SupplierCountryMismatchError as exc:
+        emit_event(
+            "supply_order_failed",
+            {
+                "ingredient_id": payload.ingredient_id,
+                "quantity_requested": payload.quantity,
+                "supplier_id": str(payload.supplier_id) if payload.supplier_id else None,
+                "location_id": payload.location_id,
+                "error_code": "validation_error",
+            },
+            ctx=ctx,
+            session=session,
+        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    ingredient = repository.get_ingredient(session, order.ingredient_id)
+    unit = ingredient.unit if ingredient else "unit"
+    emit_event(
+        "supply_order_created",
+        {
+            "supply_order_id": order.id,
+            "ingredient_id": order.ingredient_id,
+            "quantity": order.quantity,
+            "supplier_id": str(order.supplier_id),
+            "location_id": order.location_id,
+            "created_by": str(current_user.id),
+            "unit": unit,
+        },
+        ctx=ctx,
+        session=session,
+    )
+    return order
 
 
 @router.post("/orders/outbound", response_model=OutboundOrderResponse, status_code=201)
@@ -112,14 +243,61 @@ def log_outbound_order(
     session: Session = Depends(get_db),
     current_user: UserResponse = Depends(get_current_user),
 ) -> OutboundOrderResponse:
+    ctx = _telemetry_ctx(current_user)
     try:
-        return repository.create_outbound_order(
-            session, payload, user_uuid=str(current_user.id)
+        order = repository.create_outbound_order(
+            session,
+            payload,
+            user_uuid=str(current_user.id),
+            telemetry_ctx=ctx,
         )
     except repository.IngredientNotFoundError as exc:
+        emit_event(
+            "consumption_order_failed",
+            {
+                "ingredient_id": payload.ingredient_id,
+                "quantity_requested": payload.quantity,
+                "reason": payload.reason,
+                "location_id": payload.location_id,
+                "error_code": "ingredient_not_found",
+            },
+            ctx=ctx,
+            session=session,
+        )
         raise HTTPException(status_code=404, detail=str(exc))
     except repository.InsufficientStockError as exc:
+        emit_event(
+            "consumption_order_failed",
+            {
+                "ingredient_id": payload.ingredient_id,
+                "quantity_requested": payload.quantity,
+                "quantity_available": exc.available,
+                "reason": payload.reason,
+                "location_id": payload.location_id,
+                "error_code": "insufficient_stock",
+            },
+            ctx=ctx,
+            session=session,
+        )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+    ingredient = repository.get_ingredient(session, order.ingredient_id)
+    unit = ingredient.unit if ingredient else "unit"
+    emit_event(
+        "consumption_order_created",
+        {
+            "consumption_order_id": order.id,
+            "ingredient_id": order.ingredient_id,
+            "quantity": order.quantity,
+            "reason": order.reason,
+            "location_id": order.location_id,
+            "created_by": str(current_user.id),
+            "unit": unit,
+        },
+        ctx=ctx,
+        session=session,
+    )
+    return order
 
 
 @router.get("/orders", response_model=OrdersListResponse)

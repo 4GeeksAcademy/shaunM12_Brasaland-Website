@@ -9,7 +9,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from .constants import (
     MAX_LOCATION_ID,
@@ -17,13 +17,14 @@ from .constants import (
     VALID_CATEGORIES,
     VALID_COUNTRIES,
     VALID_EXIT_REASONS,
+    default_min_stock_for_category,
 )
 
 ProductCategory = Literal[
     "meat", "seafood", "produce", "sauce", "beverage", "packaging", "cleaning"
 ]
 ProductCountry = Literal["CO", "US"]
-ExitReason = Literal["consumption", "waste"]
+ExitReason = Literal["kitchen_use", "waste", "spoilage", "theft"]
 
 
 def _validate_location(value: int) -> int:
@@ -41,6 +42,7 @@ class ProductCreate(BaseModel):
     category: ProductCategory
     country: ProductCountry = "CO"
     is_active: bool = True
+    min_stock_threshold: float | None = None
 
     @field_validator("category")
     @classmethod
@@ -56,6 +58,11 @@ class ProductCreate(BaseModel):
             raise ValueError(f"country must be one of: {', '.join(VALID_COUNTRIES)}")
         return value
 
+    def resolved_min_stock_threshold(self) -> float:
+        if self.min_stock_threshold is not None:
+            return self.min_stock_threshold
+        return default_min_stock_for_category(self.category)
+
 
 class ProductResponse(BaseModel):
     id: int
@@ -66,17 +73,27 @@ class ProductResponse(BaseModel):
     country: str
     is_active: bool
     current_stock: float
+    min_stock_threshold: float
 
 
 class ProductUpdate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     is_active: bool
 
 
 class InboundOrderCreate(BaseModel):
     ingredient_id: int
     quantity: float = Field(gt=0)
-    supplier_name: str = Field(min_length=1)
+    supplier_id: int | None = None
+    supplier_name: str | None = Field(default=None, min_length=1)
     location_id: int
+
+    @model_validator(mode="after")
+    def require_supplier_reference(self) -> InboundOrderCreate:
+        if self.supplier_id is None and not self.supplier_name:
+            raise ValueError("supplier_id is required")
+        return self
 
     @field_validator("location_id")
     @classmethod
@@ -89,6 +106,13 @@ class OutboundOrderCreate(BaseModel):
     quantity: float = Field(gt=0)
     reason: ExitReason
     location_id: int
+
+    @field_validator("reason", mode="before")
+    @classmethod
+    def normalize_legacy_reason(cls, value: str) -> str:
+        if value == "consumption":
+            return "kitchen_use"
+        return value
 
     @field_validator("reason")
     @classmethod
@@ -111,6 +135,7 @@ class InboundOrderResponse(BaseModel):
     ingredient_name: str
     ingredient_sku: str
     quantity: float
+    supplier_id: int
     supplier_name: str
     location_id: int
     created_at: datetime
