@@ -196,7 +196,10 @@ export default function ProductCatalog({
                     </thead>
                     <tbody className="divide-y divide-stone-800/80">
                       {items.map((product) => {
-                        const level = getStockLevel(product.current_stock);
+                        const level = getStockLevel(
+                          product.current_stock,
+                          product.min_stock_threshold,
+                        );
                         return (
                           <tr
                             key={product.id}

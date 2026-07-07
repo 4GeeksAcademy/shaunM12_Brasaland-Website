@@ -4,8 +4,17 @@ from __future__ import annotations
 
 from sqlmodel import Session, select, func
 
-from .constants import country_for_location
-from .models import Ingredient, IngredientEntry, IngredientExit
+from .constants import (
+    DEFAULT_MIN_STOCK_THRESHOLD,
+    country_for_location,
+)
+from .supplier_validation import (
+    SupplierCountryMismatchError,
+    SupplierInactiveError,
+    SupplierNotFoundError,
+    resolve_inbound_supplier,
+)
+from .models import Ingredient, IngredientEntry, IngredientExit, IngredientLocationSettings
 from .schemas import (
     InboundOrderCreate,
     InboundOrderResponse,
@@ -16,6 +25,9 @@ from .schemas import (
     ProductResponse,
     ProductUpdate,
 )
+
+from telemetry.context import EmitContext
+from telemetry.stock import maybe_emit_stock_threshold_triggered
 
 
 class DuplicateSkuError(ValueError):
@@ -60,6 +72,26 @@ def compute_current_stock(
     return float(inbound) - float(outbound)
 
 
+def resolve_min_stock_threshold(
+    session: Session,
+    ingredient: Ingredient,
+    location_id: int | None = None,
+) -> float:
+    """Location override → ingredient default → system default."""
+    assert ingredient.id is not None
+    if location_id is not None:
+        country_for_location(location_id)
+        override = session.exec(
+            select(IngredientLocationSettings).where(
+                IngredientLocationSettings.ingredient_id == ingredient.id,
+                IngredientLocationSettings.location_id == location_id,
+            )
+        ).first()
+        if override is not None:
+            return float(override.min_stock_threshold)
+    return float(ingredient.min_stock_threshold or DEFAULT_MIN_STOCK_THRESHOLD)
+
+
 def _to_product_response(
     session: Session,
     ingredient: Ingredient,
@@ -75,6 +107,9 @@ def _to_product_response(
         country=ingredient.country,
         is_active=ingredient.is_active,
         current_stock=compute_current_stock(session, ingredient.id, location_id),
+        min_stock_threshold=resolve_min_stock_threshold(
+            session, ingredient, location_id
+        ),
     )
 
 
@@ -85,7 +120,12 @@ def create_ingredient(session: Session, payload: ProductCreate) -> ProductRespon
     if existing is not None:
         raise DuplicateSkuError(f"SKU already exists: {payload.sku}")
 
-    ingredient = Ingredient.model_validate(payload.model_dump())
+    ingredient = Ingredient(
+        **{
+            **payload.model_dump(exclude={"min_stock_threshold"}),
+            "min_stock_threshold": payload.resolved_min_stock_threshold(),
+        }
+    )
     session.add(ingredient)
     session.commit()
     session.refresh(ingredient)
@@ -143,12 +183,24 @@ def create_inbound_order(
     session: Session,
     payload: InboundOrderCreate,
     user_uuid: str,
+    *,
+    telemetry_ctx: EmitContext | None = None,
 ) -> InboundOrderResponse:
     ingredient = _require_ingredient(session, payload.ingredient_id)
+    assert ingredient.id is not None
+    stock_before = compute_current_stock(
+        session, ingredient.id, location_id=payload.location_id
+    )
+    threshold = resolve_min_stock_threshold(session, ingredient, payload.location_id)
+    supplier_id, supplier_name = resolve_inbound_supplier(
+        payload,
+        ingredient_category=ingredient.category,
+    )
     entry = IngredientEntry(
         ingredient_id=payload.ingredient_id,
         quantity=payload.quantity,
-        supplier_name=payload.supplier_name,
+        supplier_id=supplier_id,
+        supplier_name=supplier_name,
         location_id=payload.location_id,
         user_uuid=user_uuid,
     )
@@ -156,12 +208,27 @@ def create_inbound_order(
     session.commit()
     session.refresh(entry)
     assert entry.id is not None
+    stock_after = compute_current_stock(
+        session, ingredient.id, location_id=payload.location_id
+    )
+    maybe_emit_stock_threshold_triggered(
+        session,
+        ingredient_id=ingredient.id,
+        location_id=payload.location_id,
+        stock_before=stock_before,
+        stock_after=stock_after,
+        min_stock_threshold=threshold,
+        triggering_order_type="SupplyOrder",
+        triggering_order_id=entry.id,
+        ctx=telemetry_ctx,
+    )
     return InboundOrderResponse(
         id=entry.id,
         ingredient_id=entry.ingredient_id,
         ingredient_name=ingredient.name,
         ingredient_sku=ingredient.sku,
         quantity=entry.quantity,
+        supplier_id=entry.supplier_id,
         supplier_name=entry.supplier_name,
         location_id=entry.location_id,
         created_at=entry.created_at,
@@ -173,12 +240,16 @@ def create_outbound_order(
     session: Session,
     payload: OutboundOrderCreate,
     user_uuid: str,
+    *,
+    telemetry_ctx: EmitContext | None = None,
 ) -> OutboundOrderResponse:
     ingredient = _require_ingredient(session, payload.ingredient_id)
     assert ingredient.id is not None
-    available = compute_current_stock(
+    stock_before = compute_current_stock(
         session, ingredient.id, location_id=payload.location_id
     )
+    threshold = resolve_min_stock_threshold(session, ingredient, payload.location_id)
+    available = stock_before
     if payload.quantity > available:
         raise InsufficientStockError(ingredient.name, available, payload.quantity)
 
@@ -193,6 +264,20 @@ def create_outbound_order(
     session.commit()
     session.refresh(exit_row)
     assert exit_row.id is not None
+    stock_after = compute_current_stock(
+        session, ingredient.id, location_id=payload.location_id
+    )
+    maybe_emit_stock_threshold_triggered(
+        session,
+        ingredient_id=ingredient.id,
+        location_id=payload.location_id,
+        stock_before=stock_before,
+        stock_after=stock_after,
+        min_stock_threshold=threshold,
+        triggering_order_type="ConsumptionOrder",
+        triggering_order_id=exit_row.id,
+        ctx=telemetry_ctx,
+    )
     return OutboundOrderResponse(
         id=exit_row.id,
         ingredient_id=exit_row.ingredient_id,
@@ -226,6 +311,7 @@ def list_orders(session: Session) -> OrdersListResponse:
                 ingredient_name=ingredient.name,
                 ingredient_sku=ingredient.sku,
                 quantity=entry.quantity,
+                supplier_id=entry.supplier_id,
                 supplier_name=entry.supplier_name,
                 location_id=entry.location_id,
                 created_at=entry.created_at,

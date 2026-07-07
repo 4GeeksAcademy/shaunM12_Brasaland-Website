@@ -25,6 +25,7 @@ from sqlmodel import Session
 
 import inventory.models  # noqa: F401 — register ORM tables with SQLModel metadata
 import incidents.models  # noqa: F401 — register ORM tables with SQLModel metadata
+import telemetry.models  # noqa: F401 — register telemetry ORM tables
 
 
 @asynccontextmanager

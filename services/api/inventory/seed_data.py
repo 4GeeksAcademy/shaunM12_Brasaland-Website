@@ -130,6 +130,12 @@ INGREDIENTS: list[IngredientRow] = [
 ]
 # fmt: on
 
+# Per-restaurant threshold overrides (Option C): default on ingredient, exception here.
+LOCATION_THRESHOLD_OVERRIDES: list[dict[str, Any]] = [
+    # High-volume Miami site — keep more beef on hand than chain default (25 kg).
+    {"sku": "BRS-BEEF-001", "location_id": 11, "min_stock_threshold": 40.0},
+]
+
 DemoOrderSpec = dict[str, Any]
 
 ALL_LOCATIONS = range(1, 15)
@@ -140,9 +146,9 @@ CONTEXT11_DEMO_ORDERS: list[DemoOrderSpec] = [
     {"kind": "inbound", "sku": "BRS-BEEF-001", "quantity": 30, "supplier_name": "Carnes del Valle S.A.", "location_id": 1},
     {"kind": "inbound", "sku": "BRS-PORK-001", "quantity": 40, "supplier_name": "MiamiMeat Co.", "location_id": 10},
     {"kind": "inbound", "sku": "BRS-SAUCE-001", "quantity": 20, "supplier_name": "Salsas Artesanales Ltda.", "location_id": 2},
-    {"kind": "outbound", "sku": "BRS-BEEF-001", "quantity": 25, "reason": "consumption", "location_id": 1},
+    {"kind": "outbound", "sku": "BRS-BEEF-001", "quantity": 25, "reason": "kitchen_use", "location_id": 1},
     {"kind": "outbound", "sku": "BRS-BEEF-001", "quantity": 5, "reason": "waste", "location_id": 1},
-    {"kind": "outbound", "sku": "BRS-PORK-001", "quantity": 10, "reason": "consumption", "location_id": 10},
+    {"kind": "outbound", "sku": "BRS-PORK-001", "quantity": 10, "reason": "kitchen_use", "location_id": 10},
 ]
 
 EXPLICIT_STOCK_ORDERS: list[DemoOrderSpec] = [
@@ -150,7 +156,7 @@ EXPLICIT_STOCK_ORDERS: list[DemoOrderSpec] = [
     {"kind": "inbound", "sku": "BRS-FISH-005", "quantity": 18, "supplier_name": "Florida Gulf Seafood Co.", "location_id": 12},
     {"kind": "inbound", "sku": "BRS-PKG-006", "quantity": 500, "supplier_name": "Empaques Andinos Ltda.", "location_id": 1},
     {"kind": "inbound", "sku": "BRS-PKG-013", "quantity": 1200, "supplier_name": "Empaques Andinos Ltda.", "location_id": 1},
-    {"kind": "outbound", "sku": "BRS-SHR-001", "quantity": 5, "reason": "consumption", "location_id": 3},
+    {"kind": "outbound", "sku": "BRS-SHR-001", "quantity": 5, "reason": "kitchen_use", "location_id": 3},
 ]
 
 _CONTEXT_SKUS = frozenset(spec["sku"] for spec in CONTEXT11_DEMO_ORDERS)
@@ -179,7 +185,11 @@ def _supplier_for(category: str, location_id: int) -> str:
         return "Bebidas Andinas S.A." if country == "CO" else "Florida Beverage Supply"
     if category == "packaging":
         return "Empaques Andinos Ltda." if country == "CO" else "PackRight USA"
-    return "Brasaland Facilities Supply"
+    if category == "cleaning":
+        return "Limpiahogar Profesional" if country == "CO" else "CleanPro Florida"
+    if category == "seafood":
+        return "Frigorífico Antioqueño" if country == "CO" else "Miami Meat Distributors LLC"
+    return "Empaques y Más" if country == "CO" else "PackRight USA"
 
 
 def _explicit_location_skus() -> set[tuple[int, str]]:

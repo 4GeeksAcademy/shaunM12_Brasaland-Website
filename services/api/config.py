@@ -85,3 +85,9 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 # Optional. When set, code that opts into SQLModel can use this URI. TinyDB
 # paths and table accessors in ``database.py`` are unchanged.
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+# --- Telemetry (Wave 1) ------------------------------------------------------
+TELEMETRY_ENABLED = _as_bool(os.getenv("TELEMETRY_ENABLED"), default=False)
+# stdout | postgres | both — postgres requires DATABASE_URL
+TELEMETRY_SINK = os.getenv("TELEMETRY_SINK", "stdout").strip().lower()
+TELEMETRY_SAMPLE_RATE = float(os.getenv("TELEMETRY_SAMPLE_RATE", "1.0"))

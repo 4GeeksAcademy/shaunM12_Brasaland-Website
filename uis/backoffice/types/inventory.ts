@@ -8,7 +8,7 @@ export type ProductCategory =
   | "cleaning";
 
 export type ProductCountry = "CO" | "US";
-export type ExitReason = "consumption" | "waste";
+export type ExitReason = "kitchen_use" | "waste" | "spoilage" | "theft";
 
 export interface Product {
   id: number;
@@ -19,6 +19,7 @@ export interface Product {
   country: ProductCountry | string;
   is_active: boolean;
   current_stock: number;
+  min_stock_threshold: number;
 }
 
 export interface ProductCreateInput {
@@ -33,7 +34,7 @@ export interface ProductCreateInput {
 export interface InboundOrderCreateInput {
   ingredient_id: number;
   quantity: number;
-  supplier_name: string;
+  supplier_id: number;
   location_id: number;
 }
 
@@ -50,6 +51,7 @@ export interface InboundOrder {
   ingredient_name: string;
   ingredient_sku: string;
   quantity: number;
+  supplier_id: number;
   supplier_name: string;
   location_id: number;
   created_at: string;
