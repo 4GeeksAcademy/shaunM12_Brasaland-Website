@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
 
 import config
+from telemetry.context import EmitContext
+from telemetry.emit import emit_event
 from users.models import UserResponse
 from users.repository import (
     EmailAlreadyExistsError,
@@ -40,6 +43,18 @@ logger = get_logger("auth")
 router = APIRouter(tags=["auth"])
 
 
+def _emit_auth_telemetry(event_type: str, properties: dict[str, str], *, user_id: int | None = None) -> None:
+    """Best-effort auth telemetry that never blocks login flows."""
+    try:
+        emit_event(
+            event_type,
+            properties,
+            ctx=EmitContext.for_user(user_id),
+        )
+    except Exception as exc:  # noqa: BLE001 - telemetry must stay fail-open
+        logger.warning("Auth telemetry emit failed for %s", event_type, exc_info=exc)
+
+
 def _set_refresh_cookie(response: Response, raw_token: str) -> None:
     response.set_cookie(
         key=config.REFRESH_COOKIE_NAME,
@@ -62,6 +77,11 @@ def _clear_refresh_cookie(response: Response) -> None:
     )
 
 
+def _hash_ip(ip: str) -> str:
+    raw = f"{ip}:{config.JWT_SECRET_KEY}".encode("utf-8")
+    return hashlib.sha256(raw).hexdigest()
+
+
 def _issue_session(response: Response, user_id: int) -> TokenResponse:
     """Mint an access token and set a fresh refresh-token cookie."""
     raw_refresh = refresh_tokens.issue_refresh_token(user_id)
@@ -72,17 +92,33 @@ def _issue_session(response: Response, user_id: int) -> TokenResponse:
 @router.post("/login", response_model=TokenResponse)
 def login(
     response: Response,
+    request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
 ) -> TokenResponse:
     # OAuth2PasswordRequestForm carries the email in its `username` field.
     user = get_user_record_by_email(form_data.username)
     if user is None or not verify_password(form_data.password, user.hashed_password):
+        _emit_auth_telemetry(
+            "user_login_failed",
+            {
+                "failure_reason": "invalid_credentials",
+                "source_ip_hash": _hash_ip(_client_ip(request)),
+            },
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     if not user.is_active:
+        _emit_auth_telemetry(
+            "user_login_failed",
+            {
+                "failure_reason": "account_locked",
+                "source_ip_hash": _hash_ip(_client_ip(request)),
+            },
+            user_id=user.id,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive user",

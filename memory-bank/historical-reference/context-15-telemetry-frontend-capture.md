@@ -8,6 +8,8 @@
 > **Type:** Frontend telemetry capture + temporary backend verification endpoint  
 > **Status:** 🟡 Planned
 
+> **Authority rule:** Milestone 5 contexts are the runtime source of truth. This telemetry context only adds observability and must not redefine inventory API contracts.
+
 ---
 
 ## Your Company
@@ -37,10 +39,14 @@ This phase is verification-focused. Persistence and strict server-side event val
 - All frontend telemetry goes through **one public function**:  
   `track(eventType: string, properties: Record<string, unknown>): void`
 - Tracking must not be scattered in ad-hoc fetch/axios calls.
+- Event ownership is explicit to prevent duplicates:
+  - **Backend-owned (source of truth):** `supply_order_created`, `supply_order_failed`, `consumption_order_created`, `consumption_order_failed`, `stock_threshold_triggered`, `direct_stock_edit_rejected`
+  - **Frontend-owned in this phase:** `ingredient_list_viewed`, `location_filter_applied`, `order_form_abandoned`, `session_expired`, `user_login_succeeded`
 - Endpoint URL is configured from env on day one:
   - Backend: `TELEMETRY_ENDPOINT` (pattern established even for stub)
   - Frontend: `NEXT_PUBLIC_TELEMETRY_ENDPOINT`
 - The endpoint in this phase is **temporary** and only verifies arrival/shape.
+- Optional implementation switch: `TELEMETRY_PHASE_MODE=stub|storage` (`stub` for Phase 2 grading; `storage` for Phase 3 mixed-batch persistence).
 - `userId` is always TinyDB UUID (never name/email).
 - Inventory telemetry requires `location_id`.
 - Frontend capture must avoid PII and raw error stacks.
@@ -103,7 +109,7 @@ Create `POST /telemetry/events` in its own router under `services/api/`.
 
 ## Phase 2 — Backoffice TelemetryService
 
-Create: `uis/backoffice/src/services/telemetry.ts`
+Create: `uis/backoffice/lib/telemetry.ts`
 
 ### Responsibilities
 
@@ -140,10 +146,10 @@ Instrument these touchpoints in backoffice:
 
 | Event | Where to call `track()` | Notes |
 |---|---|---|
-| `supply_order_created` | After successful API response in SupplyOrder form | include `ingredient_id`, `quantity`, `location_id`, `supplier_id` |
-| `consumption_order_created` | After successful API response in ConsumptionOrder form | include `ingredient_id`, `quantity`, `reason`, `location_id` |
-| `consumption_order_failed` | On API error in ConsumptionOrder form | include `error_code`, `ingredient_id`, `location_id`, `quantity_requested` |
-| `supply_order_failed` | On API error in SupplyOrder form | include `error_code`, `location_id`, `ingredient_id` when known |
+| `supply_order_created` | **Do not emit in frontend** | Backend emits this after commit to avoid duplicates and ensure canonical payload |
+| `consumption_order_created` | **Do not emit in frontend** | Backend emits this after commit to include server-resolved fields |
+| `consumption_order_failed` | **Do not emit in frontend** | Backend emits standardized failure reasons on API rejection |
+| `supply_order_failed` | **Do not emit in frontend** | Backend emits validation/supplier errors as source of truth |
 | `ingredient_list_viewed` | On mount of ingredient stock list | include `location_id`, `ingredient_count`, `view_source` |
 
 ### Rules
@@ -161,7 +167,7 @@ Instrument in auth hooks/components (not page-by-page):
 | Event | Where to call `track()` | Notes |
 |---|---|---|
 | `user_login_succeeded` | After successful auth response | include `location_id` and `auth_method` when available; no email/password |
-| `user_login_failed` | On failed auth response | include `failure_reason` (`invalid_credentials` \| `expired_session` \| `account_locked`) |
+| `user_login_failed` | **Do not emit in frontend** | Backend emits this event with `source_ip_hash` for security-safe throttling |
 | `session_expired` | Token expiry detection in middleware/auth hook | include `last_active_path` and `session_duration_seconds` when available |
 
 ---
@@ -172,13 +178,9 @@ These are the allowed keys for frontend-captured properties in this phase:
 
 | Event | Allowed properties for frontend capture |
 |---|---|
-| `supply_order_created` | `ingredient_id`, `quantity`, `location_id`, `supplier_id` |
-| `consumption_order_created` | `ingredient_id`, `quantity`, `reason`, `location_id` |
-| `consumption_order_failed` | `error_code`, `ingredient_id`, `location_id`, `quantity_requested` |
-| `supply_order_failed` | `error_code`, `location_id`, `ingredient_id`, `quantity_requested`, `supplier_id` |
 | `ingredient_list_viewed` | `location_id`, `ingredient_count`, `view_source` |
 | `user_login_succeeded` | `location_id`, `auth_method` |
-| `user_login_failed` | `failure_reason`, `location_id` |
+| `user_login_failed` | **Backend-owned** (frontend does not emit) |
 | `session_expired` | `last_active_path`, `session_duration_seconds`, `location_id` |
 
 Note: Canonical source of truth remains `docs/telemetry/event-schemas.json`.
@@ -189,7 +191,7 @@ Note: Canonical source of truth remains `docs/telemetry/event-schemas.json`.
 
 - **Dual currency is business metadata, not frontend usage telemetry** in this phase.
 - `location_id` is required for inventory events.
-- `reason` on `consumption_order_created` must be captured (`kitchen_use`, `waste`, `spoilage`, `theft`) for waste KPI.
+- `reason` on `consumption_order_created` follows Milestone 5 values (`consumption`, `waste`) for KPI aggregation.
 - `userId` must always be TinyDB UUID.
 - Never capture emails/passwords or user-entered secrets.
 
@@ -207,6 +209,7 @@ Reference image used to validate:
 - `track()` as single entry point
 - Strict event/property allowlist compliance
 - Inventory + auth instrumentation coverage
+- Auth ownership clarity: frontend emits `user_login_succeeded`/`session_expired`; backend emits `user_login_failed` with `source_ip_hash`
 - DevTools verification of payload format and `200` response
 
 ---
@@ -219,7 +222,7 @@ Reference image used to validate:
 4. `sendBeacon` flush executes on hidden/close.
 5. Retry policy executes up to 3 times then drops batch.
 6. Inventory events reach stub endpoint from backoffice flow.
-7. Auth events reach stub endpoint from auth hooks.
+7. Auth telemetry reaches endpoint with ownership split: frontend (`user_login_succeeded`, `session_expired`) and backend (`user_login_failed`).
 8. Captured keys match allowlists in `event-schemas.json`.
 9. No PII in properties or envelope.
 

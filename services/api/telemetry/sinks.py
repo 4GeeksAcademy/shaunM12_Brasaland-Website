@@ -10,7 +10,7 @@ from typing import Any
 from sqlmodel import Session
 
 from .constants import sink_includes_postgres, sink_includes_stdout
-from .models import TelemetryEvent, TelemetryEventRestricted
+from .models import TelemetryEvent
 
 logger = logging.getLogger("brasaland.telemetry")
 
@@ -34,17 +34,23 @@ def write_postgres(
     if not sink_includes_postgres():
         return
     timestamp = datetime.fromisoformat(envelope["timestamp"].replace("Z", "+00:00"))
-    row_kwargs = {
-        "event_id": envelope["eventId"],
-        "timestamp": timestamp,
-        "session_id": envelope["sessionId"],
-        "user_id": envelope["userId"],
-        "event_type": envelope["event_type"],
-        "schema_version": envelope["schemaVersion"],
-        "request_id": envelope["requestId"],
-        "processing": envelope["processing"],
-        "properties": envelope["properties"],
-    }
-    model = TelemetryEventRestricted if restricted else TelemetryEvent
-    session.add(model(**row_kwargs))
+    tags = envelope["properties"]
+    quantity = tags.get("quantity")
+    quantity_requested = tags.get("quantity_requested")
+    raw_value = quantity if quantity is not None else quantity_requested
+    value: float | None
+    if isinstance(raw_value, (int, float)):
+        value = float(raw_value)
+    else:
+        value = None
+
+    row = TelemetryEvent(
+        event_type=envelope["event_type"],
+        timestamp=timestamp,
+        service=str(envelope.get("service", "api")),
+        level="restricted" if restricted else "info",
+        value=value,
+        tags=tags,
+    )
+    session.add(row)
     session.commit()

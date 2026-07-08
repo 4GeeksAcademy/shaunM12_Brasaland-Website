@@ -8,7 +8,7 @@ export type ProductCategory =
   | "cleaning";
 
 export type ProductCountry = "CO" | "US";
-export type ExitReason = "kitchen_use" | "waste" | "spoilage" | "theft";
+export type ExitReason = "consumption" | "waste";
 
 export interface Product {
   id: number;

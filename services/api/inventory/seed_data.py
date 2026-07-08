@@ -146,9 +146,9 @@ CONTEXT11_DEMO_ORDERS: list[DemoOrderSpec] = [
     {"kind": "inbound", "sku": "BRS-BEEF-001", "quantity": 30, "supplier_name": "Carnes del Valle S.A.", "location_id": 1},
     {"kind": "inbound", "sku": "BRS-PORK-001", "quantity": 40, "supplier_name": "MiamiMeat Co.", "location_id": 10},
     {"kind": "inbound", "sku": "BRS-SAUCE-001", "quantity": 20, "supplier_name": "Salsas Artesanales Ltda.", "location_id": 2},
-    {"kind": "outbound", "sku": "BRS-BEEF-001", "quantity": 25, "reason": "kitchen_use", "location_id": 1},
+    {"kind": "outbound", "sku": "BRS-BEEF-001", "quantity": 25, "reason": "consumption", "location_id": 1},
     {"kind": "outbound", "sku": "BRS-BEEF-001", "quantity": 5, "reason": "waste", "location_id": 1},
-    {"kind": "outbound", "sku": "BRS-PORK-001", "quantity": 10, "reason": "kitchen_use", "location_id": 10},
+    {"kind": "outbound", "sku": "BRS-PORK-001", "quantity": 10, "reason": "consumption", "location_id": 10},
 ]
 
 EXPLICIT_STOCK_ORDERS: list[DemoOrderSpec] = [
@@ -156,7 +156,7 @@ EXPLICIT_STOCK_ORDERS: list[DemoOrderSpec] = [
     {"kind": "inbound", "sku": "BRS-FISH-005", "quantity": 18, "supplier_name": "Florida Gulf Seafood Co.", "location_id": 12},
     {"kind": "inbound", "sku": "BRS-PKG-006", "quantity": 500, "supplier_name": "Empaques Andinos Ltda.", "location_id": 1},
     {"kind": "inbound", "sku": "BRS-PKG-013", "quantity": 1200, "supplier_name": "Empaques Andinos Ltda.", "location_id": 1},
-    {"kind": "outbound", "sku": "BRS-SHR-001", "quantity": 5, "reason": "kitchen_use", "location_id": 3},
+    {"kind": "outbound", "sku": "BRS-SHR-001", "quantity": 5, "reason": "consumption", "location_id": 3},
 ]
 
 _CONTEXT_SKUS = frozenset(spec["sku"] for spec in CONTEXT11_DEMO_ORDERS)

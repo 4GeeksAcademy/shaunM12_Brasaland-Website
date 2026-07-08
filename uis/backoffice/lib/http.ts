@@ -10,6 +10,7 @@
 
 import { LOGIN_PATH } from "./auth-config";
 import { clearAccessToken, getAccessToken, setAccessToken } from "./auth-storage";
+import { getSessionDurationSeconds, track } from "./telemetry";
 
 let refreshPromise: Promise<string | null> | null = null;
 
@@ -68,6 +69,20 @@ function redirectToLogin(): void {
 }
 
 function endSessionAndRedirect(): void {
+  const currentPath =
+    typeof window === "undefined"
+      ? "/"
+      : `${window.location.pathname}${window.location.search}`;
+  const params =
+    typeof window === "undefined"
+      ? new URLSearchParams()
+      : new URLSearchParams(window.location.search);
+  const locationParam = params.get("location_id");
+  track("session_expired", {
+    last_active_path: currentPath,
+    session_duration_seconds: getSessionDurationSeconds(),
+    location_id: locationParam ? Number(locationParam) : undefined,
+  });
   clearAccessToken();
   redirectToLogin();
 }

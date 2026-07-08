@@ -7,6 +7,8 @@
 > **Type:** Telemetry analysis pipeline + reporting endpoint  
 > **Status:** 🟡 Planned
 
+> **Authority rule:** Milestone 5 contexts govern runtime inventory semantics; this reporting phase enriches observability and must not change API behavior.
+
 ---
 
 ## Your Company
@@ -127,7 +129,7 @@ def auth_failure_rate_per_day(start_date, end_date) -> list[dict]:
 - `location_id` must be extracted from `tags`, not from a fixed SQL column.
 - Consumption metric must preserve location segmentation so Colombia and Florida can be compared.
 - Temporal grouping is mandatory; a global scalar count without time context is not a KPI metric.
-- Optional third metric for waste/loss ratio may be added using `reason` extracted from `tags`.
+- Optional third metric for waste ratio may be added using `reason == waste` extracted from `tags`.
 
 ---
 

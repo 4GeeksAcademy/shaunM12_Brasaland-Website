@@ -91,3 +91,9 @@ TELEMETRY_ENABLED = _as_bool(os.getenv("TELEMETRY_ENABLED"), default=False)
 # stdout | postgres | both — postgres requires DATABASE_URL
 TELEMETRY_SINK = os.getenv("TELEMETRY_SINK", "stdout").strip().lower()
 TELEMETRY_SAMPLE_RATE = float(os.getenv("TELEMETRY_SAMPLE_RATE", "1.0"))
+# Telemetry endpoint behavior phase:
+# - stub: Phase 2 shape verification endpoint
+# - storage: Phase 3 mixed-batch ingestion + persistence
+TELEMETRY_PHASE_MODE = os.getenv("TELEMETRY_PHASE_MODE", "stub").strip().lower()
+# Stub/ingestion endpoint path used by frontend telemetry service.
+TELEMETRY_ENDPOINT = os.getenv("TELEMETRY_ENDPOINT", "/telemetry/events")

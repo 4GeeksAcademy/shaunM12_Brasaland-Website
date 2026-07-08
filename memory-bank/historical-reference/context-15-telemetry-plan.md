@@ -8,6 +8,8 @@
 > **Type:** Observability design + Wave 1 inventory instrumentation (partial)  
 > **Status:** 🟢 Wave 1 inventory instrumentation implemented (see `services/api/telemetry/`)
 
+> **Authority rule:** Milestone 5 contexts (`context-11-milestone-5-backend-inventory-management.md`, `context-12-milestone-5-backoffice-inventory-interface.md`) remain the runtime source of truth. This telemetry context is additive only and must not alter Milestone 5 API contracts.
+
 ---
 
 ## Business Objective
@@ -31,7 +33,7 @@ This context defines the telemetry plan the team will implement: KPIs, events, e
 - **No PII in telemetry.** `created_by` / `userId` are opaque TinyDB UUIDs — never names or email addresses.
 - **Dual currency:** `currency` is `COP` for locations 1–9, `USD` for 10–14; derived from `location_id`, not client-side strings.
 - **Multi-location:** location-scoped events must include `location_id` (integer 1–14).
-- **`reason = theft` is restricted.** `consumption_order_created` with `reason = theft` routes to a restricted store (Felipe, Mariana, Nicolás only).
+- **Milestone 5 reason enum parity:** `ConsumptionOrder.reason` at API boundaries is `consumption` or `waste`.
 - **Fail-open on client, fail-safe on server.** Telemetry must never block user flows.
 - **Wave 1 inventory instrumentation is live** in `services/api/telemetry/` (6 events). Auth and backoffice client events remain design-only until hooked.
 
@@ -89,7 +91,7 @@ Primary surfaces:
 | `id` | int (PK) | |
 | `ingredient_id` | int (FK → Ingredient) | |
 | `quantity` | float | |
-| `reason` | string | `kitchen_use`, `waste`, `spoilage`, `theft` |
+| `reason` | string | `consumption`, `waste` |
 | `location_id` | int | 1–14 |
 | `created_by` | string | Opaque TinyDB user UUID |
 | `created_at` | datetime (UTC) | |
@@ -100,9 +102,9 @@ Primary surfaces:
 
 | # | KPI | Definition | Business decision it enables | Primary events | Data origin |
 | - | --- | ---------- | ---------------------------- | -------------- | ----------- |
-| 1 | **Daily consumption rate by ingredient and location** | Units consumed per ingredient per location per day (via `ConsumptionOrder` where `reason = kitchen_use`) | Detect locations overconsuming relative to sales; adjust supplier orders | `consumption_order_created` | `POST /inventory/orders/outbound` |
+| 1 | **Daily consumption rate by ingredient and location** | Units consumed per ingredient per location per day (via `ConsumptionOrder` where `reason = consumption`) | Detect locations overconsuming relative to sales; adjust supplier orders | `consumption_order_created` | `POST /inventory/orders/outbound` |
 | 2 | **Stock-out frequency** | Times an ingredient's stock hit zero or `min_stock_threshold` in a period | Identify chronically under-stocked ingredients; renegotiate supply contracts | `stock_threshold_triggered`, `consumption_order_failed` | Stock recompute after order commit; outbound rejection |
-| 3 | **Waste and loss ratio** | Proportion of `ConsumptionOrder` with `reason ∈ {waste, spoilage, theft}` vs total consumption | Flag abnormal waste patterns; trigger operational investigation | `consumption_order_created` | `POST /inventory/orders/outbound` |
+| 3 | **Waste and loss ratio** | Proportion of `ConsumptionOrder` with `reason = waste` vs total consumption | Flag abnormal waste patterns; trigger operational investigation | `consumption_order_created` | `POST /inventory/orders/outbound` |
 
 ---
 
@@ -196,7 +198,7 @@ Full schemas with property allowlists are in `docs/telemetry/event-schemas.json`
 | event_type | Description | KPI link | Sensitivity |
 | ---------- | ----------- | -------- | ----------- |
 | `supply_order_created` | SupplyOrder successfully registered | Indirect KPI 2 | Standard |
-| `consumption_order_created` | ConsumptionOrder successfully registered | KPI 1, KPI 3 | Restricted when `reason = theft` |
+| `consumption_order_created` | ConsumptionOrder successfully registered | KPI 1, KPI 3 | Standard |
 | `stock_threshold_triggered` | Stock at or below `min_stock_threshold` | KPI 2 | Standard |
 | `direct_stock_edit_rejected` | Blocked direct stock mutation | Governance | Standard |
 | `consumption_order_failed` | Outbound order rejected | KPI 2 leading | Standard |
@@ -281,7 +283,7 @@ docs/telemetry/
 ### Privacy and sensitivity
 
 - No emails, names, phone numbers, or free-text notes in telemetry.
-- `consumption_order_created` with `reason = theft` → restricted store only.
+- `consumption_order_created` follows Milestone 5 reason values (`consumption`, `waste`) and remains standard telemetry.
 - `user_login_failed` carries `failure_reason` enum only — never attempted passwords.
 
 ### Dual-currency
@@ -320,7 +322,7 @@ See also **Rejected candidate events** (Phase 1 instrumentation map) for events 
 - Standard envelope defined with all mandatory fields.
 - `docs/telemetry/event-schemas.json` contains ≥ 5 complete schemas with property allowlists.
 - Stream/batch decision per event with business (not technical) justification.
-- Risks section covers dual-currency, multi-location, theft sensitivity, and exclusions.
+- Risks section covers dual-currency, multi-location, and exclusions without conflicting with Milestone 5 runtime contracts.
 
 ---
 
@@ -330,7 +332,7 @@ See also **Rejected candidate events** (Phase 1 instrumentation map) for events 
 2. `docs/telemetry/event-schemas.json` validates Wave 1 catalog (≥ 5 events).
 3. Each kept event survives the golden-rule test (hypothesis → decision).
 4. Every location-scoped schema includes `location_id` and `currency` where applicable.
-5. `reason = theft` marked restricted in schema metadata.
+5. Consumption reason values align with Milestone 5 (`consumption`, `waste`) and legacy aliases are documented.
 6. Stream events (`stock_threshold_triggered`, `consumption_order_failed`, `direct_stock_edit_rejected`, `user_login_failed`) have business urgency documented.
 7. Throttle/debounce rules documented for high-frequency events.
 8. Implementation gaps listed before instrumentation sprint starts.

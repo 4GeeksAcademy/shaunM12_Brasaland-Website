@@ -7,6 +7,8 @@
 > **Type:** Telemetry persistence + ingestion endpoint  
 > **Status:** 🟡 Planned
 
+> **Authority rule:** Milestone 5 contexts are authoritative for runtime inventory behavior. This phase persists telemetry as an additive layer and must not redefine Milestone contracts.
+
 ---
 
 ## Your Company
@@ -131,7 +133,7 @@ These examples show the intent of storing event-specific properties in `tags`.
 | `event_type` | Illustrative `tags` content |
 |---|---|
 | `supply_order_created` | `{ "ingredient_id": 7, "quantity": 50, "location_id": 3, "supplier_id": "12" }` |
-| `consumption_order_created` | `{ "ingredient_id": 7, "quantity": 12, "reason": "kitchen_use", "location_id": 11 }` |
+| `consumption_order_created` | `{ "ingredient_id": 7, "quantity": 12, "reason": "consumption", "location_id": 11 }` |
 | `consumption_order_failed` | `{ "error_code": "insufficient_stock", "ingredient_id": 7, "location_id": 3 }` |
 | `supply_order_failed` | `{ "error_code": "unknown_supplier", "location_id": 11 }` |
 | `ingredient_list_viewed` | `{ "location_id": 3, "ingredient_count": 34, "view_source": "backoffice" }` |
@@ -182,7 +184,7 @@ With the real endpoint active:
 ## Verification Checklist for Brasaland
 
 - [ ] `supply_order_created` rows include `location_id` in `tags` (required for country segmentation)
-- [ ] `consumption_order_created` rows include `reason` in `tags` (required for waste ratio KPI)
+- [ ] `consumption_order_created` rows include `reason` in `tags` using Milestone 5 values (`consumption`, `waste`)
 - [ ] No row contains manager names, email addresses, passwords, or raw error stacks in `tags`
 - [ ] Colombian and Florida events are segmentable via `location_id` in `tags`
 - [ ] Mixed batch response correctly reports `received`, `stored`, and `rejected`

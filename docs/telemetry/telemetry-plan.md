@@ -7,6 +7,8 @@
 > **Type:** Observability / operational runbook  
 > **Status:** 🟢 Wave 1 inventory telemetry implemented — backoffice client events pending
 
+> **Authority rule:** Milestone 5 contexts are authoritative for runtime inventory/API contracts. This runbook is additive observability guidance and must not redefine Milestone behavior.
+
 ---
 
 ## Purpose
@@ -39,15 +41,15 @@ The context document owns **why** and **what**. This document owns **how** at im
 
 | # | KPI | Definition | Business decision | Primary events | Data origin |
 | - | --- | ---------- | ------------------- | -------------- | ----------- |
-| 1 | **Daily consumption rate by ingredient and location** | Units consumed per ingredient per location per day (`ConsumptionOrder`, `reason = kitchen_use`) | Detect overconsumption; adjust supplier orders | `consumption_order_created` | `POST /inventory/orders/outbound` |
+| 1 | **Daily consumption rate by ingredient and location** | Units consumed per ingredient per location per day (`ConsumptionOrder`, `reason = consumption`) | Detect overconsumption; adjust supplier orders | `consumption_order_created` | `POST /inventory/orders/outbound` |
 | 2 | **Stock-out frequency** | Times stock hit zero or `min_stock_threshold` | Identify under-stocked ingredients; renegotiate contracts | `stock_threshold_triggered`, `consumption_order_failed` | Stock recompute; outbound rejection |
-| 3 | **Waste and loss ratio** | Share of `ConsumptionOrder` with `reason ∈ {waste, spoilage, theft}` vs total | Flag abnormal waste; trigger investigation | `consumption_order_created` | `POST /inventory/orders/outbound` |
+| 3 | **Waste and loss ratio** | Share of `ConsumptionOrder` with `reason = waste` vs total | Flag abnormal waste; trigger investigation | `consumption_order_created` | `POST /inventory/orders/outbound` |
 
 ### KPI → aggregation
 
 | KPI | Aggregation | Batch window |
 | --- | ----------- | -------------- |
-| Daily consumption rate | `SUM(quantity)` by `ingredient_id`, `location_id`, day where `reason = kitchen_use` | Daily |
+| Daily consumption rate | `SUM(quantity)` by `ingredient_id`, `location_id`, day where `reason = consumption` | Daily |
 | Stock-out frequency | `COUNT` of `stock_threshold_triggered` + `consumption_order_failed` where `error_code = insufficient_stock` | Weekly |
 | Waste and loss ratio | `SUM(quantity)` loss reasons / `SUM(quantity)` all reasons by `location_id` | Weekly |
 
@@ -115,7 +117,7 @@ Every emitted event must include these fields (see `event-schemas.json` → `env
     "consumption_order_id": 42,
     "ingredient_id": 7,
     "quantity": 2.5,
-    "reason": "kitchen_use",
+    "reason": "consumption",
     "location_id": 11,
     "created_by": "usr_tinydb_uuid_here",
     "currency": "USD",
@@ -150,7 +152,7 @@ Every emitted event must include these fields (see `event-schemas.json` → `env
 | ---------- | ---------- | --- | ----------- |
 | `supply_order_created` | batch | 2 (indirect) | standard |
 | `supply_order_failed` | batch | — | standard |
-| `consumption_order_created` | batch | 1, 3 | restricted when `reason = theft` |
+| `consumption_order_created` | batch | 1, 3 | standard |
 | `consumption_order_failed` | stream | 2 | standard |
 | `stock_threshold_triggered` | stream | 2 | standard |
 | `direct_stock_edit_rejected` | stream | — | standard |
@@ -200,7 +202,7 @@ Full rules: `event-schemas.json` → `throttle`.
 
 ### Restricted routing
 
-`consumption_order_created` where `properties.reason = theft` → restricted store only (Operations Director, CEO, CTO). Not on general ops dashboards.
+`consumption_order_created` follows Milestone 5 reason values (`consumption`, `waste`) and routes through the standard telemetry pipeline.
 
 ---
 
@@ -220,6 +222,8 @@ Full rules: `event-schemas.json` → `throttle`.
 | `ingredient_list_viewed` | API + Frontend | `GET /inventory/products` + products page mount |
 | `location_filter_applied` | Frontend | Inventory location selector |
 | `order_form_abandoned` | Frontend | `InboundOrderForm`, `OutboundOrderForm` idle detection |
+
+**Ownership rule:** each event has a single emitter. Inventory order lifecycle events are backend-owned (API/repository) and must not be emitted again from frontend forms.
 
 ### Planned module layout (post-approval)
 
@@ -244,14 +248,14 @@ uis/backoffice/lib/telemetry/
 | `TELEMETRY_STREAM_ENDPOINT` | Stream sink URL | — |
 | `TELEMETRY_BATCH_BUCKET` | Batch export destination | — |
 | `TELEMETRY_SAMPLE_RATE` | Client sampling `0.0`–`1.0` | `1.0` |
-| `TELEMETRY_RESTRICTED_ENDPOINT` | Restricted store for theft events | — |
+| `TELEMETRY_RESTRICTED_ENDPOINT` | Reserved for future restricted telemetry policies | — |
 
 ### Local development
 
 1. Set `TELEMETRY_ENABLED=true` in root `.env`.
 2. Point `TELEMETRY_STREAM_ENDPOINT` to a local collector or stdout adapter.
 3. Emit test events and validate against `event-schemas.json` allowlists.
-4. Confirm theft events route only to `TELEMETRY_RESTRICTED_ENDPOINT`.
+4. Confirm consumption events match Milestone 5 reason values (`consumption`, `waste`).
 
 ---
 
@@ -261,7 +265,7 @@ uis/backoffice/lib/telemetry/
 
 - No emails, names, phone numbers, or free-text in telemetry.
 - `user_login_failed`: `failure_reason` enum only — never attempted passwords.
-- `consumption_order_created` with `reason = theft`: restricted store; no ingredient name in restricted pipeline.
+- `consumption_order_created` uses Milestone 5 reasons (`consumption`, `waste`) and excludes PII.
 
 ### Dual-currency
 
@@ -308,7 +312,7 @@ uis/backoffice/lib/telemetry/
 2. [x] Each event has `propertyAllowlist`, `processing`, and `domain`.
 3. [x] Stream events have business urgency documented in `processing.stream`.
 4. [x] KPI 1–3 map to events via `kpis` and per-event `kpiLinks`.
-5. [x] `reason = theft` marked `restricted_when_reason_theft` on `consumption_order_created`.
+5. [x] Consumption reason values align with Milestone 5 (`consumption`, `waste`).
 6. [x] Throttle rules in `throttle` match this runbook.
 7. [x] Test emit validates allowlist rejection for extra keys (`tests/test_telemetry.py`).
 8. [x] Inventory implementation gaps resolved; backoffice/auth events still pending.
