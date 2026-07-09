@@ -105,7 +105,7 @@
       "id": 1,
       "name": "daily_consumption_rate",
       "label": "Daily consumption rate by ingredient and location",
-      "definition": "Units consumed per ingredient per location per day via ConsumptionOrder where reason = kitchen_use",
+      "definition": "Units consumed per ingredient per location per day via ConsumptionOrder where reason = consumption",
       "businessDecision": "Detect locations overconsuming relative to sales; adjust supplier orders",
       "primaryEvents": ["consumption_order_created"]
     },
@@ -121,7 +121,7 @@
       "id": 3,
       "name": "waste_and_loss_ratio",
       "label": "Waste and loss ratio",
-      "definition": "Proportion of ConsumptionOrder with reason in waste, spoilage, theft vs total consumption",
+      "definition": "Proportion of ConsumptionOrder with reason = waste vs total consumption",
       "businessDecision": "Flag abnormal waste patterns; trigger operational investigation",
       "primaryEvents": ["consumption_order_created"]
     }
@@ -283,7 +283,7 @@
       "schemaVersion": 1,
       "processing": "batch",
       "kpiLinks": [1, 3],
-      "sensitivity": "restricted_when_reason_theft",
+      "sensitivity": "standard",
       "containsPii": false,
       "propertyAllowlist": [
         "consumption_order_id",
@@ -302,16 +302,12 @@
         "reason": {
           "type": "string",
           "required": true,
-          "enum": ["kitchen_use", "waste", "spoilage", "theft"]
+          "enum": ["consumption", "waste"]
         },
         "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
         "created_by": { "type": "string", "required": true, "description": "Opaque TinyDB user UUID" },
         "currency": { "type": "string", "required": true, "enum": ["COP", "USD"] },
         "unit": { "type": "string", "required": true }
-      },
-      "sanitization": {
-        "when": "properties.reason = theft",
-        "action": "Route to restricted store (Operations Director, CEO, CTO only); omit ingredient name in restricted pipeline"
       }
     },
     "consumption_order_failed": {
@@ -339,7 +335,7 @@
         "reason": {
           "type": "string",
           "required": false,
-          "enum": ["kitchen_use", "waste", "spoilage", "theft"]
+          "enum": ["consumption", "waste"]
         },
         "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
         "error_code": {

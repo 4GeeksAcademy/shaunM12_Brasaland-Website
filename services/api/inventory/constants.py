@@ -14,7 +14,10 @@ VALID_CATEGORIES = [
 
 VALID_COUNTRIES = ["CO", "US"]
 
-VALID_EXIT_REASONS = ["kitchen_use", "waste", "spoilage", "theft"]
+VALID_EXIT_REASONS = ["consumption", "waste"]
+
+# Backward-compatibility aliases accepted on write APIs.
+LEGACY_EXIT_REASON_ALIASES = {"kitchen_use": "consumption"}
 
 MIN_LOCATION_ID = 1
 MAX_LOCATION_ID = 14

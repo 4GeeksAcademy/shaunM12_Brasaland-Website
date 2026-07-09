@@ -16,6 +16,7 @@ from .constants import (
     MIN_LOCATION_ID,
     VALID_CATEGORIES,
     VALID_COUNTRIES,
+    LEGACY_EXIT_REASON_ALIASES,
     VALID_EXIT_REASONS,
     default_min_stock_for_category,
 )
@@ -24,7 +25,7 @@ ProductCategory = Literal[
     "meat", "seafood", "produce", "sauce", "beverage", "packaging", "cleaning"
 ]
 ProductCountry = Literal["CO", "US"]
-ExitReason = Literal["kitchen_use", "waste", "spoilage", "theft"]
+ExitReason = Literal["consumption", "waste"]
 
 
 def _validate_location(value: int) -> int:
@@ -110,9 +111,7 @@ class OutboundOrderCreate(BaseModel):
     @field_validator("reason", mode="before")
     @classmethod
     def normalize_legacy_reason(cls, value: str) -> str:
-        if value == "consumption":
-            return "kitchen_use"
-        return value
+        return LEGACY_EXIT_REASON_ALIASES.get(value, value)
 
     @field_validator("reason")
     @classmethod

@@ -24,7 +24,7 @@ interface OutboundOrderFormProps {
 const EMPTY_FORM = {
   ingredient_id: "",
   quantity: "",
-  reason: "kitchen_use" as ExitReason,
+  reason: "consumption" as ExitReason,
 };
 
 function resolveLocationId(preferredLocationId?: string | null): number {
@@ -136,7 +136,7 @@ export default function OutboundOrderForm({
         setForm({
           ingredient_id: preselectedId,
           quantity: "",
-          reason: "kitchen_use",
+          reason: "consumption",
         });
       } else {
         setForm(EMPTY_FORM);

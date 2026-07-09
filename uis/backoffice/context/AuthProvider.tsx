@@ -15,6 +15,7 @@ import {
   logout as logoutRequest,
   register as registerRequest,
 } from "@/lib/auth-api";
+import { track } from "@/lib/telemetry";
 import { AuthStatus, AuthUser } from "@/types/auth";
 
 interface AuthContextValue {
@@ -48,8 +49,13 @@ export function AuthProvider({
 
   const login = useCallback(
     async (email: string, password: string) => {
-      await loginRequest(email, password);
-      await hydrate();
+      try {
+        await loginRequest(email, password);
+        await hydrate();
+        track("user_login_succeeded", { auth_method: "password" });
+      } catch (caught) {
+        throw caught;
+      }
     },
     [hydrate],
   );

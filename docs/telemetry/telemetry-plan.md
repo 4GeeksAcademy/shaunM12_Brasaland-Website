@@ -5,7 +5,9 @@
 > **Canonical design:** `memory-bank/historical-reference/context-15-telemetry-plan.md`  
 > **Event contracts:** `docs/telemetry/event-schemas.json`  
 > **Type:** Observability / operational runbook  
-> **Status:** 🟢 Wave 1 inventory telemetry implemented — backoffice client events pending
+> **Status:** 🟢 Phases 1-4 backend telemetry implemented (`/telemetry/events` storage + `/telemetry/report`); remaining frontend-only events are additive follow-ups
+
+> **Authority rule:** Milestone 5 contexts are authoritative for runtime inventory/API contracts. This runbook is additive observability guidance and must not redefine Milestone behavior.
 
 ---
 
@@ -26,6 +28,8 @@ The context document owns **why** and **what**. This document owns **how** at im
 | [Phase 2 — Envelope](#phase-2--event-envelope) | Mandatory fields on every event |
 | [Phase 2 — Event Catalog](#phase-2--event-catalog) | Wave 1 events by domain |
 | [Phase 3 — Delivery](#phase-3--delivery-strategy) | Stream vs batch, throttle rules |
+| [Phase 3 — Storage & Ingestion](#phase-3--storage--ingestion-runtime) | Supabase table contract + mixed-batch endpoint behavior |
+| [Phase 4 — Reporting](#phase-4--reporting-runtime) | Pandas KPI metrics + cached report endpoint |
 | [Implementation Hooks](#implementation-hooks) | Code attachment points |
 | [Configuration](#configuration) | Environment variables |
 | [Risks and Exclusions](#risks-and-exclusions) | Privacy, currency, gaps |
@@ -39,15 +43,15 @@ The context document owns **why** and **what**. This document owns **how** at im
 
 | # | KPI | Definition | Business decision | Primary events | Data origin |
 | - | --- | ---------- | ------------------- | -------------- | ----------- |
-| 1 | **Daily consumption rate by ingredient and location** | Units consumed per ingredient per location per day (`ConsumptionOrder`, `reason = kitchen_use`) | Detect overconsumption; adjust supplier orders | `consumption_order_created` | `POST /inventory/orders/outbound` |
+| 1 | **Daily consumption rate by ingredient and location** | Units consumed per ingredient per location per day (`ConsumptionOrder`, `reason = consumption`) | Detect overconsumption; adjust supplier orders | `consumption_order_created` | `POST /inventory/orders/outbound` |
 | 2 | **Stock-out frequency** | Times stock hit zero or `min_stock_threshold` | Identify under-stocked ingredients; renegotiate contracts | `stock_threshold_triggered`, `consumption_order_failed` | Stock recompute; outbound rejection |
-| 3 | **Waste and loss ratio** | Share of `ConsumptionOrder` with `reason ∈ {waste, spoilage, theft}` vs total | Flag abnormal waste; trigger investigation | `consumption_order_created` | `POST /inventory/orders/outbound` |
+| 3 | **Waste and loss ratio** | Share of `ConsumptionOrder` with `reason = waste` vs total | Flag abnormal waste; trigger investigation | `consumption_order_created` | `POST /inventory/orders/outbound` |
 
 ### KPI → aggregation
 
 | KPI | Aggregation | Batch window |
 | --- | ----------- | -------------- |
-| Daily consumption rate | `SUM(quantity)` by `ingredient_id`, `location_id`, day where `reason = kitchen_use` | Daily |
+| Daily consumption rate | `SUM(quantity)` by `ingredient_id`, `location_id`, day where `reason = consumption` | Daily |
 | Stock-out frequency | `COUNT` of `stock_threshold_triggered` + `consumption_order_failed` where `error_code = insufficient_stock` | Weekly |
 | Waste and loss ratio | `SUM(quantity)` loss reasons / `SUM(quantity)` all reasons by `location_id` | Weekly |
 
@@ -115,7 +119,7 @@ Every emitted event must include these fields (see `event-schemas.json` → `env
     "consumption_order_id": 42,
     "ingredient_id": 7,
     "quantity": 2.5,
-    "reason": "kitchen_use",
+    "reason": "consumption",
     "location_id": 11,
     "created_by": "usr_tinydb_uuid_here",
     "currency": "USD",
@@ -150,7 +154,7 @@ Every emitted event must include these fields (see `event-schemas.json` → `env
 | ---------- | ---------- | --- | ----------- |
 | `supply_order_created` | batch | 2 (indirect) | standard |
 | `supply_order_failed` | batch | — | standard |
-| `consumption_order_created` | batch | 1, 3 | restricted when `reason = theft` |
+| `consumption_order_created` | batch | 1, 3 | standard |
 | `consumption_order_failed` | stream | 2 | standard |
 | `stock_threshold_triggered` | stream | 2 | standard |
 | `direct_stock_edit_rejected` | stream | — | standard |
@@ -200,7 +204,58 @@ Full rules: `event-schemas.json` → `throttle`.
 
 ### Restricted routing
 
-`consumption_order_created` where `properties.reason = theft` → restricted store only (Operations Director, CEO, CTO). Not on general ops dashboards.
+`consumption_order_created` follows Milestone 5 reason values (`consumption`, `waste`) and routes through the standard telemetry pipeline.
+
+---
+
+## Phase 3 — Storage & Ingestion Runtime
+
+### Active mode
+
+- `TELEMETRY_PHASE_MODE=storage` enables the real ingestion path.
+- `TELEMETRY_PHASE_MODE=stub` remains available for Phase 2 envelope-only checks.
+
+### Ingestion contract (`POST /telemetry/events`)
+
+- Request shape remains `{ "events": [...] }`.
+- Validation is per event (`TelemetryEvent.model_validate(...)` + allowlist check).
+- Mixed batches are supported: valid events are persisted even when some events fail.
+- Persistence is one bulk insert operation per batch.
+- Response in storage mode is `{ "received": N, "stored": M, "rejected": R }`.
+
+### Storage contract (`telemetry_events`)
+
+- Column set: `id`, `event_type`, `timestamp`, `service`, `level`, `value`, `tags`, `created_at`.
+- Indexes: `event_type`, `timestamp`, GIN on `tags`.
+- Row model is append-only; no business update/delete flow.
+
+---
+
+## Phase 4 — Reporting Runtime
+
+### Endpoint
+
+- `GET /telemetry/report`
+- Optional query params: `start_date`, `end_date` (ISO 8601)
+- Default window when omitted: last 7 days (`now_utc - 7d` to `now_utc`)
+- Response shape:
+  - `period`
+  - `metrics`
+
+### Metrics implemented
+
+- `consumption_by_location_per_day`
+  - Business question: how many `consumption_order_created` events occurred per day per location?
+- `order_failure_rate_per_day`
+  - Business question: what share of order attempts (`supply` + `consumption`) failed each day?
+- `auth_failure_rate_per_day` (optional activity, implemented)
+  - Business question: what share of login attempts failed each day?
+
+### Cache
+
+- In-memory cache with `60s` TTL.
+- Cache key includes resolved report period (`start_date`, `end_date`).
+- Same-period requests within TTL return cached payload without recalculation.
 
 ---
 
@@ -221,17 +276,21 @@ Full rules: `event-schemas.json` → `throttle`.
 | `location_filter_applied` | Frontend | Inventory location selector |
 | `order_form_abandoned` | Frontend | `InboundOrderForm`, `OutboundOrderForm` idle detection |
 
-### Planned module layout (post-approval)
+**Ownership rule:** each event has a single emitter. Inventory order lifecycle events are backend-owned (API/repository) and must not be emitted again from frontend forms.
+
+### Module layout (implemented + pending)
 
 ```text
 services/api/telemetry/
-  __init__.py
-  emit.py          # validate allowlist, attach envelope, route stream/batch
   constants.py
+  emit.py          # envelope + validation helpers
+  models.py        # telemetry_events storage model
+  routes.py        # /telemetry/events + /telemetry/report
+  analysis.py      # phase 4 pandas metric pipeline
+  seed.py          # reset and seed helper
 
 uis/backoffice/lib/telemetry/
-  emit.ts          # client events with debounce/throttle
-  session.ts       # sessionId helper
+  telemetry.ts     # client batching/flush helper (implemented path)
 ```
 
 ---
@@ -244,14 +303,17 @@ uis/backoffice/lib/telemetry/
 | `TELEMETRY_STREAM_ENDPOINT` | Stream sink URL | — |
 | `TELEMETRY_BATCH_BUCKET` | Batch export destination | — |
 | `TELEMETRY_SAMPLE_RATE` | Client sampling `0.0`–`1.0` | `1.0` |
-| `TELEMETRY_RESTRICTED_ENDPOINT` | Restricted store for theft events | — |
+| `TELEMETRY_ENDPOINT` | Backend ingestion path consumed by frontend endpoint config | `/telemetry/events` |
+| `NEXT_PUBLIC_TELEMETRY_ENDPOINT` | Backoffice telemetry target URL | environment-specific |
+| `TELEMETRY_PHASE_MODE` | Runtime ingestion mode (`stub` or `storage`) | `storage` |
+| `TELEMETRY_RESTRICTED_ENDPOINT` | Reserved for future restricted telemetry policies | — |
 
 ### Local development
 
 1. Set `TELEMETRY_ENABLED=true` in root `.env`.
 2. Point `TELEMETRY_STREAM_ENDPOINT` to a local collector or stdout adapter.
 3. Emit test events and validate against `event-schemas.json` allowlists.
-4. Confirm theft events route only to `TELEMETRY_RESTRICTED_ENDPOINT`.
+4. Confirm consumption events match Milestone 5 reason values (`consumption`, `waste`).
 
 ---
 
@@ -261,7 +323,7 @@ uis/backoffice/lib/telemetry/
 
 - No emails, names, phone numbers, or free-text in telemetry.
 - `user_login_failed`: `failure_reason` enum only — never attempted passwords.
-- `consumption_order_created` with `reason = theft`: restricted store; no ingredient name in restricted pipeline.
+- `consumption_order_created` uses Milestone 5 reasons (`consumption`, `waste`) and excludes PII.
 
 ### Dual-currency
 
@@ -297,8 +359,9 @@ uis/backoffice/lib/telemetry/
 | --- | ------ |
 | Explicit stock-mutation guard on PATCH | ✅ `direct_stock_edit_rejected` in `inventory/routes.py` |
 | API uses `IngredientEntry`/`IngredientExit`; events use `SupplyOrder`/`ConsumptionOrder` | ✅ Mapped in route emitters |
-| Backoffice client events (`session_expired`, `order_form_abandoned`, etc.) | 🟡 Pending |
-| Auth login telemetry | 🟡 Pending |
+| Supabase storage + mixed-batch ingestion (`POST /telemetry/events`) | ✅ Implemented in Phase 3 |
+| Telemetry report endpoint (`GET /telemetry/report`) + pandas metrics + 60s cache | ✅ Implemented in Phase 4 |
+| Backoffice-only events (`location_filter_applied`, `order_form_abandoned`) | 🟡 Pending |
 
 ---
 
@@ -308,10 +371,13 @@ uis/backoffice/lib/telemetry/
 2. [x] Each event has `propertyAllowlist`, `processing`, and `domain`.
 3. [x] Stream events have business urgency documented in `processing.stream`.
 4. [x] KPI 1–3 map to events via `kpis` and per-event `kpiLinks`.
-5. [x] `reason = theft` marked `restricted_when_reason_theft` on `consumption_order_created`.
+5. [x] Consumption reason values align with Milestone 5 (`consumption`, `waste`).
 6. [x] Throttle rules in `throttle` match this runbook.
 7. [x] Test emit validates allowlist rejection for extra keys (`tests/test_telemetry.py`).
-8. [x] Inventory implementation gaps resolved; backoffice/auth events still pending.
+8. [x] Storage mode supports mixed-batch persistence and one bulk insert per batch.
+9. [x] `GET /telemetry/report` returns grouped metrics with period defaults and 60-second cache.
+10. [x] Optional auth metric uses login success/failure events to compute daily ratio.
+11. [x] Remaining gaps are frontend-only additive instrumentation (`location_filter_applied`, `order_form_abandoned`).
 
 ---
 

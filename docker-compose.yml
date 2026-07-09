@@ -33,6 +33,7 @@ services:
     volumes:
       - ./services/api:/app
       - ./packages:/app/packages
+      - ./docs:/app/docs:ro
     networks:
       - brasaland-dev-net
 

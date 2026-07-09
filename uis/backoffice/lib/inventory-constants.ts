@@ -17,10 +17,8 @@ export {
 } from "@/lib/inventory-form-utils";
 
 export const EXIT_REASON_OPTIONS: { value: ExitReason; label: string }[] = [
-  { value: "kitchen_use", label: "Kitchen use" },
+  { value: "consumption", label: "Consumption" },
   { value: "waste", label: "Waste" },
-  { value: "spoilage", label: "Spoilage" },
-  { value: "theft", label: "Loss — restricted" },
 ];
 
 export const COUNTRY_LABELS: Record<string, string> = {

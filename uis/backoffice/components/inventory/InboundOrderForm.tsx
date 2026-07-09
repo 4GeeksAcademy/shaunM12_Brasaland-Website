@@ -217,8 +217,10 @@ export default function InboundOrderForm({
         `Inbound delivery for ${selectedProduct.name} recorded at ${formatLocationLabel(orderLocationId)}.`,
       );
     } catch (caught) {
+      const message =
+        caught instanceof Error ? caught.message : "Could not record inbound order.";
       setFormError(
-        caught instanceof Error ? caught.message : "Could not record inbound order.",
+        message,
       );
     } finally {
       setSubmitting(false);

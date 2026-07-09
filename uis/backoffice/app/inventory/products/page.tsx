@@ -5,6 +5,7 @@ import InventoryPageShell from "@/components/inventory/InventoryPageShell";
 import ProductCatalog from "@/components/inventory/ProductCatalog";
 import { useApiState } from "@/hooks/useApiState";
 import { fetchProducts } from "@/lib/inventory";
+import { track } from "@/lib/telemetry";
 import { Product } from "@/types/inventory";
 
 export default function InventoryProductsPage(): React.JSX.Element {
@@ -27,6 +28,17 @@ export default function InventoryProductsPage(): React.JSX.Element {
   useEffect(() => {
     void loadProducts();
   }, [loadProducts]);
+
+  useEffect(() => {
+    if (loading || error) {
+      return;
+    }
+    track("ingredient_list_viewed", {
+      location_id: locationId,
+      ingredient_count: products.length,
+      view_source: "backoffice",
+    });
+  }, [error, loading, locationId, products.length]);
 
   return (
     <InventoryPageShell

@@ -255,7 +255,7 @@ def test_outbound_insufficient_stock_rejected(auth_client: TestClient):
         json={
             "ingredient_id": product["id"],
             "quantity": 5,
-            "reason": "kitchen_use",
+            "reason": "consumption",
             "location_id": 1,
         },
     )
@@ -327,7 +327,7 @@ def test_outbound_invalid_reason_rejected(auth_client: TestClient):
     assert resp.status_code == 422
 
 
-def test_outbound_spoilage_reduces_stock(auth_client: TestClient):
+def test_outbound_spoilage_reason_rejected(auth_client: TestClient):
     sku = _unique_sku()
     product = auth_client.post(
         "/inventory/products",
@@ -357,15 +357,10 @@ def test_outbound_spoilage_reduces_stock(auth_client: TestClient):
             "location_id": 1,
         },
     )
-    assert outbound.status_code == 201
-    assert outbound.json()["reason"] == "spoilage"
-    assert (
-        auth_client.get(f"/inventory/products/{product['id']}").json()["current_stock"]
-        == 6.0
-    )
+    assert outbound.status_code == 422
 
 
-def test_outbound_theft_reduces_stock(auth_client: TestClient):
+def test_outbound_theft_reason_rejected(auth_client: TestClient):
     sku = _unique_sku()
     product = auth_client.post(
         "/inventory/products",
@@ -395,15 +390,10 @@ def test_outbound_theft_reduces_stock(auth_client: TestClient):
             "location_id": 10,
         },
     )
-    assert outbound.status_code == 201
-    assert outbound.json()["reason"] == "theft"
-    assert (
-        auth_client.get(f"/inventory/products/{product['id']}").json()["current_stock"]
-        == 8.0
-    )
+    assert outbound.status_code == 422
 
 
-def test_outbound_legacy_consumption_reason_normalized(auth_client: TestClient):
+def test_outbound_legacy_kitchen_use_reason_normalized(auth_client: TestClient):
     sku = _unique_sku()
     product = auth_client.post(
         "/inventory/products",
@@ -429,12 +419,12 @@ def test_outbound_legacy_consumption_reason_normalized(auth_client: TestClient):
         json={
             "ingredient_id": product["id"],
             "quantity": 2,
-            "reason": "consumption",
+            "reason": "kitchen_use",
             "location_id": 2,
         },
     )
     assert outbound.status_code == 201
-    assert outbound.json()["reason"] == "kitchen_use"
+    assert outbound.json()["reason"] == "consumption"
 
 
 def test_list_products_includes_min_stock_threshold(anon_client: TestClient):
@@ -577,7 +567,7 @@ def test_outbound_triggers_stock_threshold_event(
             json={
                 "ingredient_id": product["id"],
                 "quantity": 6,
-                "reason": "kitchen_use",
+                "reason": "consumption",
                 "location_id": 3,
             },
         )
@@ -616,7 +606,7 @@ def test_outbound_uses_location_stock_not_global(auth_client: TestClient):
         json={
             "ingredient_id": product["id"],
             "quantity": 5,
-            "reason": "kitchen_use",
+            "reason": "consumption",
             "location_id": 4,
         },
     )
@@ -627,7 +617,7 @@ def test_outbound_uses_location_stock_not_global(auth_client: TestClient):
         json={
             "ingredient_id": product["id"],
             "quantity": 1,
-            "reason": "kitchen_use",
+            "reason": "consumption",
             "location_id": 5,
         },
     )
