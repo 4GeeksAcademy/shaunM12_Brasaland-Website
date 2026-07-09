@@ -6,7 +6,7 @@
 > **Companion docs:** `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
 > **Related context:** `context-11-milestone-5-backend-inventory-management.md`, `context-12-milestone-5-backoffice-inventory-interface.md`  
 > **Type:** Observability design + Wave 1 inventory instrumentation (partial)  
-> **Status:** 🟢 Wave 1 inventory instrumentation implemented (see `services/api/telemetry/`)
+> **Status:** 🟢 Phases 1–4 implemented; Milestone 5 contracts unchanged (additive telemetry only)
 
 > **Authority rule:** Milestone 5 contexts (`context-11-milestone-5-backend-inventory-management.md`, `context-12-milestone-5-backoffice-inventory-interface.md`) remain the runtime source of truth. This telemetry context is additive only and must not alter Milestone 5 API contracts.
 
@@ -27,7 +27,7 @@ This context defines the telemetry plan the team will implement: KPIs, events, e
 
 - **Canonical entity names:** `Ingredient`, `SupplyOrder`, `ConsumptionOrder` (not generic README names in schemas or events).
 - **Event contracts live in `docs/telemetry/event-schemas.json`.** Application code must not invent parallel event names or payload shapes.
-- **Standard envelope on every event:** `eventId`, `timestamp` (ISO 8601 UTC), `sessionId`, `userId`, `event_type`, `schemaVersion`, `requestId`, `properties`.
+- **Standard envelope on every event:** `eventId`, `timestamp` (ISO 8601 UTC), `sessionId`, `userId`, `event_type`, `schemaVersion`, `requestId`, `service`, `properties`.
 - **Naming convention:** `entity_action` snake_case (e.g. `supply_order_created`, `stock_threshold_triggered`).
 - **Property allowlists are mandatory.** Only explicitly declared keys per event; nothing outside the allowlist.
 - **No PII in telemetry.** `created_by` / `userId` are opaque TinyDB UUIDs — never names or email addresses.
@@ -35,7 +35,7 @@ This context defines the telemetry plan the team will implement: KPIs, events, e
 - **Multi-location:** location-scoped events must include `location_id` (integer 1–14).
 - **Milestone 5 reason enum parity:** `ConsumptionOrder.reason` at API boundaries is `consumption` or `waste`.
 - **Fail-open on client, fail-safe on server.** Telemetry must never block user flows.
-- **Wave 1 inventory instrumentation is live** in `services/api/telemetry/` (6 events). Auth and backoffice client events remain design-only until hooked.
+- **Wave 1 inventory instrumentation is live** in `services/api/telemetry/` (6 events). Frontend auth/navigation capture is live for all five client-owned events.
 
 ---
 
@@ -116,7 +116,7 @@ Journey: **login → stock list → (optional location filter) → inbound/outbo
 
 | # | Point | System location | Event | Golden rule |
 | - | ----- | --------------- | ----- | ----------- |
-| 1 | Successful login | Backoffice auth + `POST /auth/login` | `user_login_succeeded` | We capture `user_login_succeeded` because we need to know **which operators are active per location per day**, which allows us to make the decision **to correlate consumption anomalies with staffing coverage**. |
+| 1 | Successful login | Backoffice auth (`AuthProvider`) after `POST /auth/login` succeeds | `user_login_succeeded` | We capture `user_login_succeeded` because we need to know **which operators are active per location per day**, which allows us to make the decision **to correlate consumption anomalies with staffing coverage**. |
 | 2 | Ingredient stock list opened | `GET /inventory/products` + `/inventory/products` | `ingredient_list_viewed` | We capture `ingredient_list_viewed` because we need to know **how often managers review stock before ordering**, which allows us to make the decision **whether to simplify the stock UI or add proactive alerts**. |
 | 3 | Location filter applied | `GET /inventory/products?location_id=` + location selector | `location_filter_applied` | We capture `location_filter_applied` because we need to know **which locations receive the most operational attention**, which allows us to make the decision **to prioritize location-specific training**. |
 | 4 | SupplyOrder registered | `POST /inventory/orders/inbound` after commit | `supply_order_created` | We capture `supply_order_created` because we need to know **inbound volume and timing per ingredient and location**, which allows us to make the decision **to adjust supplier delivery schedules before stock-outs**. |
@@ -179,14 +179,15 @@ Events considered during design but **not** included in Wave 1 — each rejected
 | `event_type` | string | ✅ | `entity_action` snake_case |
 | `schemaVersion` | integer | ✅ | Starts at `1`; increment on breaking changes |
 | `requestId` | string | ✅ | Correlates API request ↔ UI action ↔ logs |
+| `service` | string | ✅ | Emitting surface (`backoffice`, `api`) |
 | `properties` | object | ✅ | Event-specific payload (allowlist only) |
 
 ### Correlation identifiers (`sessionId`, `requestId`)
 
 | Field | API (server) | Backoffice (client) |
 | ----- | ------------ | ------------------- |
-| `sessionId` | Generated per authenticated request via `EmitContext` (`sess_` + random hex) when no browser session exists | Stable per browser tab from `uis/backoffice/lib/telemetry/session.ts` (planned) |
-| `requestId` | Generated per API handler invocation (`req_` + random hex) | Propagated from client `X-Request-Id` header when present; else generated client-side |
+| `sessionId` | Generated per authenticated request via `EmitContext` (`sess_` + random hex) when no browser session exists | Stable per browser tab from `uis/backoffice/lib/telemetry.ts` (`sessionStorage`) |
+| `requestId` | Generated per API handler invocation (`req_` + random hex), or propagated from client `X-Request-Id` when present | Sent as `X-Request-Id` on authorized API calls; order submits share one correlated id across fetch + backend telemetry |
 | `userId` | TinyDB user UUID from JWT; `"anonymous"` for pre-auth events only | Same UUID from auth store after login |
 
 ---
@@ -309,7 +310,9 @@ See also **Rejected candidate events** (Phase 1 instrumentation map) for events 
 
 - ~~`direct_stock_edit_rejected` requires explicit API guard on stock mutation attempts.~~ ✅ Done
 - ~~API paths today use `IngredientEntry`/`IngredientExit`; telemetry events use canonical `SupplyOrder`/`ConsumptionOrder` names.~~ ✅ Mapped in emitters
-- Backoffice client events and auth login telemetry remain pending.
+- ~~`user_login_succeeded` and `session_expired` frontend capture.~~ ✅ Done (`AuthProvider`, `http.ts`)
+- ~~`ingredient_list_viewed` frontend capture.~~ ✅ Done (`/inventory/products` page)
+- ~~`location_filter_applied` and `order_form_abandoned`.~~ ✅ Done (products page + order forms)
 
 ---
 

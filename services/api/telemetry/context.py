@@ -15,7 +15,14 @@ class EmitContext:
     request_id: str = field(default_factory=lambda: f"req_{uuid.uuid4().hex[:12]}")
 
     @classmethod
-    def for_user(cls, user_id: str | int | None) -> EmitContext:
+    def for_user(
+        cls,
+        user_id: str | int | None,
+        *,
+        request_id: str | None = None,
+    ) -> EmitContext:
         if user_id is None:
-            return cls()
+            return cls(request_id=request_id) if request_id else cls()
+        if request_id:
+            return cls(user_id=str(user_id), request_id=request_id)
         return cls(user_id=str(user_id))

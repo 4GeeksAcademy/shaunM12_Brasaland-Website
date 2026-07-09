@@ -32,10 +32,24 @@ from .schemas import (
 router = APIRouter(tags=["inventory"])
 
 
-def _telemetry_ctx(current_user: UserResponse | None = None) -> EmitContext:
+def _request_id_from_header(request: Request | None) -> str | None:
+    if request is None:
+        return None
+    header_value = request.headers.get("X-Request-Id")
+    if not header_value:
+        return None
+    candidate = header_value.strip()
+    return candidate or None
+
+
+def _telemetry_ctx(
+    current_user: UserResponse | None = None,
+    request: Request | None = None,
+) -> EmitContext:
+    request_id = _request_id_from_header(request)
     if current_user is None:
-        return EmitContext()
-    return EmitContext.for_user(current_user.id)
+        return EmitContext(request_id=request_id) if request_id else EmitContext()
+    return EmitContext.for_user(current_user.id, request_id=request_id)
 
 
 @router.get("/products", response_model=list[ProductResponse])
@@ -120,7 +134,7 @@ async def update_product(
                 "http_method": "PATCH",
                 "http_path": str(request.url.path),
             },
-            ctx=_telemetry_ctx(current_user),
+            ctx=_telemetry_ctx(current_user, request),
             session=session,
         )
         raise HTTPException(
@@ -150,10 +164,11 @@ async def update_product(
 @router.post("/orders/inbound", response_model=InboundOrderResponse, status_code=201)
 def log_inbound_order(
     payload: InboundOrderCreate,
+    request: Request,
     session: Session = Depends(get_db),
     current_user: UserResponse = Depends(get_current_user),
 ) -> InboundOrderResponse:
-    ctx = _telemetry_ctx(current_user)
+    ctx = _telemetry_ctx(current_user, request)
     try:
         order = repository.create_inbound_order(
             session,
@@ -240,10 +255,11 @@ def log_inbound_order(
 @router.post("/orders/outbound", response_model=OutboundOrderResponse, status_code=201)
 def log_outbound_order(
     payload: OutboundOrderCreate,
+    request: Request,
     session: Session = Depends(get_db),
     current_user: UserResponse = Depends(get_current_user),
 ) -> OutboundOrderResponse:
-    ctx = _telemetry_ctx(current_user)
+    ctx = _telemetry_ctx(current_user, request)
     try:
         order = repository.create_outbound_order(
             session,

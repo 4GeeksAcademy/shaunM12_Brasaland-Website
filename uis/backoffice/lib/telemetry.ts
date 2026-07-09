@@ -1,6 +1,7 @@
 "use client";
 
 import { getAccessToken } from "./auth-storage";
+import { getCorrelatedRequestId } from "./request-id";
 
 const TELEMETRY_ENDPOINT =
   process.env.NEXT_PUBLIC_TELEMETRY_ENDPOINT?.trim() || "/telemetry/events";
@@ -9,6 +10,12 @@ const TELEMETRY_FLUSH_MS = 10_000;
 const TELEMETRY_MAX_RETRIES = 3;
 const SESSION_ID_KEY = "brasaland_telemetry_session_id";
 const SESSION_STARTED_AT_KEY = "brasaland_telemetry_session_started_at";
+export const LAST_LOCATION_ID_KEY = "brasaland_last_location_id";
+
+const DEBOUNCE_WINDOWS_MS: Record<string, number> = {
+  ingredient_list_viewed: 30_000,
+  location_filter_applied: 10_000,
+};
 
 type TelemetryProperties = Record<string, unknown>;
 
@@ -32,12 +39,12 @@ let queue: TelemetryEnvelope[] = [];
 let flushTimer: number | null = null;
 let flushInFlight = false;
 let listenersRegistered = false;
+const debounceState = new Map<string, number>();
 
 function uuid(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
   }
-  // Fallback shape for old browsers; good enough for telemetry IDs.
   return `${Date.now().toString(16)}-${Math.random().toString(16).slice(2)}`;
 }
 
@@ -71,6 +78,10 @@ function resolveUserId(): string {
   return readJwtSubject(token) ?? "anonymous";
 }
 
+export function getTelemetrySessionId(): string {
+  return getOrCreateSessionId();
+}
+
 function getOrCreateSessionId(): string {
   if (typeof window === "undefined") {
     return `sess_${uuid()}`;
@@ -85,8 +96,32 @@ function getOrCreateSessionId(): string {
   return created;
 }
 
-function requestId(): string {
-  return `req_${uuid()}`;
+function debounceKey(eventType: string, properties: TelemetryProperties): string | null {
+  if (
+    eventType !== "ingredient_list_viewed" &&
+    eventType !== "location_filter_applied"
+  ) {
+    return null;
+  }
+  return `${eventType}:${getOrCreateSessionId()}:${String(properties.location_id ?? "")}`;
+}
+
+function shouldSkipDebounced(eventType: string, properties: TelemetryProperties): boolean {
+  const windowMs = DEBOUNCE_WINDOWS_MS[eventType];
+  if (!windowMs) {
+    return false;
+  }
+  const key = debounceKey(eventType, properties);
+  if (!key) {
+    return false;
+  }
+  const now = Date.now();
+  const last = debounceState.get(key) ?? 0;
+  if (now - last < windowMs) {
+    return true;
+  }
+  debounceState.set(key, now);
+  return false;
 }
 
 function buildEvent(
@@ -100,10 +135,29 @@ function buildEvent(
     userId: resolveUserId(),
     event_type: eventType,
     schemaVersion: 1,
-    requestId: requestId(),
+    requestId: getCorrelatedRequestId(),
     service: "backoffice",
     properties,
   };
+}
+
+export function rememberLastLocationId(locationId: number): void {
+  if (typeof window === "undefined") {
+    return;
+  }
+  window.sessionStorage.setItem(LAST_LOCATION_ID_KEY, String(locationId));
+}
+
+export function readLastLocationId(): number | undefined {
+  if (typeof window === "undefined") {
+    return undefined;
+  }
+  const raw = window.sessionStorage.getItem(LAST_LOCATION_ID_KEY);
+  if (!raw) {
+    return undefined;
+  }
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }
 
 function scheduleFlush(): void {
@@ -182,7 +236,6 @@ function flushWithBeacon(): void {
     new Blob([body], { type: "application/json" }),
   );
   if (!ok) {
-    // Fallback best-effort for browsers that reject sendBeacon payload.
     void postBatch(batch).catch(() => {});
   }
 }
@@ -219,6 +272,9 @@ export function track(eventType: string, properties: TelemetryProperties): void 
   if (typeof window === "undefined") {
     return;
   }
+  if (shouldSkipDebounced(eventType, properties)) {
+    return;
+  }
   ensureListeners();
   queue.push(buildEvent(eventType, properties));
   if (queue.length >= TELEMETRY_BATCH_SIZE) {
@@ -227,4 +283,3 @@ export function track(eventType: string, properties: TelemetryProperties): void 
   }
   scheduleFlush();
 }
-

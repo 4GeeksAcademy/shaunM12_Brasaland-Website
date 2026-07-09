@@ -5,7 +5,7 @@
 > **Repository index:** `context-15-telemetry-report.md`  
 > **Companion docs:** `memory-bank/historical-reference/context-15-telemetry-plan.md`, `memory-bank/historical-reference/context-15-telemetry-frontend-capture.md`, `memory-bank/historical-reference/context-15-backend-storage.md`, `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
 > **Type:** Telemetry analysis pipeline + reporting endpoint  
-> **Status:** 🟡 Planned
+> **Status:** 🟢 Implemented (KPI-aligned metrics)
 
 > **Authority rule:** Milestone 5 contexts govern runtime inventory semantics; this reporting phase enriches observability and must not change API behavior.
 
@@ -46,19 +46,19 @@ Do not hardcode sample values from examples.
 
 ---
 
-## Your Two Required Metrics
+## The Three Required KPI Metrics
 
-These metrics map directly to the KPIs defined in the Phase 1 plan.
+These metrics implement the KPI contracts from `context-15-telemetry-plan.md` (Phase 1).
 
-## Metric 1 — Daily Consumption by Location
+## Metric 1 — Daily Consumption by Ingredient and Location (KPI 1)
 
-**Business question:** how many consumption order events were registered per day, segmented by location?  
+**Business question:** how many units were consumed per ingredient per location per day?  
 **KPI mapping:** Daily consumption rate by ingredient and location.
 
 ### Function contract
 
 ```python
-def consumption_by_location_per_day(start_date, end_date) -> list[dict]:
+def daily_consumption_by_ingredient_and_location(start_date, end_date) -> list[dict]:
     ...
 ```
 
@@ -70,43 +70,73 @@ def consumption_by_location_per_day(start_date, end_date) -> list[dict]:
 - Pandas:
   - convert `timestamp` with UTC
   - derive daily date key from timestamp
-  - extract `location_id` from `tags`
-  - drop null `location_id` rows
+  - extract `location_id`, `ingredient_id`, `quantity`, `reason` from `tags`
+  - keep rows where `reason = 'consumption'`
+  - drop null `location_id`, `ingredient_id`, or `quantity` rows
 - Grouping:
-  - `groupby(['date', 'location_id'])['id'].count()`
+  - `groupby(['date', 'ingredient_id', 'location_id'])['quantity'].sum()`
 - Output:
-  - list of dicts with `date`, `location_id`, `count`
+  - list of dicts with `date`, `ingredient_id`, `location_id`, `quantity`
 
-## Metric 2 — Order Failure Rate per Day
+## Metric 2 — Stock-Out Frequency (KPI 2)
 
-**Business question:** what proportion of order attempts (supply + consumption) failed each day?  
-**KPI mapping:** Stock-out frequency (indirectly, failures signal supply chain stress).
+**Business question:** how often did stock hit the minimum threshold or fail for insufficient stock?  
+**KPI mapping:** Stock-out frequency.
 
 ### Function contract
 
 ```python
-def order_failure_rate_per_day(start_date, end_date) -> list[dict]:
+def stock_out_frequency(start_date, end_date) -> list[dict]:
     ...
 ```
 
 ### Required behavior
 
 - SQL load:
-  - `event_type IN ('consumption_order_created', 'supply_order_created', 'consumption_order_failed', 'supply_order_failed')`
+  - `event_type IN ('stock_threshold_triggered', 'consumption_order_failed')`
   - `timestamp >= start_date` and `timestamp < end_date`
 - Pandas:
   - convert timestamp UTC
   - derive `date`
-  - compute `is_failure = event_type.endswith('_failed')`
+  - extract `location_id`, `ingredient_id`, `error_code` from `tags`
+  - keep `stock_threshold_triggered` rows and `consumption_order_failed` rows where `error_code = 'insufficient_stock'`
+  - drop null `location_id` or `ingredient_id` rows
 - Grouping:
-  - `groupby('date').agg(total=('id', 'count'), failures=('is_failure', 'sum'))`
-  - compute `failure_rate = failures / total`
+  - `groupby(['date', 'ingredient_id', 'location_id'])['id'].count()`
 - Output:
-  - list of dicts with `date`, `total`, `failures`, `failure_rate`
+  - list of dicts with `date`, `ingredient_id`, `location_id`, `count`
+
+## Metric 3 — Waste and Loss Ratio (KPI 3)
+
+**Business question:** what proportion of outbound consumption was waste vs total consumption?  
+**KPI mapping:** Waste and loss ratio.
+
+### Function contract
+
+```python
+def waste_loss_ratio(start_date, end_date) -> list[dict]:
+    ...
+```
+
+### Required behavior
+
+- SQL load:
+  - `event_type = 'consumption_order_created'`
+  - `timestamp >= start_date` and `timestamp < end_date`
+- Pandas:
+  - convert timestamp UTC
+  - derive `date`
+  - extract `location_id`, `quantity`, `reason` from `tags`
+  - drop null `location_id` or `quantity` rows
+- Grouping:
+  - `groupby(['date', 'location_id'])` with `waste_quantity = sum(quantity where reason = waste)` and `total_quantity = sum(quantity)`
+  - compute `ratio = waste_quantity / total_quantity`
+- Output:
+  - list of dicts with `date`, `location_id`, `waste_quantity`, `total_quantity`, `ratio`
 
 ---
 
-## Additional Activity — Auth Failure Rate
+## Additional Activity — Auth Failure Rate (Optional)
 
 If authentication telemetry is instrumented, add:
 
@@ -118,18 +148,20 @@ def auth_failure_rate_per_day(start_date, end_date) -> list[dict]:
 ### Metric intent
 
 - Load `event_type IN ('user_login_succeeded', 'user_login_failed')`
-- Group by day (and optionally `location_id` from `tags`)
-- Compute `failure_rate = failed / (failed + succeeded)`
-- Return JSON-serializable records under `auth_failure_rate`
+- Group by day
+- Compute `failure_rate = failed / total`
+- Return JSON-serializable records under `auth_failure_rate_per_day`
+
+This metric is **not** one of the three Phase 1 KPIs.
 
 ---
 
 ## Business Constraints for Your Pipeline
 
-- `location_id` must be extracted from `tags`, not from a fixed SQL column.
-- Consumption metric must preserve location segmentation so Colombia and Florida can be compared.
+- `location_id` and `ingredient_id` must be extracted from `tags`, not from fixed SQL columns.
+- Consumption and stock-out metrics must preserve location segmentation so Colombia and Florida can be compared.
 - Temporal grouping is mandatory; a global scalar count without time context is not a KPI metric.
-- Optional third metric for waste ratio may be added using `reason == waste` extracted from `tags`.
+- KPI 1 must filter `reason = consumption`; KPI 3 uses `reason = waste` in the numerator.
 
 ---
 
@@ -139,12 +171,23 @@ def auth_failure_rate_per_day(start_date, end_date) -> list[dict]:
 {
   "period": { "from": "2025-01-13", "to": "2025-01-20" },
   "metrics": {
-    "consumption_by_location_per_day": [
-      { "date": "2025-01-13", "location_id": 3, "count": 12 },
-      { "date": "2025-01-13", "location_id": 11, "count": 8 }
+    "daily_consumption_by_ingredient_and_location": [
+      { "date": "2025-01-13", "ingredient_id": 7, "location_id": 3, "quantity": 42.0 }
     ],
-    "order_failure_rate_per_day": [
-      { "date": "2025-01-13", "total": 20, "failures": 3, "failure_rate": 0.15 }
+    "stock_out_frequency": [
+      { "date": "2025-01-13", "ingredient_id": 7, "location_id": 3, "count": 2 }
+    ],
+    "waste_loss_ratio": [
+      {
+        "date": "2025-01-13",
+        "location_id": 3,
+        "waste_quantity": 5.0,
+        "total_quantity": 50.0,
+        "ratio": 0.1
+      }
+    ],
+    "auth_failure_rate_per_day": [
+      { "date": "2025-01-13", "total": 20, "failed": 3, "failure_rate": 0.15 }
     ]
   }
 }
@@ -154,7 +197,7 @@ def auth_failure_rate_per_day(start_date, end_date) -> list[dict]:
 
 ## Phase 1 — Analysis Pipeline with Pandas
 
-Create `services/api/telemetry/analysis.py` with at least two metric functions.
+Create `services/api/telemetry/analysis.py` with three KPI metric functions (and one optional auth metric).
 
 Each function must:
 
@@ -234,16 +277,17 @@ This appendix is explanatory only. Implementation is governed by the metric cont
 
 ## Verification Checklist
 
-- [ ] `analysis.py` exists with at least two KPI-grounded metric functions
-- [ ] SQL pre-filters by event type and period in each metric function
-- [ ] UTC datetime conversion occurs before grouping in every metric
-- [ ] Consumption metric groups by `date` + `location_id`
-- [ ] Failure-rate metric groups by `date` with derived `failure_rate`
-- [ ] Endpoint defaults to last 7 days when query params are omitted
-- [ ] Endpoint shares one resolved period across all metric functions
-- [ ] Endpoint uses in-memory cache with 60-second TTL
-- [ ] Response shape includes `period` and grouped metric outputs
-- [ ] All outputs are JSON-serializable
+- [x] `analysis.py` exists with three KPI-grounded metric functions
+- [x] SQL pre-filters by event type and period in each metric function
+- [x] UTC datetime conversion occurs before grouping in every metric
+- [x] KPI 1 groups by `date` + `ingredient_id` + `location_id` and sums `quantity` where `reason = consumption`
+- [x] KPI 2 groups by `date` + `ingredient_id` + `location_id` and counts stock-out signals
+- [x] KPI 3 groups by `date` + `location_id` with `waste_quantity`, `total_quantity`, and `ratio`
+- [x] Endpoint defaults to last 7 days when query params are omitted
+- [x] Endpoint shares one resolved period across all metric functions
+- [x] Endpoint uses in-memory cache with 60-second TTL
+- [x] Response shape includes `period` and grouped metric outputs
+- [x] All outputs are JSON-serializable
 
 ---
 
