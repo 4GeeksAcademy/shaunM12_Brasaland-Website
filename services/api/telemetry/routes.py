@@ -3,20 +3,28 @@
 from __future__ import annotations
 
 import logging
+import time
 from datetime import datetime
+from datetime import timedelta
+from datetime import timezone
 from typing import Any
 
-from fastapi import APIRouter, Body, Depends, HTTPException, status
+from fastapi import APIRouter, Body, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import insert
 from sqlmodel import Session
 
 import config
 from database import get_db
+from .analysis import auth_failure_rate_per_day
+from .analysis import consumption_by_location_per_day
+from .analysis import order_failure_rate_per_day
 from .constants import event_definition
 from .models import TelemetryEvent as TelemetryEventRow, ensure_telemetry_schema
 
 logger = logging.getLogger("brasaland.telemetry.stub")
+_REPORT_CACHE_TTL_SECONDS = 60
+_REPORT_CACHE: dict[tuple[str, str], tuple[float, dict[str, Any]]] = {}
 
 
 class TelemetryEvent(BaseModel):
@@ -64,6 +72,72 @@ def _validate_allowlist(event_type: str, properties: dict[str, Any]) -> None:
     extra = set(properties) - allowlist
     if extra:
         raise ValueError(f"rejects unknown properties: {sorted(extra)}")
+
+
+def _parse_report_datetime(raw: str, *, label: str) -> datetime:
+    candidate = raw.strip()
+    if candidate.endswith("Z"):
+        candidate = f"{candidate[:-1]}+00:00"
+    try:
+        parsed = datetime.fromisoformat(candidate)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail=f"{label} must be a valid ISO 8601 datetime",
+        ) from exc
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _resolve_report_period(
+    start_date: str | None,
+    end_date: str | None,
+) -> tuple[datetime, datetime]:
+    now_utc = datetime.now(timezone.utc).replace(microsecond=0)
+    resolved_end = _parse_report_datetime(end_date, label="end_date") if end_date else now_utc
+    resolved_start = (
+        _parse_report_datetime(start_date, label="start_date")
+        if start_date
+        else resolved_end - timedelta(days=7)
+    )
+    if resolved_start >= resolved_end:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="start_date must be earlier than end_date",
+        )
+    return resolved_start, resolved_end
+
+
+def _build_report(
+    *,
+    start: datetime,
+    end: datetime,
+    session: Session | None,
+) -> dict[str, Any]:
+    return {
+        "period": {
+            "from": start.date().isoformat(),
+            "to": end.date().isoformat(),
+        },
+        "metrics": {
+            "consumption_by_location_per_day": consumption_by_location_per_day(
+                start,
+                end,
+                session=session,
+            ),
+            "order_failure_rate_per_day": order_failure_rate_per_day(
+                start,
+                end,
+                session=session,
+            ),
+            "auth_failure_rate_per_day": auth_failure_rate_per_day(
+                start,
+                end,
+                session=session,
+            ),
+        },
+    }
 
 
 def _ingest_stub(payload: dict[str, Any]) -> dict[str, int]:
@@ -144,4 +218,23 @@ def ingest_events(
     if mode == "storage":
         return _ingest_storage(payload, session)
     return _ingest_stub(payload)
+
+
+@router.get("/report")
+def get_telemetry_report(
+    start_date: str | None = Query(default=None),
+    end_date: str | None = Query(default=None),
+    session: Session | None = Depends(_get_optional_db),
+) -> dict[str, Any]:
+    """Phase 4 aggregated telemetry metrics for a report period."""
+    period_start, period_end = _resolve_report_period(start_date, end_date)
+    cache_key = (period_start.isoformat(), period_end.isoformat())
+    cached = _REPORT_CACHE.get(cache_key)
+    now_monotonic = time.monotonic()
+    if cached and now_monotonic - cached[0] < _REPORT_CACHE_TTL_SECONDS:
+        return cached[1]
+
+    report = _build_report(start=period_start, end=period_end, session=session)
+    _REPORT_CACHE[cache_key] = (now_monotonic, report)
+    return report
 

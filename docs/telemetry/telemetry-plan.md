@@ -5,7 +5,7 @@
 > **Canonical design:** `memory-bank/historical-reference/context-15-telemetry-plan.md`  
 > **Event contracts:** `docs/telemetry/event-schemas.json`  
 > **Type:** Observability / operational runbook  
-> **Status:** 🟢 Wave 1 inventory telemetry implemented — backoffice client events pending
+> **Status:** 🟢 Phases 1-4 backend telemetry implemented (`/telemetry/events` storage + `/telemetry/report`); remaining frontend-only events are additive follow-ups
 
 > **Authority rule:** Milestone 5 contexts are authoritative for runtime inventory/API contracts. This runbook is additive observability guidance and must not redefine Milestone behavior.
 
@@ -28,6 +28,8 @@ The context document owns **why** and **what**. This document owns **how** at im
 | [Phase 2 — Envelope](#phase-2--event-envelope) | Mandatory fields on every event |
 | [Phase 2 — Event Catalog](#phase-2--event-catalog) | Wave 1 events by domain |
 | [Phase 3 — Delivery](#phase-3--delivery-strategy) | Stream vs batch, throttle rules |
+| [Phase 3 — Storage & Ingestion](#phase-3--storage--ingestion-runtime) | Supabase table contract + mixed-batch endpoint behavior |
+| [Phase 4 — Reporting](#phase-4--reporting-runtime) | Pandas KPI metrics + cached report endpoint |
 | [Implementation Hooks](#implementation-hooks) | Code attachment points |
 | [Configuration](#configuration) | Environment variables |
 | [Risks and Exclusions](#risks-and-exclusions) | Privacy, currency, gaps |
@@ -206,6 +208,57 @@ Full rules: `event-schemas.json` → `throttle`.
 
 ---
 
+## Phase 3 — Storage & Ingestion Runtime
+
+### Active mode
+
+- `TELEMETRY_PHASE_MODE=storage` enables the real ingestion path.
+- `TELEMETRY_PHASE_MODE=stub` remains available for Phase 2 envelope-only checks.
+
+### Ingestion contract (`POST /telemetry/events`)
+
+- Request shape remains `{ "events": [...] }`.
+- Validation is per event (`TelemetryEvent.model_validate(...)` + allowlist check).
+- Mixed batches are supported: valid events are persisted even when some events fail.
+- Persistence is one bulk insert operation per batch.
+- Response in storage mode is `{ "received": N, "stored": M, "rejected": R }`.
+
+### Storage contract (`telemetry_events`)
+
+- Column set: `id`, `event_type`, `timestamp`, `service`, `level`, `value`, `tags`, `created_at`.
+- Indexes: `event_type`, `timestamp`, GIN on `tags`.
+- Row model is append-only; no business update/delete flow.
+
+---
+
+## Phase 4 — Reporting Runtime
+
+### Endpoint
+
+- `GET /telemetry/report`
+- Optional query params: `start_date`, `end_date` (ISO 8601)
+- Default window when omitted: last 7 days (`now_utc - 7d` to `now_utc`)
+- Response shape:
+  - `period`
+  - `metrics`
+
+### Metrics implemented
+
+- `consumption_by_location_per_day`
+  - Business question: how many `consumption_order_created` events occurred per day per location?
+- `order_failure_rate_per_day`
+  - Business question: what share of order attempts (`supply` + `consumption`) failed each day?
+- `auth_failure_rate_per_day` (optional activity, implemented)
+  - Business question: what share of login attempts failed each day?
+
+### Cache
+
+- In-memory cache with `60s` TTL.
+- Cache key includes resolved report period (`start_date`, `end_date`).
+- Same-period requests within TTL return cached payload without recalculation.
+
+---
+
 ## Implementation Hooks
 
 | Event | Layer | Hook location |
@@ -225,17 +278,19 @@ Full rules: `event-schemas.json` → `throttle`.
 
 **Ownership rule:** each event has a single emitter. Inventory order lifecycle events are backend-owned (API/repository) and must not be emitted again from frontend forms.
 
-### Planned module layout (post-approval)
+### Module layout (implemented + pending)
 
 ```text
 services/api/telemetry/
-  __init__.py
-  emit.py          # validate allowlist, attach envelope, route stream/batch
   constants.py
+  emit.py          # envelope + validation helpers
+  models.py        # telemetry_events storage model
+  routes.py        # /telemetry/events + /telemetry/report
+  analysis.py      # phase 4 pandas metric pipeline
+  seed.py          # reset and seed helper
 
 uis/backoffice/lib/telemetry/
-  emit.ts          # client events with debounce/throttle
-  session.ts       # sessionId helper
+  telemetry.ts     # client batching/flush helper (implemented path)
 ```
 
 ---
@@ -248,6 +303,9 @@ uis/backoffice/lib/telemetry/
 | `TELEMETRY_STREAM_ENDPOINT` | Stream sink URL | — |
 | `TELEMETRY_BATCH_BUCKET` | Batch export destination | — |
 | `TELEMETRY_SAMPLE_RATE` | Client sampling `0.0`–`1.0` | `1.0` |
+| `TELEMETRY_ENDPOINT` | Backend ingestion path consumed by frontend endpoint config | `/telemetry/events` |
+| `NEXT_PUBLIC_TELEMETRY_ENDPOINT` | Backoffice telemetry target URL | environment-specific |
+| `TELEMETRY_PHASE_MODE` | Runtime ingestion mode (`stub` or `storage`) | `storage` |
 | `TELEMETRY_RESTRICTED_ENDPOINT` | Reserved for future restricted telemetry policies | — |
 
 ### Local development
@@ -301,8 +359,9 @@ uis/backoffice/lib/telemetry/
 | --- | ------ |
 | Explicit stock-mutation guard on PATCH | ✅ `direct_stock_edit_rejected` in `inventory/routes.py` |
 | API uses `IngredientEntry`/`IngredientExit`; events use `SupplyOrder`/`ConsumptionOrder` | ✅ Mapped in route emitters |
-| Backoffice client events (`session_expired`, `order_form_abandoned`, etc.) | 🟡 Pending |
-| Auth login telemetry | 🟡 Pending |
+| Supabase storage + mixed-batch ingestion (`POST /telemetry/events`) | ✅ Implemented in Phase 3 |
+| Telemetry report endpoint (`GET /telemetry/report`) + pandas metrics + 60s cache | ✅ Implemented in Phase 4 |
+| Backoffice-only events (`location_filter_applied`, `order_form_abandoned`) | 🟡 Pending |
 
 ---
 
@@ -315,7 +374,10 @@ uis/backoffice/lib/telemetry/
 5. [x] Consumption reason values align with Milestone 5 (`consumption`, `waste`).
 6. [x] Throttle rules in `throttle` match this runbook.
 7. [x] Test emit validates allowlist rejection for extra keys (`tests/test_telemetry.py`).
-8. [x] Inventory implementation gaps resolved; backoffice/auth events still pending.
+8. [x] Storage mode supports mixed-batch persistence and one bulk insert per batch.
+9. [x] `GET /telemetry/report` returns grouped metrics with period defaults and 60-second cache.
+10. [x] Optional auth metric uses login success/failure events to compute daily ratio.
+11. [x] Remaining gaps are frontend-only additive instrumentation (`location_filter_applied`, `order_form_abandoned`).
 
 ---
 
