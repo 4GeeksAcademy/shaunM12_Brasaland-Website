@@ -5,7 +5,7 @@ import InventoryPageShell from "@/components/inventory/InventoryPageShell";
 import ProductCatalog from "@/components/inventory/ProductCatalog";
 import { useApiState } from "@/hooks/useApiState";
 import { fetchProducts } from "@/lib/inventory";
-import { track } from "@/lib/telemetry";
+import { track, rememberLastLocationId } from "@/lib/telemetry";
 import { Product } from "@/types/inventory";
 
 export default function InventoryProductsPage(): React.JSX.Element {
@@ -30,6 +30,24 @@ export default function InventoryProductsPage(): React.JSX.Element {
   }, [loadProducts]);
 
   useEffect(() => {
+    rememberLastLocationId(locationId);
+  }, [locationId]);
+
+  const handleLocationChange = useCallback(
+    (nextLocationId: number) => {
+      if (nextLocationId !== locationId) {
+        track("location_filter_applied", {
+          location_id: nextLocationId,
+          previous_location_id: locationId,
+          page_path: "/inventory/products",
+        });
+      }
+      setLocationId(nextLocationId);
+    },
+    [locationId],
+  );
+
+  useEffect(() => {
     if (loading || error) {
       return;
     }
@@ -52,7 +70,7 @@ export default function InventoryProductsPage(): React.JSX.Element {
         error={error || null}
         locationId={locationId}
         includeInactive={includeInactive}
-        onLocationChange={setLocationId}
+        onLocationChange={handleLocationChange}
         onIncludeInactiveChange={setIncludeInactive}
         onRetry={loadProducts}
         onRefresh={loadProducts}

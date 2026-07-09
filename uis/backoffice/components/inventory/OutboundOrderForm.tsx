@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useOrderFormAbandonment } from "@/hooks/useOrderFormAbandonment";
 import {
   EXIT_REASON_OPTIONS,
   INPUT_CLASS,
@@ -62,6 +63,23 @@ export default function OutboundOrderForm({
     Number.isFinite(parsedQuantity) &&
     parsedQuantity > 0 &&
     parsedQuantity > selectedProduct.current_stock;
+
+  const fieldsCompleted = useMemo(() => {
+    const completed: string[] = [];
+    if (form.ingredient_id) completed.push("ingredient_id");
+    if (form.quantity) completed.push("quantity");
+    if (form.reason) completed.push("reason");
+    completed.push("location_id");
+    return completed;
+  }, [form.ingredient_id, form.quantity, form.reason]);
+
+  useOrderFormAbandonment({
+    formType: "ConsumptionOrder",
+    ingredientId: form.ingredient_id ? Number(form.ingredient_id) : null,
+    locationId,
+    fieldsCompleted,
+    active: Boolean(form.ingredient_id) && !submitting && !successMessage,
+  });
 
   useEffect(() => {
     if (!preselectedLocationId) {

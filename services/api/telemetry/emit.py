@@ -40,7 +40,8 @@ def _validate_properties(event_type: str, properties: dict[str, Any]) -> dict[st
     return properties
 
 
-def _inject_currency(properties: dict[str, Any]) -> dict[str, Any]:
+def enrich_properties(properties: dict[str, Any]) -> dict[str, Any]:
+    """Derive server-side fields such as currency before persistence."""
     location_id = properties.get("location_id")
     if location_id is not None and "currency" not in properties:
         enriched = dict(properties)
@@ -56,7 +57,7 @@ def build_envelope(
 ) -> dict[str, Any]:
     definition = event_definition(event_type)
     validated = _validate_properties(event_type, properties)
-    validated = _inject_currency(validated)
+    validated = enrich_properties(validated)
     return {
         "eventId": str(uuid.uuid4()),
         "timestamp": _utc_iso(),
@@ -65,6 +66,7 @@ def build_envelope(
         "event_type": event_type,
         "schemaVersion": int(definition.get("schemaVersion", 1)),
         "requestId": ctx.request_id,
+        "service": "api",
         "processing": processing_for(event_type),
         "properties": validated,
     }

@@ -17,9 +17,11 @@ from sqlmodel import Session
 import config
 from database import get_db
 from .analysis import auth_failure_rate_per_day
-from .analysis import consumption_by_location_per_day
-from .analysis import order_failure_rate_per_day
+from .analysis import daily_consumption_by_ingredient_and_location
+from .analysis import stock_out_frequency
+from .analysis import waste_loss_ratio
 from .constants import event_definition
+from .emit import enrich_properties
 from .models import TelemetryEvent as TelemetryEventRow, ensure_telemetry_schema
 
 logger = logging.getLogger("brasaland.telemetry.stub")
@@ -121,12 +123,17 @@ def _build_report(
             "to": end.date().isoformat(),
         },
         "metrics": {
-            "consumption_by_location_per_day": consumption_by_location_per_day(
+            "daily_consumption_by_ingredient_and_location": daily_consumption_by_ingredient_and_location(
                 start,
                 end,
                 session=session,
             ),
-            "order_failure_rate_per_day": order_failure_rate_per_day(
+            "stock_out_frequency": stock_out_frequency(
+                start,
+                end,
+                session=session,
+            ),
+            "waste_loss_ratio": waste_loss_ratio(
                 start,
                 end,
                 session=session,
@@ -177,14 +184,15 @@ def _ingest_storage(
             continue
 
         event_types.append(event.event_type)
+        tags = enrich_properties(dict(event.properties))
         valid_rows.append(
             {
                 "event_type": event.event_type,
                 "timestamp": event.timestamp,
                 "service": event.service,
                 "level": "info",
-                "value": _project_numeric_value(event.properties),
-                "tags": event.properties,
+                "value": _project_numeric_value(tags),
+                "tags": tags,
             }
         )
 

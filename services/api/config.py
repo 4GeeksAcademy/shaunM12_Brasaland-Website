@@ -86,10 +86,45 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 # paths and table accessors in ``database.py`` are unchanged.
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+def resolve_telemetry_enabled(
+    *,
+    env_value: str | None,
+    is_dev: bool,
+    database_url: str | None,
+) -> bool:
+    if env_value is not None:
+        return _as_bool(env_value, default=False)
+    return bool(is_dev and database_url)
+
+
+def resolve_telemetry_sink(
+    *,
+    env_value: str | None,
+    is_dev: bool,
+    database_url: str | None,
+) -> str:
+    if env_value is not None:
+        return env_value.strip().lower()
+    if is_dev and database_url:
+        return "both"
+    return "stdout"
+
+
 # --- Telemetry (Wave 1) ------------------------------------------------------
-TELEMETRY_ENABLED = _as_bool(os.getenv("TELEMETRY_ENABLED"), default=False)
-# stdout | postgres | both — postgres requires DATABASE_URL
-TELEMETRY_SINK = os.getenv("TELEMETRY_SINK", "stdout").strip().lower()
+_telemetry_enabled_env = os.getenv("TELEMETRY_ENABLED")
+TELEMETRY_ENABLED = resolve_telemetry_enabled(
+    env_value=_telemetry_enabled_env,
+    is_dev=IS_DEV,
+    database_url=DATABASE_URL,
+)
+
+_telemetry_sink_env = os.getenv("TELEMETRY_SINK")
+TELEMETRY_SINK = resolve_telemetry_sink(
+    env_value=_telemetry_sink_env,
+    is_dev=IS_DEV,
+    database_url=DATABASE_URL,
+)
+
 TELEMETRY_SAMPLE_RATE = float(os.getenv("TELEMETRY_SAMPLE_RATE", "1.0"))
 # Telemetry endpoint behavior phase:
 # - stub: Phase 2 shape verification endpoint

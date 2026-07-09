@@ -6,7 +6,7 @@
 > **Companion docs:** `memory-bank/historical-reference/context-15-telemetry-plan.md`, `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
 > **Related context:** `context-12-milestone-5-backoffice-inventory-interface.md`  
 > **Type:** Frontend telemetry capture + temporary backend verification endpoint  
-> **Status:** 🟡 Planned
+> **Status:** 🟢 Implemented (frontend capture + stub/storage endpoint)
 
 > **Authority rule:** Milestone 5 contexts are the runtime source of truth. This telemetry context only adds observability and must not redefine inventory API contracts.
 
@@ -102,8 +102,10 @@ Create `POST /telemetry/events` in its own router under `services/api/`.
 
 - No Supabase write
 - No warehouse write
-- No full per-event allowlist enforcement
+- No per-event property allowlist enforcement (storage mode adds allowlist checks in Phase 3)
 - No stream/batch routing in backend
+
+Stub mode validates the full batch envelope strictly via `TelemetryBatch`; storage mode validates each event individually and supports mixed batches.
 
 ---
 
@@ -210,6 +212,7 @@ Reference image used to validate:
 - Strict event/property allowlist compliance
 - Inventory + auth instrumentation coverage
 - Auth ownership clarity: frontend emits `user_login_succeeded`/`session_expired`; backend emits `user_login_failed` with `source_ip_hash`
+- `user_login_succeeded.location_id` is best-effort from the last inventory location in session storage (optional on first login)
 - DevTools verification of payload format and `200` response
 
 ---
@@ -225,6 +228,16 @@ Reference image used to validate:
 7. Auth telemetry reaches endpoint with ownership split: frontend (`user_login_succeeded`, `session_expired`) and backend (`user_login_failed`).
 8. Captured keys match allowlists in `event-schemas.json`.
 9. No PII in properties or envelope.
+
+### Remaining frontend instrumentation
+
+| Event | Status |
+|---|---|
+| `ingredient_list_viewed` | ✅ Implemented (`/inventory/products` page mount) |
+| `user_login_succeeded` | ✅ Implemented (`AuthProvider` after successful login) |
+| `session_expired` | ✅ Implemented (`http.ts` on refresh failure) |
+| `location_filter_applied` | ✅ Implemented (products page location selector) |
+| `order_form_abandoned` | ✅ Implemented (inbound/outbound form idle detection) |
 
 ---
 

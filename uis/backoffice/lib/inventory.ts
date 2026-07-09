@@ -1,4 +1,5 @@
 import { formatApiError } from "@/lib/api-error";
+import { withCorrelatedRequest } from "@/lib/request-id";
 import { authorizedFetch } from "@/lib/http";
 import {
   InboundOrder,
@@ -109,19 +110,23 @@ export async function fetchOrders(): Promise<OrdersList> {
 export async function createInboundOrder(
   payload: InboundOrderCreateInput,
 ): Promise<InboundOrder> {
-  return request<InboundOrder>(inventoryPath("/orders/inbound"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  return withCorrelatedRequest(() =>
+    request<InboundOrder>(inventoryPath("/orders/inbound"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  );
 }
 
 export async function createOutboundOrder(
   payload: OutboundOrderCreateInput,
 ): Promise<OutboundOrder> {
-  return request<OutboundOrder>(inventoryPath("/orders/outbound"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  return withCorrelatedRequest(() =>
+    request<OutboundOrder>(inventoryPath("/orders/outbound"), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }),
+  );
 }

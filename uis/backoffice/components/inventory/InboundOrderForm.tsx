@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useOrderFormAbandonment } from "@/hooks/useOrderFormAbandonment";
 import {
   INPUT_CLASS,
   LABEL_CLASS,
@@ -86,6 +87,23 @@ export default function InboundOrderForm({
   }, [locationId, selectedProduct, suppliers]);
 
   const quantityConstraints = getQuantityConstraints(selectedProduct?.unit);
+
+  const fieldsCompleted = useMemo(() => {
+    const completed: string[] = [];
+    if (form.ingredient_id) completed.push("ingredient_id");
+    if (form.quantity) completed.push("quantity");
+    if (form.supplier_id) completed.push("supplier_id");
+    if (form.location_id) completed.push("location_id");
+    return completed;
+  }, [form.ingredient_id, form.location_id, form.quantity, form.supplier_id]);
+
+  useOrderFormAbandonment({
+    formType: "SupplyOrder",
+    ingredientId: form.ingredient_id ? Number(form.ingredient_id) : null,
+    locationId: Number(form.location_id) || locationId,
+    fieldsCompleted,
+    active: Boolean(form.ingredient_id) && !submitting && !successMessage,
+  });
 
   useEffect(() => {
     let cancelled = false;

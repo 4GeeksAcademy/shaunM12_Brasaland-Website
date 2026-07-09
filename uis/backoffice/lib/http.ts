@@ -10,6 +10,7 @@
 
 import { LOGIN_PATH } from "./auth-config";
 import { clearAccessToken, getAccessToken, setAccessToken } from "./auth-storage";
+import { getCorrelatedRequestId } from "./request-id";
 import { getSessionDurationSeconds, track } from "./telemetry";
 
 let refreshPromise: Promise<string | null> | null = null;
@@ -50,6 +51,9 @@ export function refreshAccessToken(): Promise<string | null> {
 
 function withAuthHeaders(init: RequestInit, token: string | null): Headers {
   const headers = new Headers(init.headers);
+  if (!headers.has("X-Request-Id")) {
+    headers.set("X-Request-Id", getCorrelatedRequestId());
+  }
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }

@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Generator
+
 from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.security import OAuth2PasswordRequestForm
+from sqlmodel import Session
 
 import config
+from database import get_db
 from telemetry.context import EmitContext
 from telemetry.emit import emit_event
+from telemetry.throttle import should_emit_login_failed
 from users.models import UserResponse
 from users.repository import (
     EmailAlreadyExistsError,
@@ -43,13 +48,41 @@ logger = get_logger("auth")
 router = APIRouter(tags=["auth"])
 
 
-def _emit_auth_telemetry(event_type: str, properties: dict[str, str], *, user_id: int | None = None) -> None:
+def _optional_db() -> Generator[Session | None, None, None]:
+    if not config.DATABASE_URL:
+        yield None
+        return
+    yield from get_db()
+
+
+def _request_id_from_header(request: Request | None) -> str | None:
+    if request is None:
+        return None
+    header_value = request.headers.get("X-Request-Id")
+    if not header_value:
+        return None
+    candidate = header_value.strip()
+    return candidate or None
+
+
+def _emit_auth_telemetry(
+    event_type: str,
+    properties: dict[str, str],
+    *,
+    user_id: int | None = None,
+    session: Session | None = None,
+    request: Request | None = None,
+) -> None:
     """Best-effort auth telemetry that never blocks login flows."""
     try:
         emit_event(
             event_type,
             properties,
-            ctx=EmitContext.for_user(user_id),
+            ctx=EmitContext.for_user(
+                user_id,
+                request_id=_request_id_from_header(request),
+            ),
+            session=session,
         )
     except Exception as exc:  # noqa: BLE001 - telemetry must stay fail-open
         logger.warning("Auth telemetry emit failed for %s", event_type, exc_info=exc)
@@ -94,31 +127,40 @@ def login(
     response: Response,
     request: Request,
     form_data: OAuth2PasswordRequestForm = Depends(),
+    session: Session | None = Depends(_optional_db),
 ) -> TokenResponse:
     # OAuth2PasswordRequestForm carries the email in its `username` field.
     user = get_user_record_by_email(form_data.username)
     if user is None or not verify_password(form_data.password, user.hashed_password):
-        _emit_auth_telemetry(
-            "user_login_failed",
-            {
-                "failure_reason": "invalid_credentials",
-                "source_ip_hash": _hash_ip(_client_ip(request)),
-            },
-        )
+        ip_hash = _hash_ip(_client_ip(request))
+        if should_emit_login_failed(ip_hash):
+            _emit_auth_telemetry(
+                "user_login_failed",
+                {
+                    "failure_reason": "invalid_credentials",
+                    "source_ip_hash": ip_hash,
+                },
+                session=session,
+                request=request,
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
     if not user.is_active:
-        _emit_auth_telemetry(
-            "user_login_failed",
-            {
-                "failure_reason": "account_locked",
-                "source_ip_hash": _hash_ip(_client_ip(request)),
-            },
-            user_id=user.id,
-        )
+        ip_hash = _hash_ip(_client_ip(request))
+        if should_emit_login_failed(ip_hash):
+            _emit_auth_telemetry(
+                "user_login_failed",
+                {
+                    "failure_reason": "account_locked",
+                    "source_ip_hash": ip_hash,
+                },
+                user_id=user.id,
+                session=session,
+                request=request,
+            )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Inactive user",

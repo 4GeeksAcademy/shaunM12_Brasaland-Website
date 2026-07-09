@@ -52,6 +52,7 @@
       "event_type",
       "schemaVersion",
       "requestId",
+      "service",
       "properties"
     ],
     "fields": {
@@ -92,6 +93,11 @@
         "type": "string",
         "required": true,
         "description": "Correlates API request, UI action, and server logs"
+      },
+      "service": {
+        "type": "string",
+        "required": true,
+        "description": "Emitting surface identifier, e.g. backoffice or api"
       },
       "properties": {
         "type": "object",
@@ -141,7 +147,7 @@
     },
     "authentication": {
       "description": "Backoffice login, session, and credential events",
-      "source": "services/api/auth/, uis/backoffice/lib/http.ts",
+      "source": "services/api/auth/routes.py, uis/backoffice/context/AuthProvider.tsx, uis/backoffice/lib/http.ts",
       "events": [
         "user_login_succeeded",
         "user_login_failed",
@@ -420,7 +426,7 @@
       "event_type": "user_login_succeeded",
       "domain": "authentication",
       "description": "Successful backoffice login by a location manager or operator",
-      "trigger": "POST /auth/login on successful credential validation",
+      "trigger": "Backoffice AuthProvider after successful POST /auth/login response",
       "schemaVersion": 1,
       "processing": "batch",
       "kpiLinks": [],

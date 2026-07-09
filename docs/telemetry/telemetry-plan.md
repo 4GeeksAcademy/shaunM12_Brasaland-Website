@@ -138,8 +138,8 @@ Every emitted event must include these fields (see `event-schemas.json` → `env
 
 | Field | API (server) | Backoffice (client) |
 | ----- | ------------ | ------------------- |
-| `sessionId` | `EmitContext` in `services/api/telemetry/context.py` — `sess_` + 12 hex chars per request when no browser session | Stable per tab via planned `uis/backoffice/lib/telemetry/session.ts` |
-| `requestId` | `req_` + 12 hex chars per handler invocation | Client `X-Request-Id` when present; else generated client-side |
+| `sessionId` | `EmitContext` in `services/api/telemetry/context.py` — `sess_` + 12 hex chars per request when no browser session | Stable per tab via `uis/backoffice/lib/telemetry.ts` (`sessionStorage`) |
+| `requestId` | `req_` + 12 hex chars per handler invocation, or client `X-Request-Id` when present | `X-Request-Id` on authorized API calls; order submits use one correlated id via `request-id.ts` |
 | `userId` | JWT user UUID; `"anonymous"` for pre-auth only | Auth store UUID after login |
 
 ---
@@ -190,6 +190,8 @@ Full property allowlists and field types: `event-schemas.json` → `events`.
 
 Routing index: `event-schemas.json` → `processing`.
 
+Backend `emit_event()` may attach a `processing` hint (`stream` vs `batch`) to stdout envelopes. That field is sink metadata only and is not part of the persisted ingestion envelope stored in `telemetry_events`.
+
 ### Throttle and debounce
 
 | Event | Strategy | Rule |
@@ -229,6 +231,13 @@ Full rules: `event-schemas.json` → `throttle`.
 - Indexes: `event_type`, `timestamp`, GIN on `tags`.
 - Row model is append-only; no business update/delete flow.
 
+### Dual persistence paths
+
+- **Frontend batches** → `POST /telemetry/events` when `TELEMETRY_PHASE_MODE=storage`.
+- **Backend inventory/auth emit** → `emit_event()` → `write_postgres()` when `TELEMETRY_ENABLED=true` and `TELEMETRY_SINK` includes `postgres`.
+
+Both paths write to the same table. Enable both for full end-to-end coverage from backoffice orders and navigation events.
+
 ---
 
 ## Phase 4 — Reporting Runtime
@@ -244,12 +253,14 @@ Full rules: `event-schemas.json` → `throttle`.
 
 ### Metrics implemented
 
-- `consumption_by_location_per_day`
-  - Business question: how many `consumption_order_created` events occurred per day per location?
-- `order_failure_rate_per_day`
-  - Business question: what share of order attempts (`supply` + `consumption`) failed each day?
-- `auth_failure_rate_per_day` (optional activity, implemented)
-  - Business question: what share of login attempts failed each day?
+- `daily_consumption_by_ingredient_and_location` (KPI 1)
+  - `SUM(quantity)` from `consumption_order_created` where `reason = consumption`, grouped by date, ingredient, and location.
+- `stock_out_frequency` (KPI 2)
+  - Count of `stock_threshold_triggered` plus `consumption_order_failed` where `error_code = insufficient_stock`, grouped by date, ingredient, and location.
+- `waste_loss_ratio` (KPI 3)
+  - `waste_quantity / total_quantity` from `consumption_order_created`, grouped by date and location.
+- `auth_failure_rate_per_day` (optional, not a Phase 1 KPI)
+  - Daily login failure ratio from `user_login_succeeded` and `user_login_failed`.
 
 ### Cache
 
@@ -269,16 +280,16 @@ Full rules: `event-schemas.json` → `throttle`.
 | `consumption_order_failed` | API | `services/api/inventory/routes.py` → on `InsufficientStockError` |
 | `stock_threshold_triggered` | API | `services/api/inventory/repository.py` → after order commit + stock compare |
 | `direct_stock_edit_rejected` | API | `services/api/inventory/routes.py` → `PATCH /inventory/products/{id}` guard |
-| `user_login_succeeded` | API | `services/api/auth/` → login success handler |
+| `user_login_succeeded` | Frontend | `uis/backoffice/context/AuthProvider.tsx` → after successful login |
 | `user_login_failed` | API | `services/api/auth/` → login failure handler |
 | `session_expired` | Frontend | `uis/backoffice/lib/http.ts` → refresh failure |
-| `ingredient_list_viewed` | API + Frontend | `GET /inventory/products` + products page mount |
+| `ingredient_list_viewed` | Frontend | `/inventory/products` page mount |
 | `location_filter_applied` | Frontend | Inventory location selector |
 | `order_form_abandoned` | Frontend | `InboundOrderForm`, `OutboundOrderForm` idle detection |
 
 **Ownership rule:** each event has a single emitter. Inventory order lifecycle events are backend-owned (API/repository) and must not be emitted again from frontend forms.
 
-### Module layout (implemented + pending)
+### Module layout (implemented)
 
 ```text
 services/api/telemetry/
@@ -287,10 +298,12 @@ services/api/telemetry/
   models.py        # telemetry_events storage model
   routes.py        # /telemetry/events + /telemetry/report
   analysis.py      # phase 4 pandas metric pipeline
+  throttle.py      # auth failure throttle helper
   seed.py          # reset and seed helper
 
-uis/backoffice/lib/telemetry/
-  telemetry.ts     # client batching/flush helper (implemented path)
+uis/backoffice/lib/
+  telemetry.ts     # client batching/flush helper
+  request-id.ts    # correlated request ids for API + telemetry
 ```
 
 ---
@@ -299,7 +312,8 @@ uis/backoffice/lib/telemetry/
 
 | Variable | Purpose | Default |
 | -------- | ------- | ------- |
-| `TELEMETRY_ENABLED` | Master switch | `false` |
+| `TELEMETRY_ENABLED` | Master switch for backend `emit_event()` path | `false` (auto `true` in development when `DATABASE_URL` is set and var is omitted) |
+| `TELEMETRY_SINK` | Backend emit destinations (`stdout`, `postgres`, `both`) | `stdout` (auto `both` in development when `DATABASE_URL` is set and var is omitted) |
 | `TELEMETRY_STREAM_ENDPOINT` | Stream sink URL | — |
 | `TELEMETRY_BATCH_BUCKET` | Batch export destination | — |
 | `TELEMETRY_SAMPLE_RATE` | Client sampling `0.0`–`1.0` | `1.0` |
@@ -310,10 +324,14 @@ uis/backoffice/lib/telemetry/
 
 ### Local development
 
-1. Set `TELEMETRY_ENABLED=true` in root `.env`.
-2. Point `TELEMETRY_STREAM_ENDPOINT` to a local collector or stdout adapter.
+1. Set `DATABASE_URL` to your Supabase/Postgres URI.
+2. Either set `TELEMETRY_ENABLED=true` and `TELEMETRY_SINK=both`, or omit them in `APP_ENV=development` to auto-enable backend persistence.
 3. Emit test events and validate against `event-schemas.json` allowlists.
 4. Confirm consumption events match Milestone 5 reason values (`consumption`, `waste`).
+
+### Login `location_id` semantics
+
+`user_login_succeeded.location_id` is optional. The backoffice sends the last inventory location selected in-session when available; first login before visiting inventory may omit it. This does not change Milestone 5 auth contracts.
 
 ---
 
@@ -361,7 +379,7 @@ uis/backoffice/lib/telemetry/
 | API uses `IngredientEntry`/`IngredientExit`; events use `SupplyOrder`/`ConsumptionOrder` | ✅ Mapped in route emitters |
 | Supabase storage + mixed-batch ingestion (`POST /telemetry/events`) | ✅ Implemented in Phase 3 |
 | Telemetry report endpoint (`GET /telemetry/report`) + pandas metrics + 60s cache | ✅ Implemented in Phase 4 |
-| Backoffice-only events (`location_filter_applied`, `order_form_abandoned`) | 🟡 Pending |
+| Backoffice-only events (`location_filter_applied`, `order_form_abandoned`) | ✅ Implemented |
 
 ---
 
@@ -375,7 +393,7 @@ uis/backoffice/lib/telemetry/
 6. [x] Throttle rules in `throttle` match this runbook.
 7. [x] Test emit validates allowlist rejection for extra keys (`tests/test_telemetry.py`).
 8. [x] Storage mode supports mixed-batch persistence and one bulk insert per batch.
-9. [x] `GET /telemetry/report` returns grouped metrics with period defaults and 60-second cache.
+9. [x] `GET /telemetry/report` returns the three Phase 1 KPI metrics with period defaults and 60-second cache.
 10. [x] Optional auth metric uses login success/failure events to compute daily ratio.
 11. [x] Remaining gaps are frontend-only additive instrumentation (`location_filter_applied`, `order_form_abandoned`).
 

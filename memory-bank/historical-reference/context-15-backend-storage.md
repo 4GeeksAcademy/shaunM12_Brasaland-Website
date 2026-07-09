@@ -37,6 +37,15 @@
 - Response contract is `{ "received": N, "stored": M, "rejected": R }`.
 - Telemetry rows are immutable once recorded (no update/delete business logic).
 
+### Dual persistence paths
+
+Telemetry rows can reach `telemetry_events` through two complementary paths:
+
+1. **Frontend batch ingestion** — `TelemetryService.track()` batches events to `POST /telemetry/events` (this phase's primary contract). Controlled by `TELEMETRY_PHASE_MODE=storage`.
+2. **Backend direct emit** — inventory and auth API handlers call `emit_event()` → `write_postgres()` in `services/api/telemetry/sinks.py`. Controlled by `TELEMETRY_ENABLED=true` and `TELEMETRY_SINK=postgres|both`.
+
+Both paths write to the same `telemetry_events` table. Phase 3 grading focuses on the ingestion endpoint; backend emit is the Phase 1 inventory instrumentation path documented in `docs/telemetry/telemetry-plan.md`.
+
 ---
 
 ## Important Note on Examples
@@ -96,10 +105,10 @@ Create `telemetry_events` with eight columns:
 
 1. `id` (PK, identity)
 2. `event_type` (text)
-3. `timestamp` (timestamptz)
+3. `timestamp` (timestamptz or timezone-aware timestamp)
 4. `service` (text)
 5. `level` (text)
-6. `value` (numeric, nullable)
+6. `value` (numeric / double precision, nullable)
 7. `tags` (jsonb)
 8. `created_at` (timestamptz default `now()`)
 
@@ -184,12 +193,12 @@ With the real endpoint active:
 
 ## Verification Checklist for Brasaland
 
-- [ ] `supply_order_created` rows include `location_id` in `tags` (required for country segmentation)
-- [ ] `consumption_order_created` rows include `reason` in `tags` using Milestone 5 values (`consumption`, `waste`)
-- [ ] No row contains manager names, email addresses, passwords, or raw error stacks in `tags`
-- [ ] Colombian and Florida events are segmentable via `location_id` in `tags`
-- [ ] Mixed batch response correctly reports `received`, `stored`, and `rejected`
-- [ ] Insert behavior is one bulk operation per batch
+- [x] `supply_order_created` rows include `location_id` in `tags` (required for country segmentation)
+- [x] `consumption_order_created` rows include `reason` in `tags` using Milestone 5 values (`consumption`, `waste`)
+- [x] No row contains manager names, email addresses, passwords, or raw error stacks in `tags`
+- [x] Colombian and Florida events are segmentable via `location_id` in `tags`
+- [x] Mixed batch response correctly reports `received`, `stored`, and `rejected`
+- [x] Insert behavior is one bulk operation per batch
 
 ---
 
