@@ -7,7 +7,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 
-def test_telemetry_events_accepts_valid_batch(anon_client: TestClient):
+def test_telemetry_events_accepts_valid_batch(
+    anon_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
+):
+    # Phase 2 compatibility: stub endpoint returns only {"received": N}.
+    monkeypatch.setattr(config, "TELEMETRY_PHASE_MODE", "stub")
     payload = {
         "events": [
             {
@@ -30,7 +35,9 @@ def test_telemetry_events_accepts_valid_batch(anon_client: TestClient):
 
 def test_telemetry_events_rejects_invalid_envelope_in_stub_mode(
     anon_client: TestClient,
+    monkeypatch: pytest.MonkeyPatch,
 ):
+    monkeypatch.setattr(config, "TELEMETRY_PHASE_MODE", "stub")
     payload = {
         "events": [
             {

@@ -5,7 +5,7 @@
 > **Repository index:** `context-15-backend-storage.md`  
 > **Companion docs:** `memory-bank/historical-reference/context-15-telemetry-plan.md`, `memory-bank/historical-reference/context-15-telemetry-frontend-capture.md`, `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
 > **Type:** Telemetry persistence + ingestion endpoint  
-> **Status:** 🟡 Planned
+> **Status:** 🟢 Implemented (`TELEMETRY_PHASE_MODE=storage`)
 
 > **Authority rule:** Milestone 5 contexts are authoritative for runtime inventory behavior. This phase persists telemetry as an additive layer and must not redefine Milestone contracts.
 
@@ -30,6 +30,7 @@
 
 - Reuse the exact `TelemetryEvent` model from the previous phase; do not modify it.
 - Endpoint request contract remains `{ "events": [...] }`.
+- Runtime switch supports both phases: `TELEMETRY_PHASE_MODE=stub|storage` (Phase 3 uses `storage`).
 - Validation is done **per event** inside the handler with `TelemetryEvent.model_validate(...)`.
 - Valid events must still be stored when other events in the same batch are invalid.
 - Insert valid events using **one bulk insert operation per batch**.

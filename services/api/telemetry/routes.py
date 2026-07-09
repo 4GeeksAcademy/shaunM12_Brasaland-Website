@@ -8,6 +8,7 @@ from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from pydantic import BaseModel, Field, ValidationError
+from sqlalchemy import insert
 from sqlmodel import Session
 
 import config
@@ -91,7 +92,7 @@ def _ingest_storage(
 
     received = len(raw_events)
     rejected = 0
-    valid_rows: list[TelemetryEventRow] = []
+    valid_rows: list[dict[str, Any]] = []
     event_types: list[str] = []
     for raw_event in raw_events:
         try:
@@ -103,20 +104,21 @@ def _ingest_storage(
 
         event_types.append(event.event_type)
         valid_rows.append(
-            TelemetryEventRow(
-                event_type=event.event_type,
-                timestamp=event.timestamp,
-                service=event.service,
-                level="info",
-                value=_project_numeric_value(event.properties),
-                tags=event.properties,
-            )
+            {
+                "event_type": event.event_type,
+                "timestamp": event.timestamp,
+                "service": event.service,
+                "level": "info",
+                "value": _project_numeric_value(event.properties),
+                "tags": event.properties,
+            }
         )
 
     stored = 0
     if valid_rows and session is not None:
         ensure_telemetry_schema(session)
-        session.add_all(valid_rows)
+        # One bulk insert operation per batch for Phase 3 throughput/atomicity.
+        session.execute(insert(TelemetryEventRow), valid_rows)
         session.commit()
         stored = len(valid_rows)
 
