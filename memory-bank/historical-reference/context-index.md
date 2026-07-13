@@ -22,10 +22,15 @@ Ordered index of historical reference context documents.
 - `context-13-centralized-incident-manager-execution-roadmap.md` — Incident manager roadmap
 - `context-14-containerization.md` — Repository containerization
 - `context-15-telemetry-plan.md` — Telemetry Phase 1 design (inventory KPIs + event schemas)
+- `context-15-telemetry-frontend-capture.md` — Telemetry frontend capture
+- `context-15-backend-storage.md` — Telemetry backend storage
+- `context-15-telemetry-report.md` — Telemetry report / KPI analysis
+- `context-16-milestone-6-data-pipeline-design.md` — Milestone 6 Phase 1 data pipeline design
 
 ## Numbering Notes
 
 - `context-13` is reserved for the centralized incident manager workstream.
 - `context-14` is reserved for containerization.
 - `context-15` is reserved for telemetry.
+- `context-16` is reserved for Milestone 6 data pipeline (Phase 1 design; Phases 2–3 get separate files).
 - `context-9` currently has three related companion files by design.
