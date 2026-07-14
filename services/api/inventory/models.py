@@ -52,6 +52,7 @@ class IngredientEntry(SQLModel, table=True):
     supplier_id: int = Field(index=True)
     supplier_name: str
     location_id: int
+    unit_cost: float | None = Field(default=None)
     created_at: datetime = Field(default_factory=_utc_now)
     user_uuid: str
 

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlmodel import Session
 
@@ -10,6 +12,7 @@ from database import get_db
 from telemetry.constants import STOCK_MUTATION_FIELDS
 from telemetry.context import EmitContext
 from telemetry.emit import emit_event
+from telemetry.price import maybe_emit_ingredient_price_variance
 from users.models import UserResponse
 from . import repository
 from .supplier_validation import (
@@ -50,6 +53,13 @@ def _telemetry_ctx(
     if current_user is None:
         return EmitContext(request_id=request_id) if request_id else EmitContext()
     return EmitContext.for_user(current_user.id, request_id=request_id)
+
+
+def _product_meta(session: Session, product_id: int) -> tuple[str, str]:
+    product = repository.get_ingredient(session, product_id)
+    if product is None:
+        return "unknown", "unit"
+    return product.category, product.unit
 
 
 @router.get("/products", response_model=list[ProductResponse])
@@ -123,17 +133,20 @@ async def update_product(
     blocked_fields = sorted(STOCK_MUTATION_FIELDS.intersection(body))
     if blocked_fields:
         field_name = blocked_fields[0]
+        category, _unit = _product_meta(session, product_id)
+        props: dict[str, Any] = {
+            "product_id": product_id,
+            "product_category": category if category != "unknown" else None,
+            "location_id": location_id,
+            "attempted_field": field_name,
+            "attempted_value": str(body[field_name]),
+            "rejection_reason": "direct_stock_mutation_forbidden",
+            "http_method": "PATCH",
+            "http_path": str(request.url.path),
+        }
         emit_event(
             "direct_stock_edit_rejected",
-            {
-                "ingredient_id": product_id,
-                "location_id": location_id,
-                "attempted_field": field_name,
-                "attempted_value": str(body[field_name]),
-                "rejection_reason": "direct_stock_mutation_forbidden",
-                "http_method": "PATCH",
-                "http_path": str(request.url.path),
-            },
+            {key: value for key, value in props.items() if value is not None},
             ctx=_telemetry_ctx(current_user, request),
             session=session,
         )
@@ -169,6 +182,23 @@ def log_inbound_order(
     current_user: UserResponse = Depends(get_current_user),
 ) -> InboundOrderResponse:
     ctx = _telemetry_ctx(current_user, request)
+
+    def _failed(error_code: str) -> None:
+        props: dict[str, Any] = {
+            "product_id": payload.ingredient_id,
+            "quantity_requested": payload.quantity,
+            "location_id": payload.location_id,
+            "error_code": error_code,
+        }
+        if payload.supplier_id is not None:
+            props["supplier_id"] = str(payload.supplier_id)
+        emit_event(
+            "inbound_order_failed",
+            props,
+            ctx=ctx,
+            session=session,
+        )
+
     try:
         order = repository.create_inbound_order(
             session,
@@ -177,77 +207,44 @@ def log_inbound_order(
             telemetry_ctx=ctx,
         )
     except repository.IngredientNotFoundError as exc:
-        emit_event(
-            "supply_order_failed",
-            {
-                "ingredient_id": payload.ingredient_id,
-                "quantity_requested": payload.quantity,
-                "supplier_id": str(payload.supplier_id) if payload.supplier_id else None,
-                "location_id": payload.location_id,
-                "error_code": "ingredient_not_found",
-            },
-            ctx=ctx,
-            session=session,
-        )
+        _failed("product_not_found")
         raise HTTPException(status_code=404, detail=str(exc))
     except SupplierNotFoundError as exc:
-        emit_event(
-            "supply_order_failed",
-            {
-                "ingredient_id": payload.ingredient_id,
-                "quantity_requested": payload.quantity,
-                "supplier_id": str(payload.supplier_id) if payload.supplier_id else None,
-                "location_id": payload.location_id,
-                "error_code": "unknown_supplier",
-            },
-            ctx=ctx,
-            session=session,
-        )
+        _failed("unknown_supplier")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except SupplierInactiveError as exc:
-        emit_event(
-            "supply_order_failed",
-            {
-                "ingredient_id": payload.ingredient_id,
-                "quantity_requested": payload.quantity,
-                "supplier_id": str(payload.supplier_id) if payload.supplier_id else None,
-                "location_id": payload.location_id,
-                "error_code": "validation_error",
-            },
-            ctx=ctx,
-            session=session,
-        )
+        _failed("validation_error")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
     except SupplierCountryMismatchError as exc:
-        emit_event(
-            "supply_order_failed",
-            {
-                "ingredient_id": payload.ingredient_id,
-                "quantity_requested": payload.quantity,
-                "supplier_id": str(payload.supplier_id) if payload.supplier_id else None,
-                "location_id": payload.location_id,
-                "error_code": "validation_error",
-            },
-            ctx=ctx,
-            session=session,
-        )
+        _failed("validation_error")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
-    ingredient = repository.get_ingredient(session, order.ingredient_id)
-    unit = ingredient.unit if ingredient else "unit"
-    emit_event(
-        "supply_order_created",
-        {
-            "supply_order_id": order.id,
-            "ingredient_id": order.ingredient_id,
-            "quantity": order.quantity,
-            "supplier_id": str(order.supplier_id),
-            "location_id": order.location_id,
-            "created_by": str(current_user.id),
-            "unit": unit,
-        },
+    category, unit = _product_meta(session, order.ingredient_id)
+    created_props: dict[str, Any] = {
+        "inbound_order_id": order.id,
+        "product_id": order.ingredient_id,
+        "product_category": category,
+        "quantity": order.quantity,
+        "supplier_id": str(order.supplier_id),
+        "location_id": order.location_id,
+        "created_by": str(current_user.id),
+        "unit": unit,
+    }
+    if order.unit_cost is not None:
+        created_props["unit_cost"] = order.unit_cost
+    emit_event("inbound_order_created", created_props, ctx=ctx, session=session)
+
+    maybe_emit_ingredient_price_variance(
+        session,
+        inbound_order_id=order.id,
+        product_id=order.ingredient_id,
+        product_category=category,
+        supplier_id=order.supplier_id,
+        location_id=order.location_id,
+        quantity=order.quantity,
+        unit=unit,
+        new_unit_cost=order.unit_cost,
         ctx=ctx,
-        session=session,
     )
     return order
 
@@ -269,13 +266,13 @@ def log_outbound_order(
         )
     except repository.IngredientNotFoundError as exc:
         emit_event(
-            "consumption_order_failed",
+            "outbound_order_failed",
             {
-                "ingredient_id": payload.ingredient_id,
+                "product_id": payload.ingredient_id,
                 "quantity_requested": payload.quantity,
-                "reason": payload.reason,
+                "api_reason": payload.reason,
                 "location_id": payload.location_id,
-                "error_code": "ingredient_not_found",
+                "error_code": "product_not_found",
             },
             ctx=ctx,
             session=session,
@@ -283,12 +280,12 @@ def log_outbound_order(
         raise HTTPException(status_code=404, detail=str(exc))
     except repository.InsufficientStockError as exc:
         emit_event(
-            "consumption_order_failed",
+            "outbound_order_failed",
             {
-                "ingredient_id": payload.ingredient_id,
+                "product_id": payload.ingredient_id,
                 "quantity_requested": payload.quantity,
                 "quantity_available": exc.available,
-                "reason": payload.reason,
+                "api_reason": payload.reason,
                 "location_id": payload.location_id,
                 "error_code": "insufficient_stock",
             },
@@ -297,22 +294,25 @@ def log_outbound_order(
         )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
-    ingredient = repository.get_ingredient(session, order.ingredient_id)
-    unit = ingredient.unit if ingredient else "unit"
-    emit_event(
-        "consumption_order_created",
-        {
-            "consumption_order_id": order.id,
-            "ingredient_id": order.ingredient_id,
-            "quantity": order.quantity,
-            "reason": order.reason,
-            "location_id": order.location_id,
-            "created_by": str(current_user.id),
-            "unit": unit,
-        },
-        ctx=ctx,
-        session=session,
-    )
+    category, unit = _product_meta(session, order.ingredient_id)
+    base_props = {
+        "outbound_order_id": order.id,
+        "product_id": order.ingredient_id,
+        "product_category": category,
+        "quantity": order.quantity,
+        "unit": unit,
+        "location_id": order.location_id,
+        "created_by": str(current_user.id),
+    }
+    if order.reason == "waste":
+        emit_event(
+            "stock_waste_registered",
+            {**base_props, "reason": "unspecified"},
+            ctx=ctx,
+            session=session,
+        )
+    else:
+        emit_event("outbound_order_created", base_props, ctx=ctx, session=session)
     return order
 
 

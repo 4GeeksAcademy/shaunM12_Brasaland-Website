@@ -67,16 +67,16 @@ def _prepare_timestamps(frame: pd.DataFrame) -> pd.DataFrame:
     return frame
 
 
-def daily_consumption_by_ingredient_and_location(
+def daily_consumption_by_product_and_location(
     start_date: datetime,
     end_date: datetime,
     *,
     session: Session | None,
 ) -> list[dict[str, Any]]:
-    """KPI 1: units consumed per ingredient per location per day (reason=consumption)."""
+    """KPI 1: units consumed per product per location per day."""
     frame = _query_events(
         session,
-        event_types=["consumption_order_created"],
+        event_types=["outbound_order_created"],
         start_date=start_date,
         end_date=end_date,
     )
@@ -85,24 +85,25 @@ def daily_consumption_by_ingredient_and_location(
 
     frame = _prepare_timestamps(_with_tag_columns(frame))
     frame["location_id"] = pd.to_numeric(frame.get("tag_location_id"), errors="coerce")
-    frame["ingredient_id"] = pd.to_numeric(frame.get("tag_ingredient_id"), errors="coerce")
+    frame["product_id"] = pd.to_numeric(frame.get("tag_product_id"), errors="coerce")
     frame["quantity"] = pd.to_numeric(frame.get("tag_quantity"), errors="coerce")
-    frame["reason"] = frame.get("tag_reason")
-    frame = frame.loc[frame["reason"].eq("consumption")].dropna(
-        subset=["location_id", "ingredient_id", "quantity"]
-    )
+    frame = frame.dropna(subset=["location_id", "product_id", "quantity"])
     if frame.empty:
         return []
 
     grouped = (
-        frame.groupby(["date", "ingredient_id", "location_id"], as_index=False)
+        frame.groupby(["date", "product_id", "location_id"], as_index=False)
         .agg(quantity=("quantity", "sum"))
-        .sort_values(["date", "location_id", "ingredient_id"])
+        .sort_values(["date", "location_id", "product_id"])
     )
     grouped["location_id"] = grouped["location_id"].astype(int)
-    grouped["ingredient_id"] = grouped["ingredient_id"].astype(int)
+    grouped["product_id"] = grouped["product_id"].astype(int)
     grouped["quantity"] = grouped["quantity"].astype(float)
-    return _records(grouped[["date", "ingredient_id", "location_id", "quantity"]])
+    return _records(grouped[["date", "product_id", "location_id", "quantity"]])
+
+
+# Back-compat alias for any lingering imports during transition.
+daily_consumption_by_ingredient_and_location = daily_consumption_by_product_and_location
 
 
 def stock_out_frequency(
@@ -111,10 +112,10 @@ def stock_out_frequency(
     *,
     session: Session | None,
 ) -> list[dict[str, Any]]:
-    """KPI 2: stock-out signals per ingredient, location, and day."""
+    """KPI 2: stock-out signals per product, location, and day."""
     frame = _query_events(
         session,
-        event_types=["stock_threshold_triggered", "consumption_order_failed"],
+        event_types=["stock_threshold_triggered", "outbound_order_failed"],
         start_date=start_date,
         end_date=end_date,
     )
@@ -123,27 +124,27 @@ def stock_out_frequency(
 
     frame = _prepare_timestamps(_with_tag_columns(frame))
     frame["location_id"] = pd.to_numeric(frame.get("tag_location_id"), errors="coerce")
-    frame["ingredient_id"] = pd.to_numeric(frame.get("tag_ingredient_id"), errors="coerce")
+    frame["product_id"] = pd.to_numeric(frame.get("tag_product_id"), errors="coerce")
     frame["error_code"] = frame.get("tag_error_code")
     is_threshold = frame["event_type"].eq("stock_threshold_triggered")
-    is_insufficient_stock = frame["event_type"].eq("consumption_order_failed") & frame[
+    is_insufficient_stock = frame["event_type"].eq("outbound_order_failed") & frame[
         "error_code"
     ].eq("insufficient_stock")
     frame = frame.loc[is_threshold | is_insufficient_stock].dropna(
-        subset=["location_id", "ingredient_id"]
+        subset=["location_id", "product_id"]
     )
     if frame.empty:
         return []
 
     grouped = (
-        frame.groupby(["date", "ingredient_id", "location_id"], as_index=False)
+        frame.groupby(["date", "product_id", "location_id"], as_index=False)
         .agg(count=("id", "count"))
-        .sort_values(["date", "location_id", "ingredient_id"])
+        .sort_values(["date", "location_id", "product_id"])
     )
     grouped["location_id"] = grouped["location_id"].astype(int)
-    grouped["ingredient_id"] = grouped["ingredient_id"].astype(int)
+    grouped["product_id"] = grouped["product_id"].astype(int)
     grouped["count"] = grouped["count"].astype(int)
-    return _records(grouped[["date", "ingredient_id", "location_id", "count"]])
+    return _records(grouped[["date", "product_id", "location_id", "count"]])
 
 
 def waste_loss_ratio(
@@ -152,10 +153,10 @@ def waste_loss_ratio(
     *,
     session: Session | None,
 ) -> list[dict[str, Any]]:
-    """KPI 3: waste quantity as a proportion of total outbound consumption per location/day."""
+    """KPI 3: waste quantity vs total outbound movement per location/day."""
     frame = _query_events(
         session,
-        event_types=["consumption_order_created"],
+        event_types=["outbound_order_created", "stock_waste_registered"],
         start_date=start_date,
         end_date=end_date,
     )
@@ -165,12 +166,11 @@ def waste_loss_ratio(
     frame = _prepare_timestamps(_with_tag_columns(frame))
     frame["location_id"] = pd.to_numeric(frame.get("tag_location_id"), errors="coerce")
     frame["quantity"] = pd.to_numeric(frame.get("tag_quantity"), errors="coerce")
-    frame["reason"] = frame.get("tag_reason")
     frame = frame.dropna(subset=["location_id", "quantity"])
     if frame.empty:
         return []
 
-    frame["is_waste"] = frame["reason"].eq("waste")
+    frame["is_waste"] = frame["event_type"].eq("stock_waste_registered")
     frame["waste_quantity_col"] = frame["quantity"].where(frame["is_waste"], 0.0)
     grouped = (
         frame.groupby(["date", "location_id"], as_index=False)

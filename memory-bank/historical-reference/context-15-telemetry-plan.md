@@ -4,44 +4,44 @@
 
 > **Repository index:** `context-15-telemetry-plan.md`  
 > **Companion docs:** `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
+> **Alignment:** `context-15-course-alignment-plan.md`  
 > **Related context:** `context-11-milestone-5-backend-inventory-management.md`, `context-12-milestone-5-backoffice-inventory-interface.md`  
-> **Type:** Observability design + Wave 1 inventory instrumentation (partial)  
-> **Status:** 🟢 Phases 1–4 implemented; Milestone 5 contracts unchanged (additive telemetry only)
+> **Type:** Observability design + Wave 1 inventory instrumentation  
+> **Status:** 🟢 Course floor (`schemaVersion` 2) implemented end-to-end — docs, emitters, analysis, tests, and seeds
 
-> **Authority rule:** Milestone 5 contexts (`context-11-milestone-5-backend-inventory-management.md`, `context-12-milestone-5-backoffice-inventory-interface.md`) remain the runtime source of truth. This telemetry context is additive only and must not alter Milestone 5 API contracts.
+> **Authority rule:** Milestone 5 contexts remain the **runtime** source of truth for inventory/API. The course telemetry CONTEXT owns the **telemetry floor** (capture → storage contracts). This telemetry context is additive and must not alter Milestone 5 stock math, routes, or API exit `reason` (`consumption` | `waste`).
 
 ---
 
 ## Business Objective
 
-Brasaland is a grilled food restaurant chain with 14 locations across Colombia and Florida.  
-Brasaland Digital (CTO Nicolás Park) built an inventory system that tracks ingredient stock via `Ingredient`, `SupplyOrder`, and `ConsumptionOrder` — enforcing the rule that stock levels are never edited directly.
+Brasaland is a grilled-food restaurant chain with 14 locations across Colombia and Florida. The inventory system already controls ingredients — meats, vegetables, sauces, beverages, packaging — but operations cannot yet see what is happening inside it.
 
-Operations (Felipe Guerrero, Operations Director) and leadership (Mariana Restrepo, CEO) are asking questions the system cannot yet answer: daily outbound order volume, which ingredients accumulate validation errors, whether users attempt direct stock edits, and when minimum-stock alerts fire most often. The backoffice also lacks visibility into login failures, section usage, and abandoned flows.
+Telemetry Plan, capture, storage, and technical report revolve around that inventory system. They are the foundation for later executive dashboards and business reports (sales per location, Colombia vs Florida, strategic alerts for Mariana and Felipe).
 
-This context defines the telemetry plan the team will implement: KPIs, events, envelopes, stream/batch routing, and exclusions.
+This context defines KPIs, course-floor events, envelopes, stream/batch routing, and exclusions.
 
 ---
 
 ## Locked Decisions
 
-- **Canonical entity names:** `Ingredient`, `SupplyOrder`, `ConsumptionOrder` (not generic README names in schemas or events).
-- **Event contracts live in `docs/telemetry/event-schemas.json`.** Application code must not invent parallel event names or payload shapes.
+- **Telemetry entity vocabulary:** `Product`, `InboundOrder`, `OutboundOrder` (course / API names). Milestone ORM: `Ingredient`, `IngredientEntry`, `IngredientExit`.
+- **Course owns telemetry contracts; Milestone 5 owns inventory/API.** See `context-15-course-alignment-plan.md`.
+- **Event contracts live in `docs/telemetry/event-schemas.json`** (`schemaVersion` 2). Application code must not invent parallel event names or payload shapes.
 - **Standard envelope on every event:** `eventId`, `timestamp` (ISO 8601 UTC), `sessionId`, `userId`, `event_type`, `schemaVersion`, `requestId`, `service`, `properties`.
-- **Naming convention:** `entity_action` snake_case (e.g. `supply_order_created`, `stock_threshold_triggered`).
-- **Property allowlists are mandatory.** Only explicitly declared keys per event; nothing outside the allowlist.
-- **No PII in telemetry.** `created_by` / `userId` are opaque TinyDB UUIDs — never names or email addresses.
-- **Dual currency:** `currency` is `COP` for locations 1–9, `USD` for 10–14; derived from `location_id`, not client-side strings.
-- **Multi-location:** location-scoped events must include `location_id` (integer 1–14).
-- **Milestone 5 reason enum parity:** `ConsumptionOrder.reason` at API boundaries is `consumption` or `waste`.
+- **Naming convention:** `entity_action` snake_case (e.g. `inbound_order_created`, `stock_threshold_triggered`).
+- **Property allowlists are mandatory.** Only explicitly declared keys per event.
+- **Floor properties (inventory):** `location_id`, `country` (`CO`/`US`), `product_id`, `product_category`, `quantity`, `unit`, `currency` (`COP`/`USD`) — derived server-side where applicable.
+- **No PII in telemetry.** Opaque TinyDB UUIDs only — never names or emails.
+- **No FX conversion** at the telemetry layer; executive reporting converts later.
+- **Milestone 5 API reason enum unchanged:** `consumption` | `waste`. Waste subtypes are telemetry (now: `unspecified` allowed; later: additive `waste_subtype`).
 - **Fail-open on client, fail-safe on server.** Telemetry must never block user flows.
-- **Wave 1 inventory instrumentation is live** in `services/api/telemetry/` (6 events). Frontend auth/navigation capture is live for all five client-owned events.
 
 ---
 
 ## Focus
 
-Define exactly what data Brasaland captures to answer three inventory KPIs and selected backoffice operational questions — before writing instrumentation code.
+Define exactly what Brasaland captures for the **course floor** metrics and three reporting KPIs — before (or while) aligning instrumentation code.
 
 Primary surfaces:
 
@@ -53,58 +53,80 @@ Primary surfaces:
 
 ## Canonical Inventory Entities
 
-| Generic name (README) | Brasaland entity name | Description |
-| --------------------- | --------------------- | ----------- |
-| `Product` | `Ingredient` | A tracked ingredient (e.g. beef cut, sauce, packaging material) |
-| `InboundOrder` | `SupplyOrder` | A supplier delivery that increases ingredient stock |
-| `OutboundOrder` | `ConsumptionOrder` | A kitchen consumption record that reduces ingredient stock |
+| Telemetry / API name | Milestone 5 ORM | Description |
+| -------------------- | --------------- | ----------- |
+| `Product` | `Ingredient` | Ingredient or supply item (e.g. beef loin, house sauce, takeout packaging). Unit of measure + category. |
+| `InboundOrder` | `IngredientEntry` | Goods received from a supplier at a location |
+| `OutboundOrder` | `IngredientExit` | Dish-prep consumption or recorded waste |
+| `location` | location id 1–14 | Country (`CO`/`US`) and city |
+| `supplier` | supplier directory | ~20 suppliers, different per country |
 
-### `Ingredient`
+### `Product` (ORM: `Ingredient`)
 
 | Field | Type | Notes |
 | ----- | ---- | ----- |
-| `id` | int (PK) | |
-| `name` | string | |
-| `category` | string | `meat`, `produce`, `sauce`, `beverage`, `packaging`, `cleaning` |
+| `id` | int (PK) | Emitted as `product_id` |
+| `name` | string | Not emitted in high-volume telemetry |
+| `category` | string | API: `meat`, `seafood`, `produce`, `sauce`, `beverage`, `packaging`, `cleaning` (course synonyms: `protein`≈`meat`/`seafood`, `vegetable`≈`produce`) |
 | `unit` | string | e.g. `kg`, `litre`, `unit` |
 | `current_stock` | float | Computed — never stored directly |
 | `min_stock_threshold` | float | Alert threshold per location |
-| `location_id` | int | 1–14 |
-| `currency` | string | `COP` or `USD` |
+| `country` | string | Product catalogue country when present |
 
-### `SupplyOrder`
+### `InboundOrder` (ORM: `IngredientEntry`)
 
 | Field | Type | Notes |
 | ----- | ---- | ----- |
-| `id` | int (PK) | |
-| `ingredient_id` | int (FK → Ingredient) | |
+| `id` | int (PK) | Emitted as `inbound_order_id` |
+| `ingredient_id` | int | Emitted as `product_id` |
 | `quantity` | float | |
-| `supplier_id` | string | Supplier identifier |
+| `supplier` | string | Emitted as `supplier_id` |
 | `location_id` | int | 1–14 |
-| `created_by` | string | Opaque TinyDB user UUID |
+| `created_by` / `user_uuid` | string | Opaque TinyDB UUID |
 | `created_at` | datetime (UTC) | |
 
-### `ConsumptionOrder`
+### `OutboundOrder` (ORM: `IngredientExit`)
 
 | Field | Type | Notes |
 | ----- | ---- | ----- |
-| `id` | int (PK) | |
-| `ingredient_id` | int (FK → Ingredient) | |
+| `id` | int (PK) | Emitted as `outbound_order_id` |
+| `ingredient_id` | int | Emitted as `product_id` |
 | `quantity` | float | |
-| `reason` | string | `consumption`, `waste` |
+| `reason` | string | API: `consumption` \| `waste` only |
 | `location_id` | int | 1–14 |
-| `created_by` | string | Opaque TinyDB user UUID |
+| `created_by` / `user_uuid` | string | Opaque TinyDB UUID |
 | `created_at` | datetime (UTC) | |
 
 ---
 
-## The Three KPIs
+## Course Floor Metrics (mandatory)
 
-| # | KPI | Definition | Business decision it enables | Primary events | Data origin |
-| - | --- | ---------- | ---------------------------- | -------------- | ----------- |
-| 1 | **Daily consumption rate by ingredient and location** | Units consumed per ingredient per location per day (via `ConsumptionOrder` where `reason = consumption`) | Detect locations overconsuming relative to sales; adjust supplier orders | `consumption_order_created` | `POST /inventory/orders/outbound` |
-| 2 | **Stock-out frequency** | Times an ingredient's stock hit zero or `min_stock_threshold` in a period | Identify chronically under-stocked ingredients; renegotiate supply contracts | `stock_threshold_triggered`, `consumption_order_failed` | Stock recompute after order commit; outbound rejection |
-| 3 | **Waste and loss ratio** | Proportion of `ConsumptionOrder` with `reason = waste` vs total consumption | Flag abnormal waste patterns; trigger operational investigation | `consumption_order_created` | `POST /inventory/orders/outbound` |
+Instrument end-to-end (capture → storage). Design for aggregation by location, country, and week (future Felipe dashboard / Mariana weekly report).
+
+| `event_type` | Fires when… | Business hypothesis | Decision it enables |
+| ------------ | ----------- | ------------------- | ------------------- |
+| `inbound_order_created` | Location registers supplier arrival | Know purchase volume by location and supplier | Consolidate purchasing (Lucía) |
+| `outbound_order_created` | Location registers dish-prep consumption | Know consumption rate by location | Adjust auto order suggestion (Felipe) |
+| `stock_waste_registered` | Location registers waste | Know loss volume, why, where | Prioritize waste audits (Felipe) |
+| `stock_threshold_triggered` | Stock falls below configured minimum | Know shortfall frequency | Adjust threshold or replenishment |
+| `direct_stock_edit_rejected` | Direct stock edit blocked | Detect bypass of traceability | Training / permissions (Jake) |
+| `ingredient_price_variance_detected` | Inbound unit cost varies beyond threshold (default 10%) vs history for product/supplier | Detect abnormal price rises | Renegotiate or alternate supplier (Lucía, Mariana) |
+
+**Waste split:** API `reason=consumption` → `outbound_order_created` only. API `reason=waste` → `stock_waste_registered` only (never both).
+
+**Waste `reason` in telemetry:** target `expired` \| `kitchen_error` \| `theft_suspected`; interim `unspecified` until additive API `waste_subtype` (alignment decision 5).
+
+---
+
+## The Three Reporting KPIs
+
+Course floor feeds these aggregates (and later executive reporting):
+
+| # | KPI | Definition | Business decision | Primary events | Data origin |
+| - | --- | ---------- | ----------------- | -------------- | ----------- |
+| 1 | **Daily consumption rate by product and location** | Units consumed per product per location per day | Detect overconsumption; adjust supplier orders | `outbound_order_created` | `POST /inventory/orders/outbound` |
+| 2 | **Stock-out frequency** | Times stock hit zero or `min_stock_threshold` | Identify under-stocked products; renegotiate | `stock_threshold_triggered`, `outbound_order_failed` | Stock recompute; outbound rejection |
+| 3 | **Waste and loss ratio** | Wasted quantity vs total outbound movement | Flag abnormal waste; investigate | `stock_waste_registered`, `outbound_order_created` | Outbound commits |
 
 ---
 
@@ -112,57 +134,54 @@ Primary surfaces:
 
 ### Inventory flow (authenticated user → order complete)
 
-Journey: **login → stock list → (optional location filter) → inbound/outbound form → order submit → stock recompute → threshold check**.
+Journey: **login → stock list → (optional location filter) → inbound/outbound form → order submit → stock recompute → threshold check → (optional price variance check)**.
 
 | # | Point | System location | Event | Golden rule |
 | - | ----- | --------------- | ----- | ----------- |
-| 1 | Successful login | Backoffice auth (`AuthProvider`) after `POST /auth/login` succeeds | `user_login_succeeded` | We capture `user_login_succeeded` because we need to know **which operators are active per location per day**, which allows us to make the decision **to correlate consumption anomalies with staffing coverage**. |
-| 2 | Ingredient stock list opened | `GET /inventory/products` + `/inventory/products` | `ingredient_list_viewed` | We capture `ingredient_list_viewed` because we need to know **how often managers review stock before ordering**, which allows us to make the decision **whether to simplify the stock UI or add proactive alerts**. |
-| 3 | Location filter applied | `GET /inventory/products?location_id=` + location selector | `location_filter_applied` | We capture `location_filter_applied` because we need to know **which locations receive the most operational attention**, which allows us to make the decision **to prioritize location-specific training**. |
-| 4 | SupplyOrder registered | `POST /inventory/orders/inbound` after commit | `supply_order_created` | We capture `supply_order_created` because we need to know **inbound volume and timing per ingredient and location**, which allows us to make the decision **to adjust supplier delivery schedules before stock-outs**. |
-| 5 | SupplyOrder rejected | `POST /inventory/orders/inbound` on validation, unknown supplier, or 404 | `supply_order_failed` | We capture `supply_order_failed` because we need to know **which inbound orders fail validation and why (supplier, ingredient, quantity)**, which allows us to make the decision **to fix supplier-directory data or retrain managers on inbound entry (secondary to KPI 2)**. |
-| 6 | ConsumptionOrder registered | `POST /inventory/orders/outbound` after commit | `consumption_order_created` | We capture `consumption_order_created` because we need to know **daily consumption by ingredient, location, and reason**, which allows us to make the decision **to detect overconsumption and abnormal waste (KPIs 1 and 3)**. |
-| 7 | ConsumptionOrder rejected | `POST /inventory/orders/outbound` on validation or insufficient stock | `consumption_order_failed` | We capture `consumption_order_failed` because we need to know **which ingredients fail validation or exceed available stock**, which allows us to make the decision **to investigate data-entry errors vs real shortages (KPI 2 leading indicator)**. |
-| 8 | Direct stock edit blocked | API/UI attempt to mutate `current_stock` outside an order | `direct_stock_edit_rejected` | We capture `direct_stock_edit_rejected` because we need to know **whether users attempt to bypass the order-only stock rule**, which allows us to make the decision **to enforce training or tighten API guards**. |
-| 9 | Minimum threshold crossed | Repository stock recompute after order commit | `stock_threshold_triggered` | We capture `stock_threshold_triggered` because we need to know **when and where low-stock alerts fire (edge-triggered: stock crosses downward through `min_stock_threshold`)**, which allows us to make the decision **to trigger emergency supply orders (KPI 2)**. |
+| 1 | Successful login | Backoffice auth after `POST /auth/login` | `user_login_succeeded` | Correlate consumption anomalies with staffing coverage. |
+| 2 | Product stock list opened | `GET /inventory/products` + page | `ingredient_list_viewed` | Decide whether to simplify stock UI or add proactive alerts. |
+| 3 | Location filter applied | Location selector | `location_filter_applied` | Prioritize location-specific training. |
+| 4 | InboundOrder registered | `POST /inventory/orders/inbound` after commit | `inbound_order_created` | Consolidate purchasing and adjust delivery schedules (Lucía / Felipe). |
+| 5 | InboundOrder rejected | Inbound validation / 404 | `inbound_order_failed` | Fix supplier data or retrain inbound entry. |
+| 6 | Outbound consumption registered | Outbound commit, API `reason=consumption` | `outbound_order_created` | Detect overconsumption (KPI 1). |
+| 7 | Waste registered | Outbound commit, API `reason=waste` | `stock_waste_registered` | Prioritize waste audits (KPI 3). |
+| 8 | Outbound rejected | Validation or `InsufficientStockError` | `outbound_order_failed` | Distinguish data-entry errors vs shortages (KPI 2 leading). |
+| 9 | Direct stock edit blocked | PATCH guard / UI | `direct_stock_edit_rejected` | Enforce training or tighten guards (Jake). |
+| 10 | Minimum threshold crossed | Stock recompute after order | `stock_threshold_triggered` | Emergency replenishment (KPI 2). |
+| 11 | Price variance detected | After inbound when cost jumps | `ingredient_price_variance_detected` | Alert Lucía / Mariana to renegotiate. |
 
-### Backoffice opportunities (beyond inventory)
+### Backoffice opportunities (beyond course floor)
 
 | # | Section | Event | Golden rule |
 | - | ------- | ----- | ----------- |
-| 1 | Authentication | `user_login_failed` | We capture `user_login_failed` because we need to know **daily failed login volume and patterns**, which allows us to make the decision **to detect credential issues or brute-force attempts at specific locations**. |
-| 2 | Authentication | `session_expired` | We capture `session_expired` because we need to know **how often operators lose work mid-shift due to timeout**, which allows us to make the decision **to adjust session TTL or add save-draft UX on order forms**. |
-| 3 | Navigation | `order_form_abandoned` | We capture `order_form_abandoned` because we need to know **which SupplyOrder or ConsumptionOrder flows are started but not submitted**, which allows us to make the decision **to fix UX friction that blocks stock accuracy**. |
+| 1 | Authentication | `user_login_failed` | Detect credential issues or brute-force. |
+| 2 | Authentication | `session_expired` | Adjust session TTL or save-draft on forms. |
+| 3 | Navigation | `order_form_abandoned` | Fix UX friction blocking stock accuracy. |
 
 ### Candidate event disposition
 
 | Candidate event | Decision | Notes |
 | --------------- | -------- | ----- |
-| `supply_order_created` | **Keep** | Wave 1 schema; batch processing |
-| `consumption_order_created` | **Keep** | Primary KPI 1 + 3 feed |
-| `stock_threshold_triggered` | **Keep** | Primary KPI 2 feed; stream processing |
-| `direct_stock_edit_rejected` | **Keep** | Governance signal; stream processing |
-| `consumption_order_failed` | **Keep** | KPI 2 leading indicator; stream processing |
-| `supply_order_failed` | **Keep (secondary)** | Validation analytics; batch only; not KPI-primary |
-| `user_login_succeeded` | **Keep** | Staffing correlation; batch |
-| `user_login_failed` | **Keep** | Security; stream |
-| `session_expired` | **Keep** | UX; batch |
-| `ingredient_list_viewed` | **Keep** | Navigation; batch |
-| `order_form_abandoned` | **Keep** | UX funnel; batch |
-| `location_filter_applied` | **Keep** | Segmentation; batch |
+| `inbound_order_created` | **Keep (floor)** | Renamed from `supply_order_created` |
+| `outbound_order_created` | **Keep (floor)** | Consumption only |
+| `stock_waste_registered` | **Keep (floor)** | Split from former consumption+waste event |
+| `stock_threshold_triggered` | **Keep (floor)** | Stream |
+| `direct_stock_edit_rejected` | **Keep (floor)** | Stream |
+| `ingredient_price_variance_detected` | **Keep (floor)** | New; stream |
+| `outbound_order_failed` | **Keep (beyond floor)** | KPI 2 leading |
+| `inbound_order_failed` | **Keep (beyond floor)** | Validation analytics |
+| Auth / navigation trio | **Keep (beyond floor)** | Staffing, security, UX |
 
 ### Rejected candidate events
 
-Events considered during design but **not** included in Wave 1 — each rejected for a documented reason:
-
 | Candidate event | Decision | Reason discarded |
 | --------------- | -------- | ---------------- |
-| `ingredient_search_typed` | **Discard** | Per-keystroke search telemetry violates privacy exclusions; no KPI maps to raw typing. `order_form_abandoned` summary is sufficient for UX friction. |
-| `page_view` (generic) | **Discard** | Too broad — no hypothesis tied to a Brasaland ops decision. Replaced by domain-specific events (`ingredient_list_viewed`, `location_filter_applied`). |
-| `ingredient_name_viewed` | **Discard** | Ingredient names in high-volume navigation events add no KPI value and increase re-identification risk; use `ingredient_id` only. |
-| `supplier_contact_clicked` | **Discard** | Supplier PII (contacts) explicitly excluded; procurement analytics use `supplier_id` on `supply_order_created` instead. |
-| `stock_level_snapshot` (periodic) | **Discard** | Level-triggered stock polling would spam telemetry and duplicate computed stock; `stock_threshold_triggered` uses edge-trigger on order commit only. |
-| `raw_http_request` | **Discard** | Raw headers and bodies excluded; only `source_ip_hash` on `user_login_failed` for throttle keying. |
+| `ingredient_search_typed` | **Discard** | Per-keystroke privacy; use `order_form_abandoned`. |
+| `page_view` (generic) | **Discard** | No ops hypothesis; use domain events. |
+| `ingredient_name_viewed` | **Discard** | Re-identification risk; use `product_id`. |
+| `supplier_contact_clicked` | **Discard** | Supplier PII excluded; use `supplier_id`. |
+| `stock_level_snapshot` (periodic) | **Discard** | Level spam; use edge-triggered threshold. |
+| `raw_http_request` | **Discard** | Bodies/headers excluded. |
 
 ---
 
@@ -175,62 +194,60 @@ Events considered during design but **not** included in Wave 1 — each rejected
 | `eventId` | string (UUID v4) | ✅ | Unique idempotency key |
 | `timestamp` | string (ISO 8601 UTC) | ✅ | Emission time |
 | `sessionId` | string | ✅ | Opaque browser/API session id |
-| `userId` | string | ✅ | TinyDB user UUID; `"anonymous"` only for pre-auth events |
+| `userId` | string | ✅ | TinyDB user UUID; `"anonymous"` only for pre-auth |
 | `event_type` | string | ✅ | `entity_action` snake_case |
-| `schemaVersion` | integer | ✅ | Starts at `1`; increment on breaking changes |
-| `requestId` | string | ✅ | Correlates API request ↔ UI action ↔ logs |
-| `service` | string | ✅ | Emitting surface (`backoffice`, `api`) |
-| `properties` | object | ✅ | Event-specific payload (allowlist only) |
+| `schemaVersion` | integer | ✅ | Floor inventory events use `2` |
+| `requestId` | string | ✅ | Correlates API ↔ UI ↔ logs |
+| `service` | string | ✅ | `backoffice` or `api` |
+| `properties` | object | ✅ | Allowlist only |
 
-### Correlation identifiers (`sessionId`, `requestId`)
+### Correlation identifiers
 
 | Field | API (server) | Backoffice (client) |
 | ----- | ------------ | ------------------- |
-| `sessionId` | Generated per authenticated request via `EmitContext` (`sess_` + random hex) when no browser session exists | Stable per browser tab from `uis/backoffice/lib/telemetry.ts` (`sessionStorage`) |
-| `requestId` | Generated per API handler invocation (`req_` + random hex), or propagated from client `X-Request-Id` when present | Sent as `X-Request-Id` on authorized API calls; order submits share one correlated id across fetch + backend telemetry |
-| `userId` | TinyDB user UUID from JWT; `"anonymous"` for pre-auth events only | Same UUID from auth store after login |
-
----
+| `sessionId` | `EmitContext` (`sess_` + hex) when no browser session | `sessionStorage` via `telemetry.ts` |
+| `requestId` | Per handler or client `X-Request-Id` | Shared on order submits |
+| `userId` | JWT UUID; `"anonymous"` pre-auth | Auth store after login |
 
 ### Wave 1 event catalog
 
-Full schemas with property allowlists are in `docs/telemetry/event-schemas.json`.
+Full allowlists: `docs/telemetry/event-schemas.json`.
 
-| event_type | Description | KPI link | Sensitivity |
-| ---------- | ----------- | -------- | ----------- |
-| `supply_order_created` | SupplyOrder successfully registered | Indirect KPI 2 | Standard |
-| `consumption_order_created` | ConsumptionOrder successfully registered | KPI 1, KPI 3 | Standard |
-| `stock_threshold_triggered` | Stock at or below `min_stock_threshold` | KPI 2 | Standard |
-| `direct_stock_edit_rejected` | Blocked direct stock mutation | Governance | Standard |
-| `consumption_order_failed` | Outbound order rejected | KPI 2 leading | Standard |
-| `supply_order_failed` | Inbound order rejected | Validation analytics | Standard |
-| `user_login_succeeded` | Successful backoffice login | Staffing correlation | Standard |
-| `user_login_failed` | Failed backoffice login | Security | Standard |
-| `session_expired` | Session timed out | UX | Standard |
-| `ingredient_list_viewed` | Ingredient stock list opened | Navigation / UX | Standard |
-| `location_filter_applied` | Location filter changed on inventory pages | Segmentation | Standard |
-| `order_form_abandoned` | Order form started but not submitted | UX / data quality | Standard |
+| event_type | Floor? | Description | KPI / role |
+| ---------- | ------ | ----------- | ---------- |
+| `inbound_order_created` | ✅ | Inbound registered | Purchasing / indirect KPI 2 |
+| `outbound_order_created` | ✅ | Consumption registered | KPI 1, 3 |
+| `stock_waste_registered` | ✅ | Waste registered | KPI 3 |
+| `stock_threshold_triggered` | ✅ | Low-stock edge trigger | KPI 2 |
+| `direct_stock_edit_rejected` | ✅ | Blocked stock mutation | Governance |
+| `ingredient_price_variance_detected` | ✅ | Unit cost spike | Procurement alert |
+| `inbound_order_failed` | — | Inbound rejected | Validation |
+| `outbound_order_failed` | — | Outbound rejected | KPI 2 leading |
+| `user_login_succeeded` | — | Login ok | Staffing |
+| `user_login_failed` | — | Login failed | Security |
+| `session_expired` | — | Session timeout | UX |
+| `ingredient_list_viewed` | — | Stock list opened | Navigation |
+| `location_filter_applied` | — | Location filter | Segmentation |
+| `order_form_abandoned` | — | Form idle abandon | UX |
 
 ---
 
 ## Phase 3 — Delivery Strategy
 
-### Stream vs batch (business justification)
+### Stream vs batch
 
 | event_type | Processing | Justification |
 | ---------- | ---------- | ------------- |
-| `stock_threshold_triggered` | **Stream** | Stock-out at a high-volume Miami location on Friday night needs same-shift replenishment — not a weekly batch. |
-| `consumption_order_failed` | **Stream** | Insufficient-stock failures signal an active operational crisis. |
-| `direct_stock_edit_rejected` | **Stream** | Policy bypass attempts require near-real-time visibility. |
-| `user_login_failed` | **Stream** | Brute-force spike detection cannot wait for nightly ETL. |
-| `supply_order_created` | **Batch** (hourly) | Procurement decisions are daily/weekly. |
-| `consumption_order_created` | **Batch** (hourly) | KPI 1 and KPI 3 are daily aggregates. |
-| `supply_order_failed` | **Batch** | Validation errors inform training; not time-critical. |
-| `user_login_succeeded` | **Batch** | Staffing correlation is analyzed daily. |
-| `session_expired` | **Batch** | Session TTL tuning uses weekly aggregates. |
-| `ingredient_list_viewed` | **Batch** | Navigation analytics; no urgent ops decision. |
-| `location_filter_applied` | **Batch** | Weekly ops segmentation. |
-| `order_form_abandoned` | **Batch** | UX funnel analysis is weekly product work. |
+| `stock_threshold_triggered` | **Stream** | Same-shift replenishment |
+| `outbound_order_failed` | **Stream** | Active shortage / bad entry |
+| `direct_stock_edit_rejected` | **Stream** | Policy bypass |
+| `ingredient_price_variance_detected` | **Stream** | Procurement alert |
+| `user_login_failed` | **Stream** | Brute-force detection |
+| `inbound_order_created` | **Batch** | Daily/weekly purchasing |
+| `outbound_order_created` | **Batch** | Daily KPI 1 |
+| `stock_waste_registered` | **Batch** | Weekly waste ratio |
+| `inbound_order_failed` | **Batch** | Training analytics |
+| Auth success / session / navigation | **Batch** | Daily–weekly product ops |
 
 ### Throttle / debounce
 
@@ -238,9 +255,10 @@ Full schemas with property allowlists are in `docs/telemetry/event-schemas.json`
 | ---------- | -------- |
 | `ingredient_list_viewed` | Debounce 30s per `(sessionId, location_id)` |
 | `location_filter_applied` | Debounce 10s per `(sessionId, location_id)` |
-| `order_form_abandoned` | Emit once per `(sessionId, form_type, ingredient_id)` after 120s idle |
+| `order_form_abandoned` | Emit once per `(sessionId, form_type, product_id)` after 120s idle |
 | `user_login_failed` | Throttle max 1 per `(source_ip_hash, 60s)` |
-| `stock_threshold_triggered` | Dedupe per `(ingredient_id, location_id, 24h)` unless stock recovers and retriggers. **Edge-trigger only:** emit when `stock_before > min_stock_threshold` and `stock_after <= min_stock_threshold` — not while stock remains low. |
+| `stock_threshold_triggered` | Dedupe per `(product_id, location_id, 24h)`; edge-trigger only |
+| `ingredient_price_variance_detected` | Dedupe per `(product_id, supplier_id, location_id, 24h)` |
 
 ---
 
@@ -248,21 +266,21 @@ Full schemas with property allowlists are in `docs/telemetry/event-schemas.json`
 
 ### In scope
 
-- KPI definitions and event-to-KPI mapping
-- Inventory flow instrumentation map (9 points)
-- Backoffice instrumentation (3 non-inventory opportunities)
-- Standard event envelope and Wave 1 schemas (`docs/telemetry/event-schemas.json`)
-- Stream/batch routing and throttle rules
-- Operational runbook outline (`docs/telemetry/telemetry-plan.md`)
-- Risks, exclusions, and implementation-gap notes
+- Course floor metrics + three reporting KPIs
+- Inventory + backoffice instrumentation maps
+- Standard envelope and `event-schemas.json` v2
+- Stream/batch and throttle rules
+- Runbook (`docs/telemetry/telemetry-plan.md`)
+- Alignment decision log
 
-### Out of scope (Phase 1)
+### Out of scope (design / later course work)
 
-- Instrumentation code (emitters, sinks, SDK)
-- Third-party vendor selection (GA4, Datadog, Mixpanel, etc.)
-- Real-time executive dashboards
+- Third-party analytics vendors
+- Real-time executive dashboards (consume this data later)
 - OpenTelemetry / distributed tracing
-- Replacing existing `auth_audit` storage
+- Replacing `auth_audit` storage
+- Rewriting Milestone 5 API reason enum
+- Additive API `waste_subtype` (alignment decision 5 D)
 
 ---
 
@@ -270,11 +288,12 @@ Full schemas with property allowlists are in `docs/telemetry/event-schemas.json`
 
 ```text
 memory-bank/historical-reference/
-  context-15-telemetry-plan.md     # this document (canonical design)
+  context-15-telemetry-plan.md              # this document (canonical design)
+  context-15-course-alignment-plan.md       # locked remap decisions
 
 docs/telemetry/
-  telemetry-plan.md                # operational runbook (sinks, env, sampling)
-  event-schemas.json               # canonical event contracts + allowlists
+  telemetry-plan.md                         # operational runbook
+  event-schemas.json                        # canonical contracts + allowlists (v2)
 ```
 
 ---
@@ -283,62 +302,61 @@ docs/telemetry/
 
 ### Privacy and sensitivity
 
-- No emails, names, phone numbers, or free-text notes in telemetry.
-- `consumption_order_created` follows Milestone 5 reason values (`consumption`, `waste`) and remains standard telemetry.
-- `user_login_failed` carries `failure_reason` enum only — never attempted passwords.
+- No emails, names, phone numbers, or free-text notes.
+- No employee names or customer data in `properties`.
+- `user_login_failed` — `failure_reason` enum only; never passwords.
 
 ### Dual-currency
 
-- `currency` derived from `location_id` (1–9 → `COP`, 10–14 → `USD`).
-- Cross-location cost comparisons require explicit FX in the analytics layer — not in raw events.
+- `currency` from `location_id` (1–9 → `COP`, 10–14 → `USD`).
+- FX only in executive reporting — not in telemetry emit.
 
-### Multi-location
+### Multi-location / country
 
-- Operational events require `location_id` for country/city segmentation.
-- Events without location context use `location_id: null` and are excluded from location KPI rollups.
+- Inventory events require `location_id` and `country`.
+- UI language (ES/EN) is independent from `country` — do not mix.
+
+### Remaining follow-ups
+
+- Until `waste_subtype` exists on API, emit `reason: unspecified` on `stock_waste_registered` while still registering API `waste` (decision 5 D).
+- Typed waste seed reasons (`expired` / `kitchen_error` / `theft_suspected`) wait on that API addition.
 
 ### Data not captured
 
-- Raw HTTP headers (except one-way `source_ip_hash` for login throttle).
-- Ingredient unit costs until procurement exposes authoritative pricing.
-- Incident descriptions, supplier contacts, password-reset tokens.
-- Per-keystroke form telemetry (only `order_form_abandoned` summary).
+- Raw HTTP headers (except `source_ip_hash` for login throttle).
+- Supplier contacts, incident free text, password-reset tokens.
+- Per-keystroke form telemetry.
 
-See also **Rejected candidate events** (Phase 1 instrumentation map) for events explicitly considered and discarded during design.
+### Implementation status (course floor)
 
-### Implementation gaps (pre-instrumentation)
-
-- ~~`direct_stock_edit_rejected` requires explicit API guard on stock mutation attempts.~~ ✅ Done
-- ~~API paths today use `IngredientEntry`/`IngredientExit`; telemetry events use canonical `SupplyOrder`/`ConsumptionOrder` names.~~ ✅ Mapped in emitters
-- ~~`user_login_succeeded` and `session_expired` frontend capture.~~ ✅ Done (`AuthProvider`, `http.ts`)
-- ~~`ingredient_list_viewed` frontend capture.~~ ✅ Done (`/inventory/products` page)
-- ~~`location_filter_applied` and `order_form_abandoned`.~~ ✅ Done (products page + order forms)
+- ✅ Emitters use v2 `event_type`s; waste split to `stock_waste_registered`.
+- ✅ Report/`analysis.py` queries v2 names and `product_id`.
+- ✅ Price-variance emit + inbound `unit_cost` + seed fixtures.
+- ✅ Telemetry seed includes threshold and price-variance demo rows.
 
 ---
 
 ## Acceptance Criteria
 
-- Plan references `Ingredient`, `SupplyOrder`, `ConsumptionOrder` by canonical name.
-- All three KPIs mapped to events and system origins.
-- ≥ 5 instrumentation points with completed golden-rule sentences.
-- ≥ 2 non-inventory backoffice opportunities documented.
-- Standard envelope defined with all mandatory fields.
-- `docs/telemetry/event-schemas.json` contains ≥ 5 complete schemas with property allowlists.
-- Stream/batch decision per event with business (not technical) justification.
-- Risks section covers dual-currency, multi-location, and exclusions without conflicting with Milestone 5 runtime contracts.
+- Plan uses `Product` / `InboundOrder` / `OutboundOrder` in telemetry prose with Milestone ORM map.
+- Six course floor events documented with hypothesis → decision.
+- Three KPIs mapped to remapped primary events.
+- `event-schemas.json` schemaVersion 2 includes floor allowlists (`country`, `product_id`, `product_category`, …).
+- Waste split rules and C-now/D-later subtype path documented.
+- Stream/batch justified per event with business urgency.
+- Alignment plan indexed; Milestone 5 runtime contracts unchanged.
 
 ---
 
 ## Verification Checklist
 
-1. `context-15-telemetry-plan.md` indexed in `context-index.md`.
-2. `docs/telemetry/event-schemas.json` validates Wave 1 catalog (≥ 5 events).
-3. Each kept event survives the golden-rule test (hypothesis → decision).
-4. Every location-scoped schema includes `location_id` and `currency` where applicable.
-5. Consumption reason values align with Milestone 5 (`consumption`, `waste`) and legacy aliases are documented.
-6. Stream events (`stock_threshold_triggered`, `consumption_order_failed`, `direct_stock_edit_rejected`, `user_login_failed`) have business urgency documented.
-7. Throttle/debounce rules documented for high-frequency events.
-8. Implementation gaps listed before instrumentation sprint starts.
+1. `context-15-telemetry-plan.md` and `context-15-course-alignment-plan.md` indexed in `context-index.md`.
+2. `event-schemas.json` includes ≥ 6 floor events with allowlists.
+3. Each floor event survives the golden-rule test.
+4. Location-scoped inventory schemas include `location_id`, `country`, `currency`.
+5. API exit reasons remain `consumption` | `waste`; telemetry waste subtypes documented separately.
+6. Stream events include threshold, failed outbound, direct edit, price variance, login failed.
+7. Course-floor emitters, report metrics, and tests validated against `event-schemas.json` v2.
 
 ---
 
