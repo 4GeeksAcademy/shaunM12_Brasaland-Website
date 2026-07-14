@@ -65,6 +65,7 @@ def _seed_rows(now: datetime) -> list[TelemetryEvent]:
                 "product_category": "meat",
                 "quantity": 3,
                 "unit": "kg",
+                "unit_cost": 20000.0,
                 "reason": "unspecified",
                 "location_id": 1,
                 "country": "CO",

@@ -27,11 +27,14 @@ Ordered index of historical reference context documents.
 - `context-15-backend-storage.md` — Backend storage phase
 - `context-15-telemetry-report.md` — Telemetry report phase
 - `context-16-milestone-6-data-pipeline-design.md` — Milestone 6 Phase 1 data pipeline design
+- `context-16-milestone-6-resilient-data-pipeline.md` — Milestone 6 Phase 2 resilient Prefect pipeline + reporting APIs
+- `context-16-milestone-6-pipeline-subflows-tests.md` — Milestone 6 Phase 3 subflows, tests, `/reporting` dashboard
+- Shared design: `docs/pipelines/PIPELINE_DESIGN.md` (pointer: `data/pipelines/PIPELINE_DESIGN.md`)
 
 ## Numbering Notes
 
 - `context-13` is reserved for the centralized incident manager workstream.
 - `context-14` is reserved for containerization.
 - `context-15` is reserved for telemetry (plan, alignment, capture, storage, report companions).
-- `context-16` is reserved for Milestone 6 data pipeline (Phase 1 design; Phases 2–3 get separate files).
+- `context-16` is reserved for Milestone 6 data pipeline: Phase 1 design, Phase 2 resilient pipeline, Phase 3 subflows/tests/dashboard.
 - `context-9` currently has three related companion files by design.

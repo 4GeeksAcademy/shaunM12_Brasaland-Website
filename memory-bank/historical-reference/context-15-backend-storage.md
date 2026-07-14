@@ -145,7 +145,7 @@ These examples show the intent of storing event-specific properties in `tags`. T
 |---|---|
 | `inbound_order_created` | `{ "product_id": 7, "quantity": 50, "location_id": 3, "supplier_id": "12" }` |
 | `outbound_order_created` | `{ "product_id": 7, "quantity": 12, "location_id": 11 }` |
-| `stock_waste_registered` | `{ "product_id": 7, "quantity": 3, "reason": "unspecified", "location_id": 11 }` |
+| `stock_waste_registered` | `{ "product_id": 7, "quantity": 3, "unit_cost": 20.0, "reason": "unspecified", "location_id": 11 }` (optional `unit_cost` for M6 waste cost) |
 | `outbound_order_failed` | `{ "error_code": "insufficient_stock", "product_id": 7, "location_id": 3 }` |
 | `inbound_order_failed` | `{ "error_code": "unknown_supplier", "location_id": 11 }` |
 | `stock_threshold_triggered` | `{ "product_id": 7, "location_id": 3, "quantity": 2 }` |
