@@ -11,6 +11,8 @@ Phase 2 entrypoint: [`pipeline.py`](./pipeline.py). Prefect lives in the **`serv
 cd services/api && uv run python ../../data/pipelines/pipeline.py
 ```
 
+Blocks (optional): [`blocks.py`](./blocks.py) — `brasaland-postgres`, `brasaland-pipeline-settings` (cron `0 2 * * *` America/Bogota).
+
 Do **not** use `PATH=... python ...` (that is not `PYTHONPATH`) or system `python` outside the venv.
 
 Do not treat older daily `kpi_*` quantity tables as destination for Milestone 6 Phase 1+.

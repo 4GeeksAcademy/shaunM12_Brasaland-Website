@@ -11,6 +11,17 @@ def test_reporting_routes_require_auth(anon_client):
 
 def test_pipeline_module_importable():
     from data.pipelines import pipeline as pipeline_mod
+    from data.pipelines.blocks import (
+        NIGHTLY_CRON_BOGOTA,
+        BrasalandPipelineSettings,
+        load_pipeline_settings,
+    )
 
     assert pipeline_mod.FLOW_NAME == "brasaland_weekly_location_performance_pipeline"
     assert callable(pipeline_mod.brasaland_weekly_location_performance_pipeline)
+    assert NIGHTLY_CRON_BOGOTA == "0 2 * * *"
+    assert pipeline_mod.SCHEDULE_CRON == NIGHTLY_CRON_BOGOTA
+    assert BrasalandPipelineSettings._block_type_name == "brasaland-pipeline-settings"
+    settings = load_pipeline_settings()
+    assert settings["lookback_weeks"] == 2
+    assert settings["timezone"] == "America/Bogota"

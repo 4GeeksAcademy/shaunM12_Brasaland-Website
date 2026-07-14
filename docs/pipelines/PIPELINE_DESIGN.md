@@ -86,9 +86,9 @@ Deliver Mariana Restrepo (CEO) and Felipe Guerrero (Operations) a **weekly, per-
 | Filter | `event_type` ∈ source list; `timestamp` in extract window covering week(s) being recomputed |
 | Format | Relational rows; measures/dimensions in `tags` JSONB (`location_id`, `country`, `currency`, `quantity`, `unit_cost`, …) |
 | Cadence | Nightly ~02:00 `America/Bogota`; each run upserts **2** ISO weeks (open + previous) |
-| Credentials | Prefect Block `brasaland-postgres` (`DATABASE_URL`) |
-| Settings | Block `brasaland-pipeline-settings` (paths, lookback_weeks=2, timezone, schedule) |
+| Blocks | `brasaland-postgres`, `brasaland-pipeline-settings` (see `data/pipelines/blocks.py`; env fallback for local CLI) |
 | Grain write | **Sparse** — upsert only `(location_id, week_start)` with activity |
+| Schedule cron | `0 2 * * *` in timezone `America/Bogota` (`NIGHTLY_CRON_BOGOTA`) |
 
 ---
 
@@ -267,9 +267,10 @@ Phase 3 dashboard: `uis/backoffice` `/reporting` — business-facing charts/tabl
 
 | Item | Spec |
 | ---- | ---- |
-| Schedule | Nightly ~**02:00** `America/Bogota` |
+| Schedule | Nightly ~**02:00** `America/Bogota` — cron `0 2 * * *` (`NIGHTLY_CRON_BOGOTA` / settings.schedule_cron) |
 | Grain | ISO week; `week_start` = Monday UTC |
 | CLI | From `services/api`: `uv run python ../../data/pipelines/pipeline.py` |
+| Blocks (optional register) | `uv run python -c "from data.pipelines.blocks import save_default_blocks; save_default_blocks()"` |
 
 > Phase 1 delivers this design. Phase 2 implements Prefect + CLI + reporting API. Phase 3 adds subflows, `tests/pipelines/test_pipeline.py`, and backoffice dashboard.
 
@@ -286,3 +287,9 @@ Phase 3 dashboard: `uis/backoffice` `/reporting` — business-facing charts/tabl
 - [x] Reporting APIs separate from `/telemetry/report`
 - [x] Prefect names locked for Phases 2–3
 - [x] No FX mixing in a single row
+
+## 16. Phase 2 operator verification
+
+- [x] Live CLI run succeeds with `DATABASE_URL`
+- [x] Repeat CLI run upserts same grain (no duplicate `(location_id, week_start)` rows)
+- [x] Acceptance criteria in `context-16-milestone-6-resilient-data-pipeline.md` marked complete

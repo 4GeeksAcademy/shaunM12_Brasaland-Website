@@ -1,12 +1,13 @@
 """Brasaland weekly location performance Prefect pipeline (Milestone 6 Phase 2).
 
-Schedule (document / deploy later): ~02:00 America/Bogota nightly.
-CLI: ``python data/pipelines/pipeline.py`` from the repository root
-     (or ``uv run`` from ``services/api`` with PYTHONPATH including repo root).
+Schedule: nightly ~02:00 America/Bogota (``NIGHTLY_CRON_BOGOTA = "0 2 * * *"``).
+CLI (recommended)::
 
-Prefect Blocks (optional; env fallbacks used locally):
+    cd services/api && uv run python ../../data/pipelines/pipeline.py
+
+Prefect Blocks (see ``data/pipelines/blocks.py``):
 - ``brasaland-postgres`` — connection string (else ``DATABASE_URL``)
-- ``brasaland-pipeline-settings`` — lookback_weeks, timezone, paths
+- ``brasaland-pipeline-settings`` — lookback_weeks, timezone, paths, schedule_cron
 """
 
 from __future__ import annotations
@@ -30,6 +31,11 @@ from prefect import flow, task  # noqa: E402
 from sqlalchemy import bindparam, text  # noqa: E402
 from sqlmodel import Session  # noqa: E402
 
+from data.pipelines.blocks import (  # noqa: E402
+    NIGHTLY_CRON_BOGOTA,
+    load_database_url,
+    load_pipeline_settings,
+)
 from data.process.weekly_location_kpis import (  # noqa: E402
     KPI_SOURCE_EVENT_TYPES,
     compute_weekly_kpis,
@@ -41,63 +47,15 @@ logger = logging.getLogger(__name__)
 FLOW_NAME = "brasaland_weekly_location_performance_pipeline"
 DEFAULT_LOOKBACK_WEEKS = 2
 DEFAULT_TIMEZONE = "America/Bogota"
+SCHEDULE_CRON = NIGHTLY_CRON_BOGOTA
 
 
 def _load_database_url() -> str:
-    """Resolve Postgres URL from Prefect block or environment."""
-    try:
-        from prefect.blocks.system import Secret
-
-        secret = Secret.load("brasaland-postgres")
-        value = secret.get()
-        if value:
-            return str(value)
-    except Exception:  # noqa: BLE001 — local/dev without registered blocks
-        logger.debug("brasaland-postgres block unavailable; using DATABASE_URL", exc_info=True)
-
-    # Import config after path bootstrap so JWT check still works when .env present.
-    try:
-        import config as api_config
-
-        url = getattr(api_config, "DATABASE_URL", None) or os.getenv("DATABASE_URL")
-    except Exception:  # noqa: BLE001
-        url = os.getenv("DATABASE_URL")
-    if not url:
-        raise RuntimeError(
-            "DATABASE_URL is not set and Prefect block brasaland-postgres is missing"
-        )
-    return str(url)
+    return load_database_url()
 
 
 def _load_settings() -> dict[str, Any]:
-    try:
-        from prefect.blocks.system import JSON
-
-        block = JSON.load("brasaland-pipeline-settings")
-        raw = block.value if hasattr(block, "value") else block
-        if isinstance(raw, dict):
-            return {
-                "lookback_weeks": int(
-                    raw.get("lookback_weeks", DEFAULT_LOOKBACK_WEEKS)
-                ),
-                "timezone": str(raw.get("timezone", DEFAULT_TIMEZONE)),
-                "raw_dir": str(raw.get("raw_dir", str(_REPO_ROOT / "data" / "raw"))),
-                "eval_dir": str(raw.get("eval_dir", str(_REPO_ROOT / "data" / "eval"))),
-            }
-    except Exception:  # noqa: BLE001
-        logger.debug(
-            "brasaland-pipeline-settings block unavailable; using defaults",
-            exc_info=True,
-        )
-
-    return {
-        "lookback_weeks": int(
-            os.getenv("PIPELINE_LOOKBACK_WEEKS", str(DEFAULT_LOOKBACK_WEEKS))
-        ),
-        "timezone": os.getenv("PIPELINE_TIMEZONE", DEFAULT_TIMEZONE),
-        "raw_dir": os.getenv("PIPELINE_RAW_DIR", str(_REPO_ROOT / "data" / "raw")),
-        "eval_dir": os.getenv("PIPELINE_EVAL_DIR", str(_REPO_ROOT / "data" / "eval")),
-    }
+    return load_pipeline_settings()
 
 
 def _session() -> Session:
