@@ -17,7 +17,7 @@ from sqlmodel import Session
 import config
 from database import get_db
 from .analysis import auth_failure_rate_per_day
-from .analysis import daily_consumption_by_ingredient_and_location
+from .analysis import daily_consumption_by_product_and_location
 from .analysis import stock_out_frequency
 from .analysis import waste_loss_ratio
 from .constants import event_definition
@@ -123,7 +123,7 @@ def _build_report(
             "to": end.date().isoformat(),
         },
         "metrics": {
-            "daily_consumption_by_ingredient_and_location": daily_consumption_by_ingredient_and_location(
+            "daily_consumption_by_product_and_location": daily_consumption_by_product_and_location(
                 start,
                 end,
                 session=session,

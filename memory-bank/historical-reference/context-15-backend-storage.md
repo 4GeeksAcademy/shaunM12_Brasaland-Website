@@ -3,11 +3,11 @@
 ## AI Engineering - 4Geeks Academy
 
 > **Repository index:** `context-15-backend-storage.md`  
-> **Companion docs:** `memory-bank/historical-reference/context-15-telemetry-plan.md`, `memory-bank/historical-reference/context-15-telemetry-frontend-capture.md`, `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
+> **Companion docs:** `memory-bank/historical-reference/context-15-telemetry-plan.md`, `memory-bank/historical-reference/context-15-course-alignment-plan.md`, `memory-bank/historical-reference/context-15-telemetry-frontend-capture.md`, `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
 > **Type:** Telemetry persistence + ingestion endpoint  
-> **Status:** 🟢 Implemented (`TELEMETRY_PHASE_MODE=storage`)
+> **Status:** 🟢 Storage path live; course-floor catalogs/tags (`schemaVersion` 2)
 
-> **Authority rule:** Milestone 5 contexts are authoritative for runtime inventory behavior. This phase persists telemetry as an additive layer and must not redefine Milestone contracts.
+> **Authority rule:** Milestone 5 contexts are authoritative for runtime inventory behavior. This phase persists telemetry as an additive layer and must not redefine Milestone contracts. Course owns telemetry `event_type`s and property keys (`context-15-course-alignment-plan.md`).
 
 ---
 
@@ -36,6 +36,7 @@
 - Insert valid events using **one bulk insert operation per batch**.
 - Response contract is `{ "received": N, "stored": M, "rejected": R }`.
 - Telemetry rows are immutable once recorded (no update/delete business logic).
+- Stored `tags` follow `schemaVersion` 2 allowlists (`product_id`, remapped `event_type`s).
 
 ### Dual persistence paths
 
@@ -54,7 +55,7 @@ All payload/table snippets in this document are **illustrative reference only**.
 Implementation must follow:
 
 - the shared `TelemetryEvent` envelope contract, and
-- per-event allowlists in `docs/telemetry/event-schemas.json`.
+- per-event allowlists in `docs/telemetry/event-schemas.json` (`schemaVersion` 2).
 
 Do not hardcode illustrative values from examples.
 
@@ -138,20 +139,26 @@ Create `telemetry_events` with eight columns:
 
 ## Illustrative `tags` Examples (Reference Only)
 
-These examples show the intent of storing event-specific properties in `tags`.
+These examples show the intent of storing event-specific properties in `tags`. Telemetry property keys use `product_id` (Milestone 5 HTTP API payloads may still show `ingredient_id`).
 
 | `event_type` | Illustrative `tags` content |
 |---|---|
-| `supply_order_created` | `{ "ingredient_id": 7, "quantity": 50, "location_id": 3, "supplier_id": "12" }` |
-| `consumption_order_created` | `{ "ingredient_id": 7, "quantity": 12, "reason": "consumption", "location_id": 11 }` |
-| `consumption_order_failed` | `{ "error_code": "insufficient_stock", "ingredient_id": 7, "location_id": 3 }` |
-| `supply_order_failed` | `{ "error_code": "unknown_supplier", "location_id": 11 }` |
-| `ingredient_list_viewed` | `{ "location_id": 3, "ingredient_count": 34, "view_source": "backoffice" }` |
+| `inbound_order_created` | `{ "product_id": 7, "quantity": 50, "location_id": 3, "supplier_id": "12" }` |
+| `outbound_order_created` | `{ "product_id": 7, "quantity": 12, "location_id": 11 }` |
+| `stock_waste_registered` | `{ "product_id": 7, "quantity": 3, "reason": "unspecified", "location_id": 11 }` |
+| `outbound_order_failed` | `{ "error_code": "insufficient_stock", "product_id": 7, "location_id": 3 }` |
+| `inbound_order_failed` | `{ "error_code": "unknown_supplier", "location_id": 11 }` |
+| `stock_threshold_triggered` | `{ "product_id": 7, "location_id": 3, "quantity": 2 }` |
+| `direct_stock_edit_rejected` | `{ "product_id": 7, "location_id": 3 }` |
+| `ingredient_price_variance_detected` | `{ "product_id": 7, "supplier_id": "12", "location_id": 3, "threshold_pct": 10 }` |
+| `ingredient_list_viewed` | `{ "location_id": 3, "product_count": 34, "view_source": "backoffice" }` |
 | `user_login_succeeded` | `{ "location_id": 11, "auth_method": "password" }` |
 | `user_login_failed` | `{ "failure_reason": "invalid_credentials" }` |
 | `session_expired` | `{}` |
 
 The fixed columns (`event_type`, `timestamp`, `service`, `level`) come from envelope and server defaults.
+
+**Waste split:** API still accepts `reason: consumption | waste` on outbound create. Persistence must store consumption as `outbound_order_created` and waste as `stock_waste_registered` (do **not** store `reason=waste` on `outbound_order_created`).
 
 ---
 
@@ -181,8 +188,9 @@ If a batch has 5 events and 1 fails validation, 4 valid events must still be ins
 With the real endpoint active:
 
 1. Generate real events from backoffice:
-   - at least one inbound order
-   - at least one outbound order
+   - at least one inbound order (`inbound_order_created`)
+   - at least one outbound consumption (`outbound_order_created`)
+   - preferably one waste registration (`stock_waste_registered`)
 2. Query `telemetry_events` in Supabase:
    - confirm rows include `event_type`, `timestamp`, and `tags`
 3. Test rejection behavior:
@@ -193,12 +201,14 @@ With the real endpoint active:
 
 ## Verification Checklist for Brasaland
 
-- [x] `supply_order_created` rows include `location_id` in `tags` (required for country segmentation)
-- [x] `consumption_order_created` rows include `reason` in `tags` using Milestone 5 values (`consumption`, `waste`)
+- [x] `inbound_order_created` rows include `location_id` in `tags` (required for country segmentation)
+- [x] `outbound_order_created` rows are consumption-only (no waste `reason` on this event)
+- [x] `stock_waste_registered` rows include `reason` in `tags` (interim telemetry value: `unspecified`; API still uses `waste`)
 - [x] No row contains manager names, email addresses, passwords, or raw error stacks in `tags`
 - [x] Colombian and Florida events are segmentable via `location_id` in `tags`
 - [x] Mixed batch response correctly reports `received`, `stored`, and `rejected`
 - [x] Insert behavior is one bulk operation per batch
+- [ ] Floor catalog rows (`stock_waste_registered`, `ingredient_price_variance_detected`) appear once emitters align to v2
 
 ---
 
@@ -209,7 +219,7 @@ With the real endpoint active:
 - Invalid events are rejected individually without canceling the batch (per-event `model_validate`, not typed `list[TelemetryEvent]` request body)
 - The `TelemetryEvent` Pydantic model is reused unchanged from previous phase
 - Events appear in `telemetry_events` with `event_type`, `timestamp`, and `tags` correctly populated
-- Stored `tags` preserve property allowlists and context-specific dimensions from `telemetry-plan.md`
+- Stored `tags` preserve property allowlists and context-specific dimensions from `telemetry-plan.md` (`schemaVersion` 2)
 - Insert path is a single operation per batch, not one insert per event
 
 ---

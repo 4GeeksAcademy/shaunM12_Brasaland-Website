@@ -3,11 +3,11 @@
 ## AI Engineering - 4Geeks Academy
 
 > **Repository index:** `context-15-telemetry-report.md`  
-> **Companion docs:** `memory-bank/historical-reference/context-15-telemetry-plan.md`, `memory-bank/historical-reference/context-15-telemetry-frontend-capture.md`, `memory-bank/historical-reference/context-15-backend-storage.md`, `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
+> **Companion docs:** `memory-bank/historical-reference/context-15-telemetry-plan.md`, `memory-bank/historical-reference/context-15-course-alignment-plan.md`, `memory-bank/historical-reference/context-15-telemetry-frontend-capture.md`, `memory-bank/historical-reference/context-15-backend-storage.md`, `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
 > **Type:** Telemetry analysis pipeline + reporting endpoint  
-> **Status:** 🟢 Implemented (KPI-aligned metrics)
+> **Status:** 🟢 Report endpoint live; KPI queries on course-floor events (`schemaVersion` 2)
 
-> **Authority rule:** Milestone 5 contexts govern runtime inventory semantics; this reporting phase enriches observability and must not change API behavior.
+> **Authority rule:** Milestone 5 contexts govern runtime inventory semantics; this reporting phase enriches observability and must not change API behavior. Course owns telemetry `event_type`s and report property keys (`context-15-course-alignment-plan.md`).
 
 ---
 
@@ -34,13 +34,14 @@
 - SQL must pre-filter by `event_type` and timestamp window (`start_date <= ts < end_date`).
 - Metric functions are deterministic and side-effect free.
 - Metric calculations must use Pandas vectorized operations (`groupby`, `agg`, `count`, `sum`, `mean`) instead of loops.
+- KPI contracts use remapped `schemaVersion` 2 event names and `product_id` in report rows (Milestone 5 HTTP API may still use `ingredient_id`).
 
 ---
 
 ## Important Note on Examples
 
 All snippets and payloads in this document are **reference only**.  
-Implementation must follow the KPI contracts from Phase 1 and allowlist semantics from `docs/telemetry/event-schemas.json`.
+Implementation must follow the KPI contracts from Phase 1 and allowlist semantics from `docs/telemetry/event-schemas.json` (`schemaVersion` 2).
 
 Do not hardcode sample values from examples.
 
@@ -48,35 +49,36 @@ Do not hardcode sample values from examples.
 
 ## The Three Required KPI Metrics
 
-These metrics implement the KPI contracts from `context-15-telemetry-plan.md` (Phase 1).
+These metrics implement the KPI contracts from `context-15-telemetry-plan.md` (Phase 1), remapped per `context-15-course-alignment-plan.md`.
 
-## Metric 1 — Daily Consumption by Ingredient and Location (KPI 1)
+## Metric 1 — Daily Consumption by Product and Location (KPI 1)
 
-**Business question:** how many units were consumed per ingredient per location per day?  
-**KPI mapping:** Daily consumption rate by ingredient and location.
+**Business question:** how many units were consumed per product per location per day?  
+**KPI mapping:** Daily consumption rate by product and location.
 
 ### Function contract
 
 ```python
-def daily_consumption_by_ingredient_and_location(start_date, end_date) -> list[dict]:
+def daily_consumption_by_product_and_location(start_date, end_date) -> list[dict]:
     ...
 ```
 
 ### Required behavior
 
 - SQL load:
-  - `event_type = 'consumption_order_created'`
+  - `event_type = 'outbound_order_created'`
   - `timestamp >= start_date` and `timestamp < end_date`
 - Pandas:
   - convert `timestamp` with UTC
   - derive daily date key from timestamp
-  - extract `location_id`, `ingredient_id`, `quantity`, `reason` from `tags`
-  - keep rows where `reason = 'consumption'`
-  - drop null `location_id`, `ingredient_id`, or `quantity` rows
+  - extract `location_id`, `product_id`, `quantity` from `tags`
+  - drop null `location_id`, `product_id`, or `quantity` rows
 - Grouping:
-  - `groupby(['date', 'ingredient_id', 'location_id'])['quantity'].sum()`
+  - `groupby(['date', 'product_id', 'location_id'])['quantity'].sum()`
 - Output:
-  - list of dicts with `date`, `ingredient_id`, `location_id`, `quantity`
+  - list of dicts with `date`, `product_id`, `location_id`, `quantity`
+
+Note: `outbound_order_created` is consumption-only. Do not expect or filter `reason=waste` on this event.
 
 ## Metric 2 — Stock-Out Frequency (KPI 2)
 
@@ -93,22 +95,22 @@ def stock_out_frequency(start_date, end_date) -> list[dict]:
 ### Required behavior
 
 - SQL load:
-  - `event_type IN ('stock_threshold_triggered', 'consumption_order_failed')`
+  - `event_type IN ('stock_threshold_triggered', 'outbound_order_failed')`
   - `timestamp >= start_date` and `timestamp < end_date`
 - Pandas:
   - convert timestamp UTC
   - derive `date`
-  - extract `location_id`, `ingredient_id`, `error_code` from `tags`
-  - keep `stock_threshold_triggered` rows and `consumption_order_failed` rows where `error_code = 'insufficient_stock'`
-  - drop null `location_id` or `ingredient_id` rows
+  - extract `location_id`, `product_id`, `error_code` from `tags`
+  - keep `stock_threshold_triggered` rows and `outbound_order_failed` rows where `error_code = 'insufficient_stock'`
+  - drop null `location_id` or `product_id` rows
 - Grouping:
-  - `groupby(['date', 'ingredient_id', 'location_id'])['id'].count()`
+  - `groupby(['date', 'product_id', 'location_id'])['id'].count()`
 - Output:
-  - list of dicts with `date`, `ingredient_id`, `location_id`, `count`
+  - list of dicts with `date`, `product_id`, `location_id`, `count`
 
 ## Metric 3 — Waste and Loss Ratio (KPI 3)
 
-**Business question:** what proportion of outbound consumption was waste vs total consumption?  
+**Business question:** what proportion of outbound movement was waste vs total outbound volume?  
 **KPI mapping:** Waste and loss ratio.
 
 ### Function contract
@@ -121,18 +123,20 @@ def waste_loss_ratio(start_date, end_date) -> list[dict]:
 ### Required behavior
 
 - SQL load:
-  - `event_type = 'consumption_order_created'`
+  - `event_type IN ('stock_waste_registered', 'outbound_order_created')`
   - `timestamp >= start_date` and `timestamp < end_date`
 - Pandas:
   - convert timestamp UTC
   - derive `date`
-  - extract `location_id`, `quantity`, `reason` from `tags`
+  - extract `location_id`, `quantity` from `tags`
   - drop null `location_id` or `quantity` rows
 - Grouping:
-  - `groupby(['date', 'location_id'])` with `waste_quantity = sum(quantity where reason = waste)` and `total_quantity = sum(quantity)`
+  - `groupby(['date', 'location_id'])` with `waste_quantity = sum(quantity where event_type = stock_waste_registered)` and `total_quantity = sum(quantity)` across both event types
   - compute `ratio = waste_quantity / total_quantity`
 - Output:
   - list of dicts with `date`, `location_id`, `waste_quantity`, `total_quantity`, `ratio`
+
+Note: API still uses `reason: waste` on outbound create; telemetry stores waste only as `stock_waste_registered` (interim `reason` allowlist value: `unspecified`). Do not instruct emitting `reason=waste` on `outbound_order_created`.
 
 ---
 
@@ -158,10 +162,10 @@ This metric is **not** one of the three Phase 1 KPIs.
 
 ## Business Constraints for Your Pipeline
 
-- `location_id` and `ingredient_id` must be extracted from `tags`, not from fixed SQL columns.
+- `location_id` and `product_id` must be extracted from `tags`, not from fixed SQL columns.
 - Consumption and stock-out metrics must preserve location segmentation so Colombia and Florida can be compared.
 - Temporal grouping is mandatory; a global scalar count without time context is not a KPI metric.
-- KPI 1 must filter `reason = consumption`; KPI 3 uses `reason = waste` in the numerator.
+- KPI 1 uses `outbound_order_created` only; KPI 3 uses `stock_waste_registered` for the waste numerator and both waste + consumption events for total volume.
 
 ---
 
@@ -171,11 +175,11 @@ This metric is **not** one of the three Phase 1 KPIs.
 {
   "period": { "from": "2025-01-13", "to": "2025-01-20" },
   "metrics": {
-    "daily_consumption_by_ingredient_and_location": [
-      { "date": "2025-01-13", "ingredient_id": 7, "location_id": 3, "quantity": 42.0 }
+    "daily_consumption_by_product_and_location": [
+      { "date": "2025-01-13", "product_id": 7, "location_id": 3, "quantity": 42.0 }
     ],
     "stock_out_frequency": [
-      { "date": "2025-01-13", "ingredient_id": 7, "location_id": 3, "count": 2 }
+      { "date": "2025-01-13", "product_id": 7, "location_id": 3, "count": 2 }
     ],
     "waste_loss_ratio": [
       {
@@ -243,7 +247,8 @@ Compatibility note: endpoint response remains JSON; metric values must always be
 
 1. Generate real events through backoffice:
    - at least one inbound order
-   - at least one outbound order
+   - at least one outbound consumption order
+   - preferably one waste registration
 2. Query `telemetry_events` to confirm source rows exist for report window.
 3. Call `GET /telemetry/report` and validate:
    - date grouping present
@@ -267,7 +272,7 @@ Key reference takeaways:
 
 - keep temporal filtering (`start_date`, `end_date`) in SQL before loading to Pandas
 - convert `timestamp` with `pd.to_datetime(..., utc=True)` before grouping
-- extract dimensions such as `location_id` from `tags` before aggregation
+- extract dimensions such as `location_id` and `product_id` from `tags` before aggregation
 - use Pandas vectorized operations (`groupby`, `agg`, `count`, `sum`, `mean`) instead of loops
 - return serializable rows with `reset_index().to_dict(orient='records')`
 
@@ -280,14 +285,15 @@ This appendix is explanatory only. Implementation is governed by the metric cont
 - [x] `analysis.py` exists with three KPI-grounded metric functions
 - [x] SQL pre-filters by event type and period in each metric function
 - [x] UTC datetime conversion occurs before grouping in every metric
-- [x] KPI 1 groups by `date` + `ingredient_id` + `location_id` and sums `quantity` where `reason = consumption`
-- [x] KPI 2 groups by `date` + `ingredient_id` + `location_id` and counts stock-out signals
-- [x] KPI 3 groups by `date` + `location_id` with `waste_quantity`, `total_quantity`, and `ratio`
+- [ ] KPI 1 groups by `date` + `product_id` + `location_id` and sums `quantity` from `outbound_order_created`
+- [ ] KPI 2 groups by `date` + `product_id` + `location_id` and counts stock-out signals (`stock_threshold_triggered`, `outbound_order_failed`)
+- [ ] KPI 3 groups by `date` + `location_id` with `waste_quantity` from `stock_waste_registered`, `total_quantity`, and `ratio`
 - [x] Endpoint defaults to last 7 days when query params are omitted
 - [x] Endpoint shares one resolved period across all metric functions
 - [x] Endpoint uses in-memory cache with 60-second TTL
 - [x] Response shape includes `period` and grouped metric outputs
 - [x] All outputs are JSON-serializable
+- [ ] Metric key `daily_consumption_by_product_and_location` and `product_id` row fields align to v2 once analysis is updated
 
 ---
 
@@ -297,7 +303,7 @@ This appendix is explanatory only. Implementation is governed by the metric cont
 - Endpoint serves combined report and does not recalculate for every same-period request within TTL
 - Timestamp conversion is correctly handled before grouping
 - Per-metric SQL filtering is done by event type and period before Pandas transforms
-- Grouping dimensions match business questions from Phase 1
+- Grouping dimensions match business questions from Phase 1 (`product_id`, remapped event types)
 - Optional auth metric (if implemented) uses both login event types and computes ratio correctly
 
 ---

@@ -24,7 +24,7 @@ def test_telemetry_events_accepts_valid_batch(
                 "schemaVersion": 1,
                 "requestId": "req_abc123",
                 "service": "backoffice",
-                "properties": {"location_id": 1, "ingredient_count": 42},
+                "properties": {"location_id": 1, "product_count": 42},
             }
         ]
     }
@@ -60,7 +60,7 @@ def test_telemetry_events_rejects_invalid_envelope_in_stub_mode(
                 "schemaVersion": 1,
                 "requestId": "req_abc123",
                 "service": "backoffice",
-                "properties": {"location_id": 1, "ingredient_count": 42},
+                "properties": {"location_id": 1, "product_count": 42},
             },
         ]
     }
@@ -95,7 +95,7 @@ def test_telemetry_events_storage_mode_supports_mixed_batches(
                 "schemaVersion": 1,
                 "requestId": "req_abc123",
                 "service": "backoffice",
-                "properties": {"location_id": 1, "ingredient_count": 42},
+                "properties": {"location_id": 1, "product_count": 42},
             },
         ]
     }

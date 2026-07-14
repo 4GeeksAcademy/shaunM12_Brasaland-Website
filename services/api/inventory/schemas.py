@@ -89,6 +89,7 @@ class InboundOrderCreate(BaseModel):
     supplier_id: int | None = None
     supplier_name: str | None = Field(default=None, min_length=1)
     location_id: int
+    unit_cost: float | None = Field(default=None, gt=0)
 
     @model_validator(mode="after")
     def require_supplier_reference(self) -> InboundOrderCreate:
@@ -137,6 +138,7 @@ class InboundOrderResponse(BaseModel):
     supplier_id: int
     supplier_name: str
     location_id: int
+    unit_cost: float | None = None
     created_at: datetime
     user_uuid: str
 

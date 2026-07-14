@@ -159,6 +159,46 @@ EXPLICIT_STOCK_ORDERS: list[DemoOrderSpec] = [
     {"kind": "outbound", "sku": "BRS-SHR-001", "quantity": 5, "reason": "consumption", "location_id": 3},
 ]
 
+# Course-floor fixtures: unit_cost history (+variance case) and extra waste rows.
+# Do not alter CONTEXT11_DEMO_ORDERS quantities for BRS-BEEF-001 (evaluator stock asserts).
+COURSE_FLOOR_DEMO_ORDERS: list[DemoOrderSpec] = [
+    {
+        "kind": "inbound",
+        "sku": "BRS-BEEF-002",
+        "quantity": 20,
+        "supplier_name": "Carnes del Valle S.A.",
+        "location_id": 1,
+        "unit_cost": 20000.0,
+    },
+    {
+        "kind": "inbound",
+        "sku": "BRS-BEEF-002",
+        "quantity": 15,
+        "supplier_name": "Carnes del Valle S.A.",
+        "location_id": 1,
+        "unit_cost": 25000.0,
+    },
+    {
+        "kind": "inbound",
+        "sku": "BRS-CHKN-001",
+        "quantity": 12,
+        "supplier_name": "Carnes del Valle S.A.",
+        "location_id": 2,
+        "unit_cost": 9000.0,
+    },
+    {
+        "kind": "inbound",
+        "sku": "BRS-CHKN-001",
+        "quantity": 12,
+        "supplier_name": "Carnes del Valle S.A.",
+        "location_id": 2,
+        "unit_cost": 10800.0,
+    },
+    {"kind": "outbound", "sku": "BRS-SAUCE-001", "quantity": 1, "reason": "waste", "location_id": 2},
+    {"kind": "outbound", "sku": "BRS-PROD-001", "quantity": 2, "reason": "waste", "location_id": 1},
+    {"kind": "outbound", "sku": "BRS-PKG-001", "quantity": 5, "reason": "waste", "location_id": 1},
+]
+
 _CONTEXT_SKUS = frozenset(spec["sku"] for spec in CONTEXT11_DEMO_ORDERS)
 
 
@@ -249,5 +289,8 @@ def build_per_location_stock_orders() -> list[DemoOrderSpec]:
 
 
 DEMO_ORDERS: list[DemoOrderSpec] = (
-    CONTEXT11_DEMO_ORDERS + EXPLICIT_STOCK_ORDERS + build_per_location_stock_orders()
+    CONTEXT11_DEMO_ORDERS
+    + EXPLICIT_STOCK_ORDERS
+    + COURSE_FLOOR_DEMO_ORDERS
+    + build_per_location_stock_orders()
 )

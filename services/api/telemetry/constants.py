@@ -79,6 +79,16 @@ def is_restricted_consumption(properties: dict[str, Any]) -> bool:
     return properties.get("reason") == "__restricted__"
 
 
+def is_restricted_event(event_type: str, properties: dict[str, Any]) -> bool:
+    """Restricted routing hook (inactive for current Milestone reason enums)."""
+    if event_type in {"outbound_order_created", "stock_waste_registered"}:
+        return is_restricted_consumption(properties)
+    return False
+
+
+PRICE_VARIANCE_THRESHOLD_PCT = 10.0
+
+
 def telemetry_enabled() -> bool:
     return config.TELEMETRY_ENABLED
 

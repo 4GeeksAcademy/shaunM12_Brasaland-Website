@@ -11,7 +11,11 @@ from database import get_engine
 from suppliers import repository as suppliers_repository
 from .constants import default_min_stock_for_category
 from .models import Ingredient, IngredientEntry, IngredientExit, IngredientLocationSettings
-from .seed_data import DEMO_ORDERS, INGREDIENTS, LOCATION_THRESHOLD_OVERRIDES
+from .seed_data import (
+    DEMO_ORDERS,
+    INGREDIENTS,
+    LOCATION_THRESHOLD_OVERRIDES,
+)
 from .supplier_validation import find_supplier_id_by_name
 
 # Default actor when seeding outside an authenticated request.
@@ -32,6 +36,12 @@ def ensure_inventory_schema(session: Session) -> None:
         text(
             "ALTER TABLE ingredient_entry "
             "ADD COLUMN IF NOT EXISTS supplier_id INTEGER"
+        )
+    )
+    session.connection().execute(
+        text(
+            "ALTER TABLE ingredient_entry "
+            "ADD COLUMN IF NOT EXISTS unit_cost DOUBLE PRECISION"
         )
     )
     session.connection().execute(
@@ -169,6 +179,7 @@ def _seed_inventory_session(session: Session) -> tuple[int, int]:
                     supplier_id=supplier_id,
                     supplier_name=supplier_name,
                     location_id=spec["location_id"],
+                    unit_cost=spec.get("unit_cost"),
                     user_uuid=_DEFAULT_USER_UUID,
                 )
             )
