@@ -9,7 +9,7 @@ import config
 import pytest
 from fastapi.testclient import TestClient
 
-from telemetry.analysis import daily_consumption_by_ingredient_and_location
+from telemetry.analysis import daily_consumption_by_product_and_location
 from telemetry.analysis import stock_out_frequency
 from telemetry.analysis import waste_loss_ratio
 
@@ -35,60 +35,47 @@ class _FakeSession:
         return _FakeResult(self.rows)
 
 
-def test_daily_consumption_metric_sums_quantity_by_ingredient_and_location():
+def test_daily_consumption_metric_sums_quantity_by_product_and_location():
     session = _FakeSession(
         [
             {
                 "id": 1,
-                "event_type": "consumption_order_created",
+                "event_type": "outbound_order_created",
                 "timestamp": "2026-07-08T10:00:00Z",
                 "tags": {
                     "location_id": 3,
-                    "ingredient_id": 7,
+                    "product_id": 7,
                     "quantity": 10,
-                    "reason": "consumption",
                 },
             },
             {
                 "id": 2,
-                "event_type": "consumption_order_created",
+                "event_type": "outbound_order_created",
                 "timestamp": "2026-07-08T11:00:00Z",
                 "tags": {
                     "location_id": 3,
-                    "ingredient_id": 7,
+                    "product_id": 7,
                     "quantity": 5,
-                    "reason": "consumption",
-                },
-            },
-            {
-                "id": 3,
-                "event_type": "consumption_order_created",
-                "timestamp": "2026-07-08T12:00:00Z",
-                "tags": {
-                    "location_id": 3,
-                    "ingredient_id": 7,
-                    "quantity": 4,
-                    "reason": "waste",
                 },
             },
             {
                 "id": 4,
-                "event_type": "consumption_order_created",
+                "event_type": "outbound_order_created",
                 "timestamp": "2026-07-08T13:00:00Z",
-                "tags": {"location_id": 11, "ingredient_id": 2, "quantity": 8, "reason": "consumption"},
+                "tags": {"location_id": 11, "product_id": 2, "quantity": 8},
             },
         ]
     )
     start = datetime(2026, 7, 8, tzinfo=timezone.utc)
     end = datetime(2026, 7, 9, tzinfo=timezone.utc)
 
-    rows = daily_consumption_by_ingredient_and_location(start, end, session=session)
+    rows = daily_consumption_by_product_and_location(start, end, session=session)
 
     assert rows == [
-        {"date": "2026-07-08", "ingredient_id": 7, "location_id": 3, "quantity": 15.0},
-        {"date": "2026-07-08", "ingredient_id": 2, "location_id": 11, "quantity": 8.0},
+        {"date": "2026-07-08", "product_id": 7, "location_id": 3, "quantity": 15.0},
+        {"date": "2026-07-08", "product_id": 2, "location_id": 11, "quantity": 8.0},
     ]
-    assert session.calls[0]["event_types"] == ["consumption_order_created"]
+    assert session.calls[0]["event_types"] == ["outbound_order_created"]
 
 
 def test_stock_out_frequency_counts_threshold_and_insufficient_stock_only():
@@ -98,25 +85,25 @@ def test_stock_out_frequency_counts_threshold_and_insufficient_stock_only():
                 "id": 11,
                 "event_type": "stock_threshold_triggered",
                 "timestamp": "2026-07-08T09:00:00Z",
-                "tags": {"location_id": 3, "ingredient_id": 7},
+                "tags": {"location_id": 3, "product_id": 7},
             },
             {
                 "id": 12,
-                "event_type": "consumption_order_failed",
+                "event_type": "outbound_order_failed",
                 "timestamp": "2026-07-08T10:00:00Z",
                 "tags": {
                     "location_id": 3,
-                    "ingredient_id": 7,
+                    "product_id": 7,
                     "error_code": "insufficient_stock",
                 },
             },
             {
                 "id": 13,
-                "event_type": "consumption_order_failed",
+                "event_type": "outbound_order_failed",
                 "timestamp": "2026-07-08T11:00:00Z",
                 "tags": {
                     "location_id": 3,
-                    "ingredient_id": 7,
+                    "product_id": 7,
                     "error_code": "validation_error",
                 },
             },
@@ -124,7 +111,7 @@ def test_stock_out_frequency_counts_threshold_and_insufficient_stock_only():
                 "id": 14,
                 "event_type": "stock_threshold_triggered",
                 "timestamp": "2026-07-09T11:00:00Z",
-                "tags": {"location_id": 11, "ingredient_id": 2},
+                "tags": {"location_id": 11, "product_id": 2},
             },
         ]
     )
@@ -134,8 +121,8 @@ def test_stock_out_frequency_counts_threshold_and_insufficient_stock_only():
     rows = stock_out_frequency(start, end, session=session)
 
     assert rows == [
-        {"date": "2026-07-08", "ingredient_id": 7, "location_id": 3, "count": 2},
-        {"date": "2026-07-09", "ingredient_id": 2, "location_id": 11, "count": 1},
+        {"date": "2026-07-08", "product_id": 7, "location_id": 3, "count": 2},
+        {"date": "2026-07-09", "product_id": 2, "location_id": 11, "count": 1},
     ]
 
 
@@ -144,21 +131,21 @@ def test_waste_loss_ratio_computes_waste_over_total_per_location():
         [
             {
                 "id": 21,
-                "event_type": "consumption_order_created",
+                "event_type": "outbound_order_created",
                 "timestamp": "2026-07-08T09:00:00Z",
-                "tags": {"location_id": 3, "quantity": 10, "reason": "consumption"},
+                "tags": {"location_id": 3, "quantity": 10},
             },
             {
                 "id": 22,
-                "event_type": "consumption_order_created",
+                "event_type": "stock_waste_registered",
                 "timestamp": "2026-07-08T10:00:00Z",
-                "tags": {"location_id": 3, "quantity": 5, "reason": "waste"},
+                "tags": {"location_id": 3, "quantity": 5, "reason": "unspecified"},
             },
             {
                 "id": 23,
-                "event_type": "consumption_order_created",
+                "event_type": "outbound_order_created",
                 "timestamp": "2026-07-08T11:00:00Z",
-                "tags": {"location_id": 11, "quantity": 8, "reason": "consumption"},
+                "tags": {"location_id": 11, "quantity": 8},
             },
         ]
     )
@@ -186,11 +173,11 @@ def test_telemetry_report_uses_cache_for_identical_period(
 
     def _kpi1(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls["kpi1"] += 1
-        return [{"date": "2026-07-08", "ingredient_id": 7, "location_id": 3, "quantity": 1.0}]
+        return [{"date": "2026-07-08", "product_id": 7, "location_id": 3, "quantity": 1.0}]
 
     def _kpi2(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls["kpi2"] += 1
-        return [{"date": "2026-07-08", "ingredient_id": 7, "location_id": 3, "count": 1}]
+        return [{"date": "2026-07-08", "product_id": 7, "location_id": 3, "count": 1}]
 
     def _kpi3(*_args: Any, **_kwargs: Any) -> list[dict[str, Any]]:
         calls["kpi3"] += 1
@@ -208,7 +195,7 @@ def test_telemetry_report_uses_cache_for_identical_period(
         calls["auth"] += 1
         return [{"date": "2026-07-08", "total": 2, "failed": 1, "failure_rate": 0.5}]
 
-    monkeypatch.setattr(routes, "daily_consumption_by_ingredient_and_location", _kpi1)
+    monkeypatch.setattr(routes, "daily_consumption_by_product_and_location", _kpi1)
     monkeypatch.setattr(routes, "stock_out_frequency", _kpi2)
     monkeypatch.setattr(routes, "waste_loss_ratio", _kpi3)
     monkeypatch.setattr(routes, "auth_failure_rate_per_day", _auth)
@@ -223,6 +210,7 @@ def test_telemetry_report_uses_cache_for_identical_period(
     assert first.status_code == 200
     assert second.status_code == 200
     assert first.json() == second.json()
+    assert "daily_consumption_by_product_and_location" in first.json()["metrics"]
     assert calls == {"kpi1": 1, "kpi2": 1, "kpi3": 1, "auth": 1}
 
 

@@ -2,31 +2,57 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "meta": {
     "title": "Brasaland Telemetry Event Schemas",
-    "schemaVersion": 1,
-    "status": "wave_1_inventory_implemented",
+    "schemaVersion": 2,
+    "status": "course_floor_implemented",
     "canonicalDesign": "memory-bank/historical-reference/context-15-telemetry-plan.md",
+    "alignmentPlan": "memory-bank/historical-reference/context-15-course-alignment-plan.md",
     "operationalRunbook": "docs/telemetry/telemetry-plan.md",
-    "wave": "wave_1"
+    "wave": "wave_1",
+    "note": "schemaVersion 2 renames inventory event_types to course floor names, splits waste, and adds price variance. Emitters, analysis, and tests are aligned."
   },
   "conventions": {
     "eventNaming": "entity_action",
     "namingPattern": "^[a-z]+_[a-z_]+$",
     "entities": {
-      "Ingredient": {
-        "genericName": "Product",
-        "description": "A tracked ingredient (e.g. beef cut, sauce, packaging material)"
+      "Product": {
+        "ormName": "Ingredient",
+        "description": "A tracked ingredient or supply item (e.g. beef cut, sauce, packaging)",
+        "idProperty": "product_id",
+        "idSource": "Ingredient.id / ProductResponse.id"
       },
-      "SupplyOrder": {
-        "genericName": "InboundOrder",
-        "description": "A supplier delivery that increases ingredient stock",
-        "apiPath": "POST /inventory/orders/inbound"
+      "InboundOrder": {
+        "ormName": "IngredientEntry",
+        "description": "A supplier delivery that increases product stock",
+        "apiPath": "POST /inventory/orders/inbound",
+        "idProperty": "inbound_order_id"
       },
-      "ConsumptionOrder": {
-        "genericName": "OutboundOrder",
-        "description": "A kitchen consumption record that reduces ingredient stock",
-        "apiPath": "POST /inventory/orders/outbound"
+      "OutboundOrder": {
+        "ormName": "IngredientExit",
+        "description": "Kitchen consumption or waste that reduces product stock",
+        "apiPath": "POST /inventory/orders/outbound",
+        "idProperty": "outbound_order_id"
       }
     },
+    "categorySynonyms": {
+      "meat": "protein",
+      "seafood": "protein",
+      "produce": "vegetable",
+      "sauce": "sauce",
+      "beverage": "beverage",
+      "packaging": "packaging",
+      "cleaning": "cleaning",
+      "note": "Emit Milestone/API category strings in product_category; course labels are reporting synonyms only"
+    },
+    "productCategoryEnum": [
+      "meat",
+      "seafood",
+      "produce",
+      "sauce",
+      "beverage",
+      "packaging",
+      "cleaning"
+    ],
+    "countryEnum": ["CO", "US"],
     "currencyByLocation": {
       "COP": { "locationIds": [1, 2, 3, 4, 5, 6, 7, 8, 9] },
       "USD": { "locationIds": [10, 11, 12, 13, 14] }
@@ -40,7 +66,24 @@
     "userId": {
       "description": "Opaque TinyDB user UUID in envelope.userId and created_by in properties — never names or emails"
     },
-    "propertyAllowlistRule": "Only keys listed in propertyAllowlist may appear in properties. Additional keys are rejected at emit time."
+    "derivationRules": {
+      "country": "Derive from location_id via country_for_location — never trust client",
+      "currency": "Derive from location_id (1-9 COP, 10-14 USD) — never convert FX in telemetry",
+      "product_category": "Derive from Product.category server-side"
+    },
+    "wasteReasonPath": {
+      "apiReason": ["consumption", "waste"],
+      "telemetryTarget": ["expired", "kitchen_error", "theft_suspected"],
+      "interim": "unspecified",
+      "later": "Additive optional waste_subtype on outbound API (Milestone unchanged)"
+    },
+    "propertyAllowlistRule": "Only keys listed in propertyAllowlist may appear in properties. Additional keys are rejected at emit time.",
+    "deprecatedEventTypes": {
+      "supply_order_created": "inbound_order_created",
+      "supply_order_failed": "inbound_order_failed",
+      "consumption_order_created": "outbound_order_created or stock_waste_registered",
+      "consumption_order_failed": "outbound_order_failed"
+    }
   },
   "envelope": {
     "description": "Mandatory fields on every emitted event",
@@ -86,8 +129,8 @@
       "schemaVersion": {
         "type": "integer",
         "required": true,
-        "minimum": 1,
-        "description": "Event schema version; increment on breaking payload changes"
+        "minimum": 2,
+        "description": "Event schema version; inventory floor events use 2 after course alignment"
       },
       "requestId": {
         "type": "string",
@@ -106,48 +149,63 @@
       }
     }
   },
+  "courseFloor": {
+    "description": "Mandatory day-one inventory metrics from the course CONTEXT",
+    "events": [
+      "inbound_order_created",
+      "outbound_order_created",
+      "stock_waste_registered",
+      "stock_threshold_triggered",
+      "direct_stock_edit_rejected",
+      "ingredient_price_variance_detected"
+    ]
+  },
   "kpis": [
     {
       "id": 1,
       "name": "daily_consumption_rate",
-      "label": "Daily consumption rate by ingredient and location",
-      "definition": "Units consumed per ingredient per location per day via ConsumptionOrder where reason = consumption",
+      "label": "Daily consumption rate by product and location",
+      "definition": "Units consumed per product per location per day via outbound_order_created",
       "businessDecision": "Detect locations overconsuming relative to sales; adjust supplier orders",
-      "primaryEvents": ["consumption_order_created"]
+      "primaryEvents": ["outbound_order_created"]
     },
     {
       "id": 2,
       "name": "stock_out_frequency",
       "label": "Stock-out frequency",
-      "definition": "Times an ingredient stock hit zero or min_stock_threshold in a period",
-      "businessDecision": "Identify chronically under-stocked ingredients; renegotiate supply contracts",
-      "primaryEvents": ["stock_threshold_triggered", "consumption_order_failed"]
+      "definition": "Times product stock hit zero or min_stock_threshold in a period",
+      "businessDecision": "Identify chronically under-stocked products; renegotiate supply contracts",
+      "primaryEvents": ["stock_threshold_triggered", "outbound_order_failed"]
     },
     {
       "id": 3,
       "name": "waste_and_loss_ratio",
       "label": "Waste and loss ratio",
-      "definition": "Proportion of ConsumptionOrder with reason = waste vs total consumption",
+      "definition": "Proportion of wasted quantity (stock_waste_registered) vs total outbound movement",
       "businessDecision": "Flag abnormal waste patterns; trigger operational investigation",
-      "primaryEvents": ["consumption_order_created"]
+      "primaryEvents": ["stock_waste_registered", "outbound_order_created"]
     }
   ],
   "domains": {
     "inventory": {
-      "description": "SupplyOrder, ConsumptionOrder, and Ingredient stock lifecycle",
+      "description": "InboundOrder, OutboundOrder, Product stock lifecycle, and course floor signals",
       "source": "services/api/inventory/",
+      "floor": true,
       "events": [
-        "supply_order_created",
-        "supply_order_failed",
-        "consumption_order_created",
-        "consumption_order_failed",
+        "inbound_order_created",
+        "inbound_order_failed",
+        "outbound_order_created",
+        "outbound_order_failed",
+        "stock_waste_registered",
         "stock_threshold_triggered",
-        "direct_stock_edit_rejected"
+        "direct_stock_edit_rejected",
+        "ingredient_price_variance_detected"
       ]
     },
     "authentication": {
-      "description": "Backoffice login, session, and credential events",
+      "description": "Backoffice login, session, and credential events (beyond course floor)",
       "source": "services/api/auth/routes.py, uis/backoffice/context/AuthProvider.tsx, uis/backoffice/lib/http.ts",
+      "floor": false,
       "events": [
         "user_login_succeeded",
         "user_login_failed",
@@ -155,8 +213,9 @@
       ]
     },
     "navigation": {
-      "description": "Backoffice section usage and form funnel events",
+      "description": "Backoffice section usage and form funnel events (beyond course floor)",
       "source": "uis/backoffice/app/inventory/",
+      "floor": false,
       "events": [
         "ingredient_list_viewed",
         "location_filter_applied",
@@ -169,8 +228,9 @@
       "description": "Near-real-time routing for urgent operational decisions",
       "events": [
         "stock_threshold_triggered",
-        "consumption_order_failed",
+        "outbound_order_failed",
         "direct_stock_edit_rejected",
+        "ingredient_price_variance_detected",
         "user_login_failed"
       ]
     },
@@ -178,9 +238,10 @@
       "description": "Hourly or daily rollups for KPI and UX analytics",
       "batchInterval": "hourly",
       "events": [
-        "supply_order_created",
-        "consumption_order_created",
-        "supply_order_failed",
+        "inbound_order_created",
+        "outbound_order_created",
+        "stock_waste_registered",
+        "inbound_order_failed",
         "user_login_succeeded",
         "session_expired",
         "ingredient_list_viewed",
@@ -203,7 +264,7 @@
     "order_form_abandoned": {
       "strategy": "idle_emit",
       "idleSeconds": 120,
-      "key": ["sessionId", "form_type", "ingredient_id"]
+      "key": ["sessionId", "form_type", "product_id"]
     },
     "user_login_failed": {
       "strategy": "throttle",
@@ -214,173 +275,267 @@
     "stock_threshold_triggered": {
       "strategy": "dedupe",
       "windowSeconds": 86400,
-      "key": ["ingredient_id", "location_id"],
+      "key": ["product_id", "location_id"],
       "emissionRule": "Edge-trigger only: stock_before > min_stock_threshold AND stock_after <= min_stock_threshold",
       "note": "Re-emit if stock recovers above threshold then crosses again"
+    },
+    "ingredient_price_variance_detected": {
+      "strategy": "dedupe",
+      "windowSeconds": 86400,
+      "key": ["product_id", "supplier_id", "location_id"],
+      "emissionRule": "Emit when abs(variance_pct) >= threshold_pct for same currency"
     }
   },
   "events": {
-    "supply_order_created": {
-      "event_type": "supply_order_created",
+    "inbound_order_created": {
+      "event_type": "inbound_order_created",
       "domain": "inventory",
-      "description": "A SupplyOrder was successfully registered",
+      "courseFloor": true,
+      "description": "An InboundOrder was successfully registered",
       "trigger": "POST /inventory/orders/inbound after repository commit",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "batch",
       "kpiLinks": [2],
       "sensitivity": "standard",
       "containsPii": false,
       "propertyAllowlist": [
-        "supply_order_id",
-        "ingredient_id",
+        "inbound_order_id",
+        "product_id",
+        "product_category",
         "quantity",
+        "unit",
         "supplier_id",
         "location_id",
+        "country",
         "created_by",
         "currency",
-        "unit"
+        "unit_cost"
       ],
       "properties": {
-        "supply_order_id": { "type": "integer", "required": true, "description": "SupplyOrder.id" },
-        "ingredient_id": { "type": "integer", "required": true, "description": "Ingredient.id" },
+        "inbound_order_id": { "type": "integer", "required": true, "description": "InboundOrder.id / IngredientEntry.id" },
+        "product_id": { "type": "integer", "required": true, "description": "Product.id / Ingredient.id" },
+        "product_category": {
+          "type": "string",
+          "required": true,
+          "enum": ["meat", "seafood", "produce", "sauce", "beverage", "packaging", "cleaning"]
+        },
         "quantity": { "type": "number", "required": true, "description": "Units received" },
+        "unit": { "type": "string", "required": true, "description": "Product.unit" },
         "supplier_id": { "type": "string", "required": true, "description": "Supplier identifier" },
         "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
+        "country": { "type": "string", "required": true, "enum": ["CO", "US"] },
         "created_by": { "type": "string", "required": true, "description": "Opaque TinyDB user UUID" },
         "currency": { "type": "string", "required": true, "enum": ["COP", "USD"] },
-        "unit": { "type": "string", "required": true, "description": "Ingredient.unit" }
+        "unit_cost": {
+          "type": "number",
+          "required": false,
+          "description": "Unit cost in local currency when available; used for price variance"
+        }
       }
     },
-    "supply_order_failed": {
-      "event_type": "supply_order_failed",
+    "inbound_order_failed": {
+      "event_type": "inbound_order_failed",
       "domain": "inventory",
-      "description": "A SupplyOrder was rejected by validation or unknown supplier",
+      "courseFloor": false,
+      "description": "An InboundOrder was rejected by validation or unknown supplier",
       "businessDecision": "Fix supplier-directory data or retrain managers on inbound entry when validation failures cluster",
       "trigger": "POST /inventory/orders/inbound on validation or IngredientNotFoundError",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "batch",
       "kpiLinks": [],
       "sensitivity": "standard",
       "containsPii": false,
       "propertyAllowlist": [
-        "ingredient_id",
+        "product_id",
         "quantity_requested",
         "supplier_id",
         "location_id",
+        "country",
         "error_code"
       ],
       "properties": {
-        "ingredient_id": { "type": "integer", "required": false },
+        "product_id": { "type": "integer", "required": false },
         "quantity_requested": { "type": "number", "required": false },
         "supplier_id": { "type": "string", "required": false },
         "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
+        "country": { "type": "string", "required": true, "enum": ["CO", "US"] },
         "error_code": {
           "type": "string",
           "required": true,
-          "enum": ["validation_error", "ingredient_not_found", "unknown_supplier"]
+          "enum": ["validation_error", "product_not_found", "unknown_supplier"]
         }
       }
     },
-    "consumption_order_created": {
-      "event_type": "consumption_order_created",
+    "outbound_order_created": {
+      "event_type": "outbound_order_created",
       "domain": "inventory",
-      "description": "A ConsumptionOrder was successfully registered",
-      "trigger": "POST /inventory/orders/outbound after repository commit",
-      "schemaVersion": 1,
+      "courseFloor": true,
+      "description": "An OutboundOrder for dish-prep consumption was successfully registered",
+      "trigger": "POST /inventory/orders/outbound after commit when API reason=consumption",
+      "schemaVersion": 2,
       "processing": "batch",
       "kpiLinks": [1, 3],
       "sensitivity": "standard",
       "containsPii": false,
       "propertyAllowlist": [
-        "consumption_order_id",
-        "ingredient_id",
+        "outbound_order_id",
+        "product_id",
+        "product_category",
         "quantity",
-        "reason",
+        "unit",
         "location_id",
+        "country",
         "created_by",
-        "currency",
-        "unit"
+        "currency"
       ],
       "properties": {
-        "consumption_order_id": { "type": "integer", "required": true },
-        "ingredient_id": { "type": "integer", "required": true },
-        "quantity": { "type": "number", "required": true },
-        "reason": {
+        "outbound_order_id": { "type": "integer", "required": true },
+        "product_id": { "type": "integer", "required": true },
+        "product_category": {
           "type": "string",
           "required": true,
-          "enum": ["consumption", "waste"]
+          "enum": ["meat", "seafood", "produce", "sauce", "beverage", "packaging", "cleaning"]
         },
+        "quantity": { "type": "number", "required": true },
+        "unit": { "type": "string", "required": true },
         "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
+        "country": { "type": "string", "required": true, "enum": ["CO", "US"] },
         "created_by": { "type": "string", "required": true, "description": "Opaque TinyDB user UUID" },
-        "currency": { "type": "string", "required": true, "enum": ["COP", "USD"] },
-        "unit": { "type": "string", "required": true }
-      }
+        "currency": { "type": "string", "required": true, "enum": ["COP", "USD"] }
+      },
+      "note": "Do not emit this event for API reason=waste — use stock_waste_registered"
     },
-    "consumption_order_failed": {
-      "event_type": "consumption_order_failed",
+    "outbound_order_failed": {
+      "event_type": "outbound_order_failed",
       "domain": "inventory",
-      "description": "A ConsumptionOrder was rejected by validation or insufficient stock",
+      "courseFloor": false,
+      "description": "An OutboundOrder was rejected by validation or insufficient stock",
       "trigger": "POST /inventory/orders/outbound on InsufficientStockError or validation failure",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "stream",
       "kpiLinks": [2],
       "sensitivity": "standard",
       "containsPii": false,
       "propertyAllowlist": [
-        "ingredient_id",
+        "product_id",
         "quantity_requested",
         "quantity_available",
-        "reason",
+        "api_reason",
         "location_id",
+        "country",
         "error_code"
       ],
       "properties": {
-        "ingredient_id": { "type": "integer", "required": true },
+        "product_id": { "type": "integer", "required": true },
         "quantity_requested": { "type": "number", "required": true },
         "quantity_available": { "type": "number", "required": false },
-        "reason": {
+        "api_reason": {
           "type": "string",
           "required": false,
-          "enum": ["consumption", "waste"]
+          "enum": ["consumption", "waste"],
+          "description": "Milestone 5 OutboundOrder.reason when known"
         },
         "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
+        "country": { "type": "string", "required": true, "enum": ["CO", "US"] },
         "error_code": {
           "type": "string",
           "required": true,
-          "enum": ["insufficient_stock", "validation_error", "ingredient_not_found"]
+          "enum": ["insufficient_stock", "validation_error", "product_not_found"]
         }
+      }
+    },
+    "stock_waste_registered": {
+      "event_type": "stock_waste_registered",
+      "domain": "inventory",
+      "courseFloor": true,
+      "description": "A location registered waste (expired product, kitchen error, or loss/theft)",
+      "trigger": "POST /inventory/orders/outbound after commit when API reason=waste",
+      "schemaVersion": 2,
+      "processing": "batch",
+      "kpiLinks": [3],
+      "sensitivity": "standard",
+      "containsPii": false,
+      "propertyAllowlist": [
+        "outbound_order_id",
+        "product_id",
+        "product_category",
+        "quantity",
+        "unit",
+        "reason",
+        "location_id",
+        "country",
+        "created_by",
+        "currency"
+      ],
+      "properties": {
+        "outbound_order_id": { "type": "integer", "required": true },
+        "product_id": { "type": "integer", "required": true },
+        "product_category": {
+          "type": "string",
+          "required": true,
+          "enum": ["meat", "seafood", "produce", "sauce", "beverage", "packaging", "cleaning"]
+        },
+        "quantity": { "type": "number", "required": true },
+        "unit": { "type": "string", "required": true },
+        "reason": {
+          "type": "string",
+          "required": true,
+          "enum": ["expired", "kitchen_error", "theft_suspected", "unspecified"],
+          "description": "Course target subtypes; use unspecified until additive waste_subtype exists on API"
+        },
+        "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
+        "country": { "type": "string", "required": true, "enum": ["CO", "US"] },
+        "created_by": { "type": "string", "required": true },
+        "currency": { "type": "string", "required": true, "enum": ["COP", "USD"] }
       }
     },
     "stock_threshold_triggered": {
       "event_type": "stock_threshold_triggered",
       "domain": "inventory",
-      "description": "Ingredient stock crossed downward through min_stock_threshold after an order (edge-triggered, not level-triggered)",
+      "courseFloor": true,
+      "description": "Product stock crossed downward through min_stock_threshold after an order (edge-triggered)",
       "emissionRule": "Emit only when stock_before > min_stock_threshold and stock_after <= min_stock_threshold",
-      "trigger": "Repository stock recompute after SupplyOrder or ConsumptionOrder commit",
-      "schemaVersion": 1,
+      "trigger": "Repository stock recompute after InboundOrder or OutboundOrder commit",
+      "schemaVersion": 2,
       "processing": "stream",
       "kpiLinks": [2],
       "sensitivity": "standard",
       "containsPii": false,
       "propertyAllowlist": [
-        "ingredient_id",
+        "product_id",
+        "product_category",
         "location_id",
+        "country",
         "current_stock",
         "min_stock_threshold",
+        "quantity",
+        "unit",
         "currency",
         "triggering_order_type",
         "triggering_order_id"
       ],
       "properties": {
-        "ingredient_id": { "type": "integer", "required": true },
+        "product_id": { "type": "integer", "required": true },
+        "product_category": {
+          "type": "string",
+          "required": true,
+          "enum": ["meat", "seafood", "produce", "sauce", "beverage", "packaging", "cleaning"]
+        },
         "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
+        "country": { "type": "string", "required": true, "enum": ["CO", "US"] },
         "current_stock": { "type": "number", "required": true },
         "min_stock_threshold": { "type": "number", "required": true },
+        "quantity": {
+          "type": "number",
+          "required": false,
+          "description": "Quantity of the triggering order when available"
+        },
+        "unit": { "type": "string", "required": true },
         "currency": { "type": "string", "required": true, "enum": ["COP", "USD"] },
         "triggering_order_type": {
           "type": "string",
           "required": true,
-          "enum": ["SupplyOrder", "ConsumptionOrder"]
+          "enum": ["InboundOrder", "OutboundOrder"]
         },
         "triggering_order_id": { "type": "integer", "required": true }
       }
@@ -388,16 +543,19 @@
     "direct_stock_edit_rejected": {
       "event_type": "direct_stock_edit_rejected",
       "domain": "inventory",
-      "description": "API blocked an attempt to modify Ingredient.current_stock outside an order",
+      "courseFloor": true,
+      "description": "API blocked an attempt to modify product stock outside an order",
       "trigger": "PATCH /inventory/products/{id} or UI when stock fields are attempted",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "stream",
       "kpiLinks": [],
       "sensitivity": "standard",
       "containsPii": false,
       "propertyAllowlist": [
-        "ingredient_id",
+        "product_id",
+        "product_category",
         "location_id",
+        "country",
         "attempted_field",
         "attempted_value",
         "rejection_reason",
@@ -405,8 +563,14 @@
         "http_path"
       ],
       "properties": {
-        "ingredient_id": { "type": "integer", "required": false },
+        "product_id": { "type": "integer", "required": false },
+        "product_category": {
+          "type": "string",
+          "required": false,
+          "enum": ["meat", "seafood", "produce", "sauce", "beverage", "packaging", "cleaning"]
+        },
         "location_id": { "type": "integer", "required": false, "minimum": 1, "maximum": 14 },
+        "country": { "type": "string", "required": false, "enum": ["CO", "US"] },
         "attempted_field": { "type": "string", "required": true },
         "attempted_value": {
           "type": "string",
@@ -422,12 +586,67 @@
         "http_path": { "type": "string", "required": true }
       }
     },
+    "ingredient_price_variance_detected": {
+      "event_type": "ingredient_price_variance_detected",
+      "domain": "inventory",
+      "courseFloor": true,
+      "description": "Inbound unit cost varied beyond threshold vs historical value for product/supplier",
+      "trigger": "POST /inventory/orders/inbound after commit when abs(variance_pct) >= threshold_pct",
+      "schemaVersion": 2,
+      "processing": "stream",
+      "kpiLinks": [],
+      "sensitivity": "standard",
+      "containsPii": false,
+      "propertyAllowlist": [
+        "inbound_order_id",
+        "product_id",
+        "product_category",
+        "supplier_id",
+        "location_id",
+        "country",
+        "quantity",
+        "unit",
+        "currency",
+        "previous_unit_cost",
+        "new_unit_cost",
+        "variance_pct",
+        "threshold_pct"
+      ],
+      "properties": {
+        "inbound_order_id": { "type": "integer", "required": true },
+        "product_id": { "type": "integer", "required": true },
+        "product_category": {
+          "type": "string",
+          "required": true,
+          "enum": ["meat", "seafood", "produce", "sauce", "beverage", "packaging", "cleaning"]
+        },
+        "supplier_id": { "type": "string", "required": true },
+        "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
+        "country": { "type": "string", "required": true, "enum": ["CO", "US"] },
+        "quantity": { "type": "number", "required": true },
+        "unit": { "type": "string", "required": true },
+        "currency": { "type": "string", "required": true, "enum": ["COP", "USD"] },
+        "previous_unit_cost": { "type": "number", "required": true },
+        "new_unit_cost": { "type": "number", "required": true },
+        "variance_pct": { "type": "number", "required": true, "description": "Signed percent change vs historical reference" },
+        "threshold_pct": {
+          "type": "number",
+          "required": true,
+          "description": "Configured alert threshold; default 10"
+        }
+      },
+      "constraints": {
+        "sameCurrencyOnly": true,
+        "noFxConversion": true
+      }
+    },
     "user_login_succeeded": {
       "event_type": "user_login_succeeded",
       "domain": "authentication",
+      "courseFloor": false,
       "description": "Successful backoffice login by a location manager or operator",
       "trigger": "Backoffice AuthProvider after successful POST /auth/login response",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "batch",
       "kpiLinks": [],
       "sensitivity": "standard",
@@ -446,9 +665,10 @@
     "user_login_failed": {
       "event_type": "user_login_failed",
       "domain": "authentication",
+      "courseFloor": false,
       "description": "Failed backoffice login attempt",
       "trigger": "POST /auth/login on invalid credentials or locked account",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "stream",
       "kpiLinks": [],
       "sensitivity": "standard",
@@ -475,9 +695,10 @@
     "session_expired": {
       "event_type": "session_expired",
       "domain": "authentication",
+      "courseFloor": false,
       "description": "Operator session timed out and was invalidated",
       "trigger": "uis/backoffice/lib/http.ts on refresh failure and redirect to login",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "batch",
       "kpiLinks": [],
       "sensitivity": "standard",
@@ -492,20 +713,21 @@
     "ingredient_list_viewed": {
       "event_type": "ingredient_list_viewed",
       "domain": "navigation",
-      "description": "User opened the ingredient stock list for a location",
+      "courseFloor": false,
+      "description": "User opened the product stock list for a location",
       "trigger": "GET /inventory/products and backoffice /inventory/products page mount",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "batch",
       "kpiLinks": [],
       "sensitivity": "standard",
       "containsPii": false,
-      "propertyAllowlist": ["location_id", "ingredient_count", "view_source"],
+      "propertyAllowlist": ["location_id", "product_count", "view_source"],
       "properties": {
         "location_id": { "type": "integer", "required": false, "minimum": 1, "maximum": 14 },
-        "ingredient_count": {
+        "product_count": {
           "type": "integer",
           "required": false,
-          "description": "Number of ingredients returned in the list response"
+          "description": "Number of products returned in the list response"
         },
         "view_source": {
           "type": "string",
@@ -517,9 +739,10 @@
     "location_filter_applied": {
       "event_type": "location_filter_applied",
       "domain": "navigation",
+      "courseFloor": false,
       "description": "User filtered stock view by a specific location",
       "trigger": "Location selector change on inventory pages",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "batch",
       "kpiLinks": [],
       "sensitivity": "standard",
@@ -539,27 +762,28 @@
     "order_form_abandoned": {
       "event_type": "order_form_abandoned",
       "domain": "navigation",
-      "description": "User started but did not submit a SupplyOrder or ConsumptionOrder form",
+      "courseFloor": false,
+      "description": "User started but did not submit an InboundOrder or OutboundOrder form",
       "trigger": "InboundOrderForm or OutboundOrderForm idle timeout with partial input",
-      "schemaVersion": 1,
+      "schemaVersion": 2,
       "processing": "batch",
       "kpiLinks": [],
       "sensitivity": "standard",
       "containsPii": false,
-      "propertyAllowlist": ["form_type", "ingredient_id", "location_id", "fields_completed"],
+      "propertyAllowlist": ["form_type", "product_id", "location_id", "fields_completed"],
       "properties": {
         "form_type": {
           "type": "string",
           "required": true,
-          "enum": ["SupplyOrder", "ConsumptionOrder"]
+          "enum": ["InboundOrder", "OutboundOrder"]
         },
-        "ingredient_id": { "type": "integer", "required": false },
+        "product_id": { "type": "integer", "required": false },
         "location_id": { "type": "integer", "required": true, "minimum": 1, "maximum": 14 },
         "fields_completed": {
           "type": "array",
           "required": true,
           "items": { "type": "string" },
-          "description": "Allowlisted field names only, e.g. ingredient_id, quantity"
+          "description": "Allowlisted field names only, e.g. product_id, quantity"
         }
       }
     }

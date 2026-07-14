@@ -202,6 +202,7 @@ def create_inbound_order(
         supplier_id=supplier_id,
         supplier_name=supplier_name,
         location_id=payload.location_id,
+        unit_cost=payload.unit_cost,
         user_uuid=user_uuid,
     )
     session.add(entry)
@@ -213,13 +214,16 @@ def create_inbound_order(
     )
     maybe_emit_stock_threshold_triggered(
         session,
-        ingredient_id=ingredient.id,
+        product_id=ingredient.id,
+        product_category=ingredient.category,
         location_id=payload.location_id,
+        unit=ingredient.unit,
         stock_before=stock_before,
         stock_after=stock_after,
         min_stock_threshold=threshold,
-        triggering_order_type="SupplyOrder",
+        triggering_order_type="InboundOrder",
         triggering_order_id=entry.id,
+        quantity=payload.quantity,
         ctx=telemetry_ctx,
     )
     return InboundOrderResponse(
@@ -231,6 +235,7 @@ def create_inbound_order(
         supplier_id=entry.supplier_id,
         supplier_name=entry.supplier_name,
         location_id=entry.location_id,
+        unit_cost=entry.unit_cost,
         created_at=entry.created_at,
         user_uuid=entry.user_uuid,
     )
@@ -269,13 +274,16 @@ def create_outbound_order(
     )
     maybe_emit_stock_threshold_triggered(
         session,
-        ingredient_id=ingredient.id,
+        product_id=ingredient.id,
+        product_category=ingredient.category,
         location_id=payload.location_id,
+        unit=ingredient.unit,
         stock_before=stock_before,
         stock_after=stock_after,
         min_stock_threshold=threshold,
-        triggering_order_type="ConsumptionOrder",
+        triggering_order_type="OutboundOrder",
         triggering_order_id=exit_row.id,
+        quantity=payload.quantity,
         ctx=telemetry_ctx,
     )
     return OutboundOrderResponse(
@@ -314,6 +322,7 @@ def list_orders(session: Session) -> OrdersListResponse:
                 supplier_id=entry.supplier_id,
                 supplier_name=entry.supplier_name,
                 location_id=entry.location_id,
+                unit_cost=entry.unit_cost,
                 created_at=entry.created_at,
                 user_uuid=entry.user_uuid,
             )

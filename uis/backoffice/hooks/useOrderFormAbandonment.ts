@@ -6,11 +6,11 @@ import { track } from "@/lib/telemetry";
 
 const IDLE_MS = 120_000;
 
-type FormType = "SupplyOrder" | "ConsumptionOrder";
+type FormType = "InboundOrder" | "OutboundOrder";
 
 interface UseOrderFormAbandonmentOptions {
   formType: FormType;
-  ingredientId: number | null;
+  productId: number | null;
   locationId: number;
   fieldsCompleted: string[];
   active: boolean;
@@ -18,7 +18,7 @@ interface UseOrderFormAbandonmentOptions {
 
 export function useOrderFormAbandonment({
   formType,
-  ingredientId,
+  productId,
   locationId,
   fieldsCompleted,
   active,
@@ -27,10 +27,10 @@ export function useOrderFormAbandonment({
 
   useEffect(() => {
     emittedRef.current = false;
-  }, [formType, ingredientId]);
+  }, [formType, productId]);
 
   useEffect(() => {
-    if (!active || ingredientId == null || fieldsCompleted.length === 0) {
+    if (!active || productId == null || fieldsCompleted.length === 0) {
       return;
     }
 
@@ -41,7 +41,7 @@ export function useOrderFormAbandonment({
       emittedRef.current = true;
       track("order_form_abandoned", {
         form_type: formType,
-        ingredient_id: ingredientId,
+        product_id: productId,
         location_id: locationId,
         fields_completed: fieldsCompleted,
       });
@@ -50,5 +50,5 @@ export function useOrderFormAbandonment({
     return () => {
       window.clearTimeout(timer);
     };
-  }, [active, fieldsCompleted, formType, ingredientId, locationId]);
+  }, [active, fieldsCompleted, formType, productId, locationId]);
 }

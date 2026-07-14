@@ -21,11 +21,15 @@ Ordered index of historical reference context documents.
 - `context-13-centralized-incident-manager.md` — Centralized incident manager
 - `context-13-centralized-incident-manager-execution-roadmap.md` — Incident manager roadmap
 - `context-14-containerization.md` — Repository containerization
-- `context-15-telemetry-plan.md` — Telemetry Phase 1 design (inventory KPIs + event schemas)
+- `context-15-telemetry-plan.md` — Telemetry Phase 1 design (inventory KPIs + event schemas; course floor aligned)
+- `context-15-course-alignment-plan.md` — Locked decisions remapping Wave 1 telemetry to course floor
+- `context-15-telemetry-frontend-capture.md` — Frontend capture phase
+- `context-15-backend-storage.md` — Backend storage phase
+- `context-15-telemetry-report.md` — Telemetry report phase
 
 ## Numbering Notes
 
 - `context-13` is reserved for the centralized incident manager workstream.
 - `context-14` is reserved for containerization.
-- `context-15` is reserved for telemetry.
+- `context-15` is reserved for telemetry (plan, alignment, capture, storage, report companions).
 - `context-9` currently has three related companion files by design.

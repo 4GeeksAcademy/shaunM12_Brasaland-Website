@@ -9,9 +9,10 @@ from typing import Any
 from sqlmodel import Session
 
 from .constants import (
+    country_for_location,
     currency_for_location,
     event_definition,
-    is_restricted_consumption,
+    is_restricted_event,
     processing_for,
     telemetry_enabled,
 )
@@ -41,13 +42,16 @@ def _validate_properties(event_type: str, properties: dict[str, Any]) -> dict[st
 
 
 def enrich_properties(properties: dict[str, Any]) -> dict[str, Any]:
-    """Derive server-side fields such as currency before persistence."""
-    location_id = properties.get("location_id")
-    if location_id is not None and "currency" not in properties:
-        enriched = dict(properties)
-        enriched["currency"] = currency_for_location(int(location_id))
-        return enriched
-    return properties
+    """Derive server-side fields such as currency and country before persistence."""
+    enriched = dict(properties)
+    location_id = enriched.get("location_id")
+    if location_id is not None:
+        loc = int(location_id)
+        if "currency" not in enriched:
+            enriched["currency"] = currency_for_location(loc)
+        if "country" not in enriched:
+            enriched["country"] = country_for_location(loc)
+    return enriched
 
 
 def build_envelope(
@@ -85,10 +89,7 @@ def emit_event(
 
     context = ctx or EmitContext()
     envelope = build_envelope(event_type, properties, context)
-    restricted = (
-        event_type == "consumption_order_created"
-        and is_restricted_consumption(envelope["properties"])
-    )
+    restricted = is_restricted_event(event_type, envelope["properties"])
 
     write_stdout(envelope, restricted=restricted)
     if session is not None:

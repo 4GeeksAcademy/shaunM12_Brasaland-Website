@@ -66,7 +66,7 @@ export default function OutboundOrderForm({
 
   const fieldsCompleted = useMemo(() => {
     const completed: string[] = [];
-    if (form.ingredient_id) completed.push("ingredient_id");
+    if (form.ingredient_id) completed.push("product_id");
     if (form.quantity) completed.push("quantity");
     if (form.reason) completed.push("reason");
     completed.push("location_id");
@@ -74,8 +74,8 @@ export default function OutboundOrderForm({
   }, [form.ingredient_id, form.quantity, form.reason]);
 
   useOrderFormAbandonment({
-    formType: "ConsumptionOrder",
-    ingredientId: form.ingredient_id ? Number(form.ingredient_id) : null,
+    formType: "OutboundOrder",
+    productId: form.ingredient_id ? Number(form.ingredient_id) : null,
     locationId,
     fieldsCompleted,
     active: Boolean(form.ingredient_id) && !submitting && !successMessage,

@@ -53,7 +53,7 @@ export default function InventoryProductsPage(): React.JSX.Element {
     }
     track("ingredient_list_viewed", {
       location_id: locationId,
-      ingredient_count: products.length,
+      product_count: products.length,
       view_source: "backoffice",
     });
   }, [error, loading, locationId, products.length]);

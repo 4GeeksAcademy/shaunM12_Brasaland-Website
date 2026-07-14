@@ -3,12 +3,12 @@
 ## AI Engineering - 4Geeks Academy
 
 > **Repository index:** `context-15-telemetry-frontend-capture.md`  
-> **Companion docs:** `memory-bank/historical-reference/context-15-telemetry-plan.md`, `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
+> **Companion docs:** `memory-bank/historical-reference/context-15-telemetry-plan.md`, `memory-bank/historical-reference/context-15-course-alignment-plan.md`, `docs/telemetry/telemetry-plan.md`, `docs/telemetry/event-schemas.json`  
 > **Related context:** `context-12-milestone-5-backoffice-inventory-interface.md`  
 > **Type:** Frontend telemetry capture + temporary backend verification endpoint  
-> **Status:** 🟢 Implemented (frontend capture + stub/storage endpoint)
+> **Status:** 🟢 Capture path live; course-floor allowlists (`schemaVersion` 2)
 
-> **Authority rule:** Milestone 5 contexts are the runtime source of truth. This telemetry context only adds observability and must not redefine inventory API contracts.
+> **Authority rule:** Milestone 5 contexts are the runtime source of truth. This telemetry context only adds observability and must not redefine inventory API contracts. Course owns telemetry `event_type`s and property keys (`context-15-course-alignment-plan.md`).
 
 ---
 
@@ -35,12 +35,12 @@ This phase is verification-focused. Persistence and strict server-side event val
 
 ## Locked Decisions
 
-- Event names and property keys **must match** `docs/telemetry/event-schemas.json`.
+- Event names and property keys **must match** `docs/telemetry/event-schemas.json` (`schemaVersion` 2).
 - All frontend telemetry goes through **one public function**:  
   `track(eventType: string, properties: Record<string, unknown>): void`
 - Tracking must not be scattered in ad-hoc fetch/axios calls.
 - Event ownership is explicit to prevent duplicates:
-  - **Backend-owned (source of truth):** `supply_order_created`, `supply_order_failed`, `consumption_order_created`, `consumption_order_failed`, `stock_threshold_triggered`, `direct_stock_edit_rejected`
+  - **Backend-owned (source of truth):** `inbound_order_created`, `inbound_order_failed`, `outbound_order_created`, `outbound_order_failed`, `stock_waste_registered`, `stock_threshold_triggered`, `direct_stock_edit_rejected`, `ingredient_price_variance_detected`
   - **Frontend-owned in this phase:** `ingredient_list_viewed`, `location_filter_applied`, `order_form_abandoned`, `session_expired`, `user_login_succeeded`
 - Endpoint URL is configured from env on day one:
   - Backend: `TELEMETRY_ENDPOINT` (pattern established even for stub)
@@ -74,7 +74,7 @@ class TelemetryEvent(BaseModel):
     sessionId: str                    # Opaque session identifier
     userId: str                       # TinyDB user UUID
     event_type: str                   # entity_action format
-    schemaVersion: int                # starts at 1
+    schemaVersion: int                # floor inventory events use 2
     requestId: str                    # correlation identifier
     service: str                      # "backoffice"
     properties: dict[str, Any] = {}
@@ -148,17 +148,20 @@ Instrument these touchpoints in backoffice:
 
 | Event | Where to call `track()` | Notes |
 |---|---|---|
-| `supply_order_created` | **Do not emit in frontend** | Backend emits this after commit to avoid duplicates and ensure canonical payload |
-| `consumption_order_created` | **Do not emit in frontend** | Backend emits this after commit to include server-resolved fields |
-| `consumption_order_failed` | **Do not emit in frontend** | Backend emits standardized failure reasons on API rejection |
-| `supply_order_failed` | **Do not emit in frontend** | Backend emits validation/supplier errors as source of truth |
-| `ingredient_list_viewed` | On mount of ingredient stock list | include `location_id`, `ingredient_count`, `view_source` |
+| `inbound_order_created` | **Do not emit in frontend** | Backend emits this after commit to avoid duplicates and ensure canonical payload |
+| `outbound_order_created` | **Do not emit in frontend** | Backend emits after outbound commit when API `reason=consumption` only |
+| `stock_waste_registered` | **Do not emit in frontend** | Backend emits after outbound commit when API `reason=waste` (telemetry `reason` interim: `unspecified`) |
+| `outbound_order_failed` | **Do not emit in frontend** | Backend emits standardized failure reasons on API rejection |
+| `inbound_order_failed` | **Do not emit in frontend** | Backend emits validation/supplier errors as source of truth |
+| `ingredient_price_variance_detected` | **Do not emit in frontend** | Backend emits after inbound when unit cost exceeds variance threshold |
+| `ingredient_list_viewed` | On mount of product stock list | include `location_id`, `product_count`, `view_source` |
 
 ### Rules
 
-- Every call must include **only** keys allowed in Phase 1 schemas.
+- Every call must include **only** keys allowed in Phase 1 schemas (`schemaVersion` 2).
 - No "just in case" properties.
 - Never include stack traces in telemetry properties.
+- `order_form_abandoned.form_type` uses `InboundOrder` / `OutboundOrder` (not SupplyOrder/ConsumptionOrder).
 
 ---
 
@@ -180,7 +183,7 @@ These are the allowed keys for frontend-captured properties in this phase:
 
 | Event | Allowed properties for frontend capture |
 |---|---|
-| `ingredient_list_viewed` | `location_id`, `ingredient_count`, `view_source` |
+| `ingredient_list_viewed` | `location_id`, `product_count`, `view_source` |
 | `user_login_succeeded` | `location_id`, `auth_method` |
 | `user_login_failed` | **Backend-owned** (frontend does not emit) |
 | `session_expired` | `last_active_path`, `session_duration_seconds`, `location_id` |
@@ -193,7 +196,9 @@ Note: Canonical source of truth remains `docs/telemetry/event-schemas.json`.
 
 - **Dual currency is business metadata, not frontend usage telemetry** in this phase.
 - `location_id` is required for inventory events.
-- `reason` on `consumption_order_created` follows Milestone 5 values (`consumption`, `waste`) for KPI aggregation.
+- Milestone 5 HTTP API exit payloads still use `ingredient_id` and `reason` of `consumption` | `waste`. Telemetry properties use `product_id`.
+- Waste must **not** be emitted as `outbound_order_created` with `reason=waste`. API `reason=waste` maps to `stock_waste_registered` only (telemetry `reason` interim: `unspecified`).
+- API `reason=consumption` maps to `outbound_order_created` only.
 - `userId` must always be TinyDB UUID.
 - Never capture emails/passwords or user-entered secrets.
 
@@ -226,7 +231,7 @@ Reference image used to validate:
 5. Retry policy executes up to 3 times then drops batch.
 6. Inventory events reach stub endpoint from backoffice flow.
 7. Auth telemetry reaches endpoint with ownership split: frontend (`user_login_succeeded`, `session_expired`) and backend (`user_login_failed`).
-8. Captured keys match allowlists in `event-schemas.json`.
+8. Captured keys match allowlists in `event-schemas.json` (`schemaVersion` 2).
 9. No PII in properties or envelope.
 
 ### Remaining frontend instrumentation
@@ -237,7 +242,7 @@ Reference image used to validate:
 | `user_login_succeeded` | ✅ Implemented (`AuthProvider` after successful login) |
 | `session_expired` | ✅ Implemented (`http.ts` on refresh failure) |
 | `location_filter_applied` | ✅ Implemented (products page location selector) |
-| `order_form_abandoned` | ✅ Implemented (inbound/outbound form idle detection) |
+| `order_form_abandoned` | ✅ Implemented (inbound/outbound form idle detection; `form_type` = `InboundOrder` / `OutboundOrder`) |
 
 ---
 

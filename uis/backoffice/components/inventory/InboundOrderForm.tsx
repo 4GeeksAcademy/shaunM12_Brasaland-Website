@@ -30,6 +30,7 @@ const EMPTY_FORM = {
   quantity: "",
   supplier_id: "",
   location_id: "",
+  unit_cost: "",
 };
 
 function resolveLocationId(preferredLocationId?: string | null): number {
@@ -53,6 +54,7 @@ function applyProductDefaults(
     supplier_id: defaultSupplier ? String(defaultSupplier.id) : "",
     location_id: String(locationId),
     quantity: "",
+    unit_cost: "",
   };
 }
 
@@ -90,16 +92,17 @@ export default function InboundOrderForm({
 
   const fieldsCompleted = useMemo(() => {
     const completed: string[] = [];
-    if (form.ingredient_id) completed.push("ingredient_id");
+    if (form.ingredient_id) completed.push("product_id");
     if (form.quantity) completed.push("quantity");
     if (form.supplier_id) completed.push("supplier_id");
     if (form.location_id) completed.push("location_id");
+    if (form.unit_cost) completed.push("unit_cost");
     return completed;
-  }, [form.ingredient_id, form.location_id, form.quantity, form.supplier_id]);
+  }, [form.ingredient_id, form.location_id, form.quantity, form.supplier_id, form.unit_cost]);
 
   useOrderFormAbandonment({
-    formType: "SupplyOrder",
-    ingredientId: form.ingredient_id ? Number(form.ingredient_id) : null,
+    formType: "InboundOrder",
+    productId: form.ingredient_id ? Number(form.ingredient_id) : null,
     locationId: Number(form.location_id) || locationId,
     fieldsCompleted,
     active: Boolean(form.ingredient_id) && !submitting && !successMessage,
@@ -187,6 +190,8 @@ export default function InboundOrderForm({
     const quantity = Number(form.quantity);
     const supplierId = Number(form.supplier_id);
     const orderLocationId = Number(form.location_id);
+    const unitCostRaw = form.unit_cost.trim();
+    const unitCost = unitCostRaw === "" ? undefined : Number(unitCostRaw);
 
     if (!ingredientId || !selectedProduct) {
       setFormError("Select a product.");
@@ -205,6 +210,11 @@ export default function InboundOrderForm({
       return;
     }
 
+    if (unitCostRaw !== "" && (!Number.isFinite(unitCost) || (unitCost ?? 0) <= 0)) {
+      setFormError("Unit cost must be a positive number when provided.");
+      return;
+    }
+
     if (!RESTAURANT_LOCATIONS.some((location) => location.id === orderLocationId)) {
       setFormError("Select a restaurant.");
       return;
@@ -217,6 +227,7 @@ export default function InboundOrderForm({
         quantity,
         supplier_id: supplierId,
         location_id: orderLocationId,
+        ...(unitCost !== undefined ? { unit_cost: unitCost } : {}),
       });
       const resetProduct = preselectedId
         ? products.find((item) => String(item.id) === preselectedId)
@@ -300,6 +311,24 @@ export default function InboundOrderForm({
               </option>
             ))}
           </select>
+        </label>
+
+        <label>
+          <span className={LABEL_CLASS}>
+            Unit cost (optional, local currency)
+          </span>
+          <input
+            type="number"
+            min={0.01}
+            step="0.01"
+            value={form.unit_cost}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, unit_cost: event.target.value }))
+            }
+            className={INPUT_CLASS}
+            placeholder="e.g. 22000"
+            disabled={!selectedProduct}
+          />
         </label>
 
         <label className="md:col-span-2">
