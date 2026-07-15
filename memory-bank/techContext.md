@@ -19,7 +19,7 @@
   - Incident analyzer package at `services/api/incident_analyzer/`
 - **Tooling:**
   - Node.js/npm for dependency and script management
-  - Python 3.12 for the FastAPI service: root `.venv` for `api:dev`/`api:install`, or **uv** in `services/api/` (`pyproject.toml`, `uv sync`, `uv run seed`) for checklist-aligned seeding
+  - Python 3.12 for the FastAPI service: root `.venv` for `api:dev`/`api:install`, or **uv** in `services/api/` (`pyproject.toml`, `uv sync`, `uv run seed` / `python -m seeds.*`) for checklist-aligned seeding
   - Vitest for unit testing
   - Custom Node.js scripts for static site serving and incident CSV analysis (`scripts/analyze.py`)
   - Vercel for deployment (static public website rewrites in `vercel.json`; backoffice and FastAPI require separate hosting for full production)

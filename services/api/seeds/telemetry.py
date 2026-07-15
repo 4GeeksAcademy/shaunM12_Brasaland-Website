@@ -9,8 +9,7 @@ from sqlalchemy import text
 from sqlmodel import Session
 
 from database import get_engine
-
-from .models import TelemetryEvent, ensure_telemetry_schema
+from telemetry.models import TelemetryEvent, ensure_telemetry_schema
 
 
 def _seed_rows(now: datetime) -> list[TelemetryEvent]:

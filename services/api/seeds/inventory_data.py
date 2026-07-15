@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .constants import country_for_location
+from inventory.constants import country_for_location
 
 IngredientRow = dict[str, Any]
 

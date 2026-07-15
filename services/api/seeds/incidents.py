@@ -4,42 +4,33 @@
 from __future__ import annotations
 
 import csv
-import importlib.util
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 from sqlmodel import Session
 
-
-REPO_ROOT = Path(__file__).resolve().parents[1]
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
-
-API_ROOT = REPO_ROOT / "services" / "api"
-if str(API_ROOT) not in sys.path:
-    sys.path.insert(0, str(API_ROOT))
+from database import get_engine
+from incidents import repository
+from incidents.schemas import IncidentCreate
 
 
-def _load_local_module(module_name: str, module_path: Path):
-    spec = importlib.util.spec_from_file_location(module_name, module_path)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"Unable to load module '{module_name}' from {module_path}")
-    module = importlib.util.module_from_spec(spec)
-    sys.modules[module_name] = module
-    spec.loader.exec_module(module)
-    return module
+def _ensure_repo_root_on_path() -> Path:
+    current = Path(__file__).resolve()
+    for candidate in (current.parent, *current.parents):
+        if (candidate / "packages" / "shared" / "incidents_validation.py").exists():
+            if str(candidate) not in sys.path:
+                sys.path.insert(0, str(candidate))
+            return candidate
+    if Path("/app/packages/shared/incidents_validation.py").exists():
+        if "/app" not in sys.path:
+            sys.path.insert(0, "/app")
+        return Path("/app")
+    return current.parents[3]
 
 
-# Force-load local API modules (avoid same-name packages from site-packages).
-for _module_name in ("config", "database"):
-    sys.modules.pop(_module_name, None)
+_REPO_ROOT = _ensure_repo_root_on_path()
 
-_load_local_module("config", API_ROOT / "config.py")
-database = _load_local_module("database", API_ROOT / "database.py")
-
-from incidents import repository  # noqa: E402
-from incidents.schemas import IncidentCreate  # noqa: E402
 from packages.shared.incidents_validation import (  # noqa: E402
     ANALYZER_CATEGORY_CODES,
     normalize_legacy_branch,
@@ -47,8 +38,6 @@ from packages.shared.incidents_validation import (  # noqa: E402
     normalize_legacy_status,
     parse_legacy_date,
 )
-
-get_engine = database.get_engine
 
 
 @dataclass
@@ -59,7 +48,7 @@ class SeedStats:
 
 
 def _csv_path() -> Path:
-    return REPO_ROOT / "data" / "incidents-brasaland.csv"
+    return _REPO_ROOT / "data" / "incidents-brasaland.csv"
 
 
 def _source_key(row: dict[str, str], row_number: int) -> str:

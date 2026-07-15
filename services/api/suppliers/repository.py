@@ -5,9 +5,9 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from .constants import SUPPLIERS_SEED
-from .models import SupplierCreate, SupplierResponse
 from database import get_suppliers_table
+from seeds.suppliers_data import SUPPLIERS_SEED
+from .models import SupplierCreate, SupplierResponse
 
 
 def _utc_now_iso() -> str:
