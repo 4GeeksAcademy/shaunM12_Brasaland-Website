@@ -6,6 +6,7 @@ import sys
 from collections.abc import Iterable
 from pathlib import Path
 
+
 def _ensure_repo_root_on_path() -> None:
     current = Path(__file__).resolve()
     for candidate in (current.parent, *current.parents):
@@ -13,6 +14,11 @@ def _ensure_repo_root_on_path() -> None:
             if str(candidate) not in sys.path:
                 sys.path.insert(0, str(candidate))
             return
+    # Docker bind-mount fallback: packages live under /app/packages.
+    if str(Path("/app")) not in sys.path and (
+        Path("/app/packages/shared/incidents_validation.py").exists()
+    ):
+        sys.path.insert(0, "/app")
 
 
 _ensure_repo_root_on_path()
@@ -86,6 +92,6 @@ STATUS_TRANSITIONS: dict[str, tuple[str, ...]] = {
     "discarded": (),
 }
 
+
 def is_allowed(value: str, allowed: Iterable[str]) -> bool:
     return value in set(allowed)
-

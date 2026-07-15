@@ -11,6 +11,7 @@ from pydantic import BaseModel, Field, ValidationError, field_validator
 
 from .constants import BRANCH_VALUES, CATEGORY_VALUES, ORIGIN_VALUES, STATUS_VALUES
 
+
 def _ensure_repo_root_on_path() -> None:
     current = Path(__file__).resolve()
     for candidate in (current.parent, *current.parents):
@@ -18,6 +19,10 @@ def _ensure_repo_root_on_path() -> None:
             if str(candidate) not in sys.path:
                 sys.path.insert(0, str(candidate))
             return
+    if str(Path("/app")) not in sys.path and (
+        Path("/app/packages/shared/incidents_validation.py").exists()
+    ):
+        sys.path.insert(0, "/app")
 
 
 _ensure_repo_root_on_path()
@@ -129,9 +134,12 @@ class IncidentSummaryResponse(BaseModel):
 
 
 def parse_validation_error(exc: ValidationError) -> ValidationMessage:
-    issue = exc.errors()[0] if exc.errors() else {"loc": ("body",), "msg": "Invalid input."}
+    issue = (
+        exc.errors()[0]
+        if exc.errors()
+        else {"loc": ("body",), "msg": "Invalid input."}
+    )
     loc = issue.get("loc", ("body",))
     field = str(loc[-1]) if isinstance(loc, (tuple, list)) and loc else "body"
     message = str(issue.get("msg", "Invalid input."))
     return ValidationMessage(field=field, message=message)
-

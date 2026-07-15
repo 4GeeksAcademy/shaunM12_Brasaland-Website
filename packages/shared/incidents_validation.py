@@ -43,6 +43,15 @@ LEGACY_LOCATION_TO_BRANCH: dict[str, str] = {
     "FLA-04": "orlando_international",
 }
 
+# Original analyzer CSV category codes (pre-transform).
+ANALYZER_CATEGORY_CODES: tuple[str, ...] = (
+    "CUSTOMER_COMPLAINT",
+    "EQUIPMENT",
+    "SUPPLY",
+    "FOOD_QUALITY",
+    "STAFF",
+)
+
 
 def validate_enum_value(value: str, allowed: tuple[str, ...], message: str) -> str:
     cleaned = value.strip()
@@ -86,4 +95,3 @@ def parse_legacy_date(value: str | None) -> datetime | None:
         return None
     # CSV format is YYYY-MM-DD; keep it strict and explicit.
     return datetime.strptime(cleaned, "%Y-%m-%d")
-

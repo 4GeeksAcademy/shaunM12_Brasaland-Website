@@ -20,6 +20,7 @@ API_ROOT = REPO_ROOT / "services" / "api"
 if str(API_ROOT) not in sys.path:
     sys.path.insert(0, str(API_ROOT))
 
+
 def _load_local_module(module_name: str, module_path: Path):
     spec = importlib.util.spec_from_file_location(module_name, module_path)
     if spec is None or spec.loader is None:
@@ -40,6 +41,7 @@ database = _load_local_module("database", API_ROOT / "database.py")
 from incidents import repository  # noqa: E402
 from incidents.schemas import IncidentCreate  # noqa: E402
 from packages.shared.incidents_validation import (  # noqa: E402
+    ANALYZER_CATEGORY_CODES,
     normalize_legacy_branch,
     normalize_legacy_category,
     normalize_legacy_status,
@@ -67,7 +69,36 @@ def _source_key(row: dict[str, str], row_number: int) -> str:
     return f"legacy_row:{row_number}"
 
 
+def _assert_analyzer_valid(row: dict[str, str]) -> None:
+    """Skip the same invalid set used by the incident file analyzer (CONTEXT)."""
+    location_id = (row.get("location_id") or "").strip()
+    if not location_id or normalize_legacy_branch(location_id) is None:
+        raise ValueError("missing or invalid location_id")
+
+    category = (row.get("category") or "").strip().upper()
+    if category not in ANALYZER_CATEGORY_CODES:
+        raise ValueError("missing or invalid category")
+
+    description = (row.get("description") or "").strip()
+    if len(description) < 5:
+        raise ValueError("empty or too-short description")
+
+    status = (row.get("status") or "").strip().upper()
+    score_raw = (row.get("satisfaction_score") or "").strip()
+    if status == "CLOSED" and not score_raw:
+        raise ValueError("closed case without satisfaction_score")
+    if score_raw:
+        try:
+            score = int(score_raw)
+        except ValueError as exc:
+            raise ValueError("satisfaction_score out of range") from exc
+        if score < 1 or score > 5:
+            raise ValueError("satisfaction_score out of range")
+
+
 def _build_payload(row: dict[str, str]) -> IncidentCreate:
+    _assert_analyzer_valid(row)
+
     title_source = (row.get("category") or "incident").strip()
     title = f"Historical Incident - {title_source}"
     description = (row.get("description") or "").strip()
@@ -89,10 +120,10 @@ def _build_payload(row: dict[str, str]) -> IncidentCreate:
     return IncidentCreate(
         title=title,
         description=description,
-        category=category,
-        status=status,
+        category=category,  # type: ignore[arg-type]
+        status=status,  # type: ignore[arg-type]
         origin="customer",
-        branch=branch,
+        branch=branch,  # type: ignore[arg-type]
         created_at=created_at,
     )
 
@@ -104,7 +135,9 @@ def seed_incidents() -> SeedStats:
 
     stats = SeedStats()
 
-    with csv_path.open("r", encoding="utf-8", newline="") as handle, Session(get_engine()) as session:
+    with csv_path.open("r", encoding="utf-8", newline="") as handle, Session(
+        get_engine()
+    ) as session:
         reader = csv.DictReader(handle)
         for row_number, row in enumerate(reader, start=2):
             source_key = _source_key(row, row_number)
@@ -114,11 +147,16 @@ def seed_incidents() -> SeedStats:
 
             try:
                 payload = _build_payload(row)
-                repository.create_seeded_incident(session, payload, source_key=source_key)
+                repository.create_seeded_incident(
+                    session, payload, source_key=source_key
+                )
                 stats.inserted += 1
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — report and continue
                 stats.invalid += 1
-                print(f"[seed-incidents] row {row_number} skipped: {exc}", file=sys.stderr)
+                print(
+                    f"[seed-incidents] row {row_number} skipped: {exc}",
+                    file=sys.stderr,
+                )
 
     return stats
 
@@ -126,7 +164,7 @@ def seed_incidents() -> SeedStats:
 def main() -> int:
     try:
         stats = seed_incidents()
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         print(f"[seed-incidents] failed: {exc}", file=sys.stderr)
         return 1
 
