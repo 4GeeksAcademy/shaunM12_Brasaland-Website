@@ -260,12 +260,105 @@ def export_pipeline_eval_flow(
     return str(path)
 
 
+def _invoke(fn: Any, run_with_engine: bool, *args: Any, **kwargs: Any) -> Any:
+    """Call a Prefect task/flow with or without the orchestration engine."""
+    if run_with_engine:
+        return fn(*args, **kwargs)
+    return fn.fn(*args, **kwargs)
+
+
+@flow(name="extract_telemetry_events_flow")
+def extract_telemetry_events_flow(
+    period_start: datetime,
+    period_end: datetime,
+    raw_dir: str,
+    *,
+    use_engine: bool = True,
+) -> list[dict[str, Any]]:
+    """Phase 3 extract subflow — thin wrapper around extract_telemetry_events task."""
+    return _invoke(
+        extract_telemetry_events,
+        use_engine,
+        period_start,
+        period_end,
+        raw_dir,
+    )
+
+
+@flow(name="transform_weekly_location_performance_flow")
+def transform_weekly_location_performance_flow(
+    rows: list[dict[str, Any]],
+    week_starts: list[date],
+    period_start: datetime,
+    period_end: datetime,
+    *,
+    use_engine: bool = True,
+) -> dict[str, Any]:
+    """Phase 3 transform subflow — runs the five KPI tasks, then sparse merge."""
+    purchase_result = _invoke(
+        transform_purchase_cost_task,
+        use_engine,
+        rows,
+        period_start=period_start,
+        period_end=period_end,
+    )
+    waste_result = _invoke(transform_waste_cost_task, use_engine, rows)
+    skipped = int(purchase_result["skipped"]) + int(waste_result["skipped"])
+    if skipped:
+        logger.warning(
+            "Skipped %s events missing quantity/unit_cost for cost KPIs", skipped
+        )
+
+    ratio_records = _invoke(
+        transform_waste_ratio_task,
+        use_engine,
+        purchase_result["records"],
+        waste_result["records"],
+    )
+    stockout_records = _invoke(
+        transform_stockout_frequency_task, use_engine, rows
+    )
+    price_records = _invoke(
+        transform_price_alert_frequency_task, use_engine, rows
+    )
+
+    kpi_frame, skipped_total = compute_weekly_kpis(rows, week_starts=week_starts)
+    _ = (ratio_records, stockout_records, price_records)
+    return {
+        "kpi_rows": kpi_frame.to_dict(orient="records"),
+        "skipped": skipped_total,
+    }
+
+
+@flow(name="load_weekly_location_performance_flow")
+def load_weekly_location_performance_flow(
+    kpi_rows: list[dict[str, Any]],
+    run_id: str,
+    *,
+    records_extracted: int,
+    records_skipped_missing_cost: int,
+    use_engine: bool = True,
+) -> int:
+    """Phase 3 load subflow — upsert KPI grains and finish pipeline_runs audit."""
+    loaded = _invoke(load_weekly_location_performance, use_engine, kpi_rows)
+    _invoke(
+        record_pipeline_run,
+        use_engine,
+        run_id,
+        status="completed",
+        records_extracted=records_extracted,
+        records_loaded=loaded,
+        records_skipped_missing_cost=records_skipped_missing_cost,
+    )
+    return loaded
+
+
 def run_weekly_pipeline_core(
     lookback_weeks: int | None = None,
     *,
     use_prefect_engine: bool = False,
 ) -> dict[str, Any]:
-    """Extract → transform → load → audit.
+    """Extract → transform → load → audit via named Phase 3 subflows.
 
     ``use_prefect_engine=True`` runs Prefect tasks/subflows (needs API/ephemeral server).
     Default ``False`` uses ``.fn()`` so CLI / FastAPI background work without a Prefect server.
@@ -275,11 +368,6 @@ def run_weekly_pipeline_core(
     period_start, period_end, week_starts = extract_window_bounds(lookback_weeks=weeks)
 
     from reporting.repository import start_pipeline_run
-
-    def _call(task_or_fn, *args, **kwargs):
-        if use_prefect_engine:
-            return task_or_fn(*args, **kwargs)
-        return task_or_fn.fn(*args, **kwargs)
 
     session = _session()
     try:
@@ -297,41 +385,37 @@ def run_weekly_pipeline_core(
     loaded = 0
     skipped = 0
     try:
-        rows = _call(
-            extract_telemetry_events,
+        rows = _invoke(
+            extract_telemetry_events_flow,
+            use_prefect_engine,
             period_start,
             period_end,
             settings["raw_dir"],
+            use_engine=use_prefect_engine,
         )
         extracted = len(rows)
 
-        purchase_result = _call(
-            transform_purchase_cost_task,
+        transform_result = _invoke(
+            transform_weekly_location_performance_flow,
+            use_prefect_engine,
             rows,
-            period_start=period_start,
-            period_end=period_end,
+            week_starts,
+            period_start,
+            period_end,
+            use_engine=use_prefect_engine,
         )
-        waste_result = _call(transform_waste_cost_task, rows)
-        skipped = int(purchase_result["skipped"]) + int(waste_result["skipped"])
-        if skipped:
-            logger.warning(
-                "Skipped %s events missing quantity/unit_cost for cost KPIs", skipped
-            )
+        kpi_rows = transform_result["kpi_rows"]
+        skipped = int(transform_result["skipped"])
 
-        ratio_records = _call(
-            transform_waste_ratio_task,
-            purchase_result["records"],
-            waste_result["records"],
+        loaded = _invoke(
+            load_weekly_location_performance_flow,
+            use_prefect_engine,
+            kpi_rows,
+            str(run_id),
+            records_extracted=extracted,
+            records_skipped_missing_cost=skipped,
+            use_engine=use_prefect_engine,
         )
-        stockout_records = _call(transform_stockout_frequency_task, rows)
-        price_records = _call(transform_price_alert_frequency_task, rows)
-
-        kpi_frame, skipped_total = compute_weekly_kpis(rows, week_starts=week_starts)
-        skipped = skipped_total
-        kpi_rows = kpi_frame.to_dict(orient="records")
-        _ = (ratio_records, stockout_records, price_records)
-
-        loaded = _call(load_weekly_location_performance, kpi_rows)
 
         export_meta = {
             "period_start": period_start.isoformat(),
@@ -340,7 +424,6 @@ def run_weekly_pipeline_core(
             "records_skipped_missing_cost": skipped,
         }
         if use_prefect_engine:
-            # Optional export must not fail the main run.
             export_pipeline_eval_flow(
                 settings["eval_dir"],
                 kpi_rows,
@@ -355,14 +438,6 @@ def run_weekly_pipeline_core(
             except Exception:  # noqa: BLE001
                 logger.exception("Eval export failed; continuing main pipeline")
 
-        _call(
-            record_pipeline_run,
-            str(run_id),
-            status="completed",
-            records_extracted=extracted,
-            records_loaded=loaded,
-            records_skipped_missing_cost=skipped,
-        )
         return {
             "status": "completed",
             "run_id": str(run_id),
@@ -388,7 +463,7 @@ def run_weekly_pipeline_core(
 def brasaland_weekly_location_performance_pipeline(
     lookback_weeks: int | None = None,
 ) -> dict[str, Any]:
-    """Prefect-engine entry (scheduler / `flow()` calls). Prefer CLI via ``main()``."""
+    """Prefect-engine entry — composes extract/transform/load subflows."""
     return run_weekly_pipeline_core(
         lookback_weeks=lookback_weeks,
         use_prefect_engine=True,

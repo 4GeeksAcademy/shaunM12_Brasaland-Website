@@ -10,6 +10,17 @@
 
 Refactor the Phase 2 pipeline into clear extract / transform / load **subflows**, add `tests/pipelines/test_pipeline.py`, and ship a business-facing dashboard at `uis/backoffice` `/reporting` that reads `reporting.weekly_location_performance` (and run status).
 
+### Phase 3 implementation locks (D1–D6)
+
+| ID | Lock |
+| -- | ---- |
+| D1 | Table + week selector + last-run status (charts optional, not required) |
+| D2 | **Run pipeline** button → `POST /reporting/pipeline-runs` (202) + refresh/poll |
+| D3 | Nav link **Reporting** → `/reporting` (near Inventory) |
+| D4 | Keep **sparse** grains; empty-state copy; show country + currency (no FX) |
+| D5 | Tests at `services/api/tests/pipelines/test_pipeline.py` |
+| D6 | Thin Prefect subflow wrappers; do not rewrite `data/process/` KPI math |
+
 ---
 
 ## Must implement
@@ -29,7 +40,7 @@ Main flow remains `brasaland_weekly_location_performance_pipeline` and composes 
 
 | Path | Coverage |
 | ---- | -------- |
-| `tests/pipelines/test_pipeline.py` | Happy path, missing-cost skip, upsert idempotency, at least one transform unit |
+| `services/api/tests/pipelines/test_pipeline.py` | Happy path, missing-cost skip, upsert idempotency, subflow names, transform unit |
 | Existing fixtures | Prefer course-floor v2 event shapes |
 
 ### Dashboard
@@ -54,10 +65,10 @@ Main flow remains `brasaland_weekly_location_performance_pipeline` and composes 
 
 ## Acceptance criteria (Phase 3)
 
-- [ ] Main flow invokes named extract/transform/load subflows  
-- [ ] `tests/pipelines/test_pipeline.py` passes in CI / local  
-- [ ] Backoffice `/reporting` shows weekly KPI rows (or empty state + last run status)  
-- [ ] Design checklist in `PIPELINE_DESIGN.md` remains accurate  
+- [x] Main flow invokes named extract/transform/load subflows
+- [x] `services/api/tests/pipelines/test_pipeline.py` passes locally
+- [x] Backoffice `/reporting` shows weekly KPI rows (or empty state + last run status)
+- [x] Design checklist in `PIPELINE_DESIGN.md` remains accurate (D1–D6 locked)
 
 ---
 

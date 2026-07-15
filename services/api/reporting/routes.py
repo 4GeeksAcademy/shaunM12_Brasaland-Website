@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import logging
+import threading
 from datetime import date
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
 from auth.dependencies import get_current_user
@@ -19,6 +21,7 @@ from .schemas import (
     WeeklyLocationPerformanceOut,
 )
 
+logger = logging.getLogger(__name__)
 router = APIRouter(tags=["reporting"])
 
 
@@ -58,8 +61,16 @@ def get_latest_pipeline_run(
     status_code=status.HTTP_202_ACCEPTED,
 )
 def trigger_pipeline_run(
-    background_tasks: BackgroundTasks,
     _: UserResponse = Depends(get_current_user),
 ) -> PipelineRunAccepted:
-    background_tasks.add_task(run_weekly_pipeline, lookback_weeks=2)
+    # Daemon thread (not BackgroundTasks): return 202 immediately and keep ETL off
+    # the request lifecycle so proxy timeouts / reloads do not kill the accept path.
+    thread = threading.Thread(
+        target=run_weekly_pipeline,
+        kwargs={"lookback_weeks": 2},
+        daemon=True,
+        name="weekly-location-performance-pipeline",
+    )
+    thread.start()
+    logger.info("Accepted weekly location performance pipeline run")
     return PipelineRunAccepted()

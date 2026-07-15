@@ -234,7 +234,7 @@ create table if not exists reporting.weekly_location_performance (
 
 Module: `services/api/reporting/`. Auth: same JWT conventions as inventory.
 
-Phase 3 dashboard: `uis/backoffice` `/reporting` — business-facing charts/tables labeled with KPI names from §3, period = ISO week.
+Phase 3 dashboard: `uis/backoffice` `/reporting` — table + week selector + last-run status + Run pipeline button (D1–D4); nav label **Reporting**.
 
 ---
 
@@ -293,3 +293,14 @@ Phase 3 dashboard: `uis/backoffice` `/reporting` — business-facing charts/tabl
 - [x] Live CLI run succeeds with `DATABASE_URL`
 - [x] Repeat CLI run upserts same grain (no duplicate `(location_id, week_start)` rows)
 - [x] Acceptance criteria in `context-16-milestone-6-resilient-data-pipeline.md` marked complete
+
+## 17. Phase 3 locks (D1–D6)
+
+| ID | Lock |
+| -- | ---- |
+| D1 | Table + week selector + last-run status |
+| D2 | Run pipeline button → `POST /reporting/pipeline-runs` |
+| D3 | Nav **Reporting** → `/reporting` |
+| D4 | Sparse + empty-state copy; show country/currency |
+| D5 | `services/api/tests/pipelines/test_pipeline.py` |
+| D6 | Thin extract/transform/load subflows around existing tasks |

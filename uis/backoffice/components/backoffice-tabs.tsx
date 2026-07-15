@@ -18,6 +18,7 @@ const TABS: BackofficeTab[] = [
   { href: "/incidents", label: "Incidents" },
   { href: "/suppliers", label: "Suppliers" },
   { href: "/inventory/products", label: "Inventory" },
+  { href: "/reporting", label: "Reporting" },
   { href: "/account/profile", label: "Profile" },
   { href: "/account/users", label: "Users", adminOnly: true },
 ];

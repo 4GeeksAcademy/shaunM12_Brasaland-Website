@@ -28,12 +28,20 @@ services:
       dockerfile: services/Dockerfile
     env_file:
       - ./.env
+    environment:
+      # Repo-root ``data/`` is mounted below; runner resolves pipelines via this.
+      BRASALAND_REPO_ROOT: /workspace
     ports:
       - "8000:8000"
     volumes:
       - ./services/api:/app
+      # Keep container Python deps off the bind mount. Host `uv run` recreating
+      # services/api/.venv otherwise deletes the interpreter under the running
+      # API and the UI sees "socket hang up" on Run pipeline.
+      - backend_api_venv:/app/.venv
       - ./packages:/app/packages
       - ./docs:/app/docs:ro
+      - ./data:/workspace/data
     networks:
       - brasaland-dev-net
 
@@ -44,3 +52,4 @@ networks:
 volumes:
   ui_website_node_modules:
   ui_backoffice_node_modules:
+  backend_api_venv:

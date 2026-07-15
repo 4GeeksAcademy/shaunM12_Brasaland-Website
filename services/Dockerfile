@@ -12,4 +12,6 @@ COPY packages /app/packages
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "uv sync --frozen --no-dev && uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload"]
+# Exclude .venv from --reload: uv sync writes site-packages under the bind-mounted
+# /app and would otherwise restart the API mid-request (UI sees "socket hang up").
+CMD ["sh", "-c", "uv sync --frozen --no-dev && uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude '.venv' --reload-exclude '**/.venv/**' --reload-exclude '**/site-packages/**'"]

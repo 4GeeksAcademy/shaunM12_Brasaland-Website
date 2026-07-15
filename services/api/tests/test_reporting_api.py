@@ -19,6 +19,7 @@ def test_pipeline_module_importable():
 
     assert pipeline_mod.FLOW_NAME == "brasaland_weekly_location_performance_pipeline"
     assert callable(pipeline_mod.brasaland_weekly_location_performance_pipeline)
+    assert pipeline_mod.extract_telemetry_events_flow.name == "extract_telemetry_events_flow"
     assert NIGHTLY_CRON_BOGOTA == "0 2 * * *"
     assert pipeline_mod.SCHEDULE_CRON == NIGHTLY_CRON_BOGOTA
     assert BrasalandPipelineSettings._block_type_name == "brasaland-pipeline-settings"
