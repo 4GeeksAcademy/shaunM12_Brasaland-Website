@@ -16,8 +16,27 @@ VALID_COUNTRIES = ["CO", "US"]
 
 VALID_EXIT_REASONS = ["consumption", "waste"]
 
+# Backward-compatibility aliases accepted on write APIs.
+LEGACY_EXIT_REASON_ALIASES = {"kitchen_use": "consumption"}
+
 MIN_LOCATION_ID = 1
 MAX_LOCATION_ID = 14
+
+DEFAULT_MIN_STOCK_THRESHOLD = 10.0
+
+CATEGORY_DEFAULT_MIN_STOCK: dict[str, float] = {
+    "meat": 25.0,
+    "seafood": 15.0,
+    "produce": 20.0,
+    "sauce": 5.0,
+    "beverage": 10.0,
+    "packaging": 50.0,
+    "cleaning": 5.0,
+}
+
+
+def default_min_stock_for_category(category: str) -> float:
+    return CATEGORY_DEFAULT_MIN_STOCK.get(category, DEFAULT_MIN_STOCK_THRESHOLD)
 
 
 def country_for_location(location_id: int) -> str:

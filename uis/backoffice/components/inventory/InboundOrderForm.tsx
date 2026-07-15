@@ -2,17 +2,23 @@
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { useOrderFormAbandonment } from "@/hooks/useOrderFormAbandonment";
 import {
   INPUT_CLASS,
   LABEL_CLASS,
   RESTAURANT_LOCATIONS,
   formatLocationLabel,
   getQuantityConstraints,
-  getSupplierForLocation,
   isValidQuantity,
 } from "@/lib/inventory-constants";
+import {
+  filterSuppliersForInbound,
+  pickDefaultSupplier,
+} from "@/lib/inventory-supplier-utils";
 import { createInboundOrder } from "@/lib/inventory";
+import { fetchSuppliers } from "@/lib/suppliers-api";
 import { Product } from "@/types/inventory";
+import { Supplier } from "@/types/suppliers";
 
 interface InboundOrderFormProps {
   products: Product[];
@@ -22,8 +28,9 @@ interface InboundOrderFormProps {
 const EMPTY_FORM = {
   ingredient_id: "",
   quantity: "",
-  supplier_name: "",
+  supplier_id: "",
   location_id: "",
+  unit_cost: "",
 };
 
 function resolveLocationId(preferredLocationId?: string | null): number {
@@ -35,16 +42,19 @@ function resolveLocationId(preferredLocationId?: string | null): number {
 
 function applyProductDefaults(
   product: Product,
+  suppliers: Supplier[],
   current: typeof EMPTY_FORM,
   preferredLocationId?: string | null,
 ): typeof EMPTY_FORM {
   const locationId = resolveLocationId(preferredLocationId);
+  const defaultSupplier = pickDefaultSupplier(suppliers, product.category, locationId);
   return {
     ...current,
     ingredient_id: String(product.id),
-    supplier_name: getSupplierForLocation(product.category, locationId),
+    supplier_id: defaultSupplier ? String(defaultSupplier.id) : "",
     location_id: String(locationId),
     quantity: "",
+    unit_cost: "",
   };
 }
 
@@ -56,6 +66,9 @@ export default function InboundOrderForm({
   const preselectedId = searchParams.get("productId");
   const preselectedLocationId = searchParams.get("locationId");
 
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [suppliersLoading, setSuppliersLoading] = useState(true);
+  const [suppliersError, setSuppliersError] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -66,35 +79,105 @@ export default function InboundOrderForm({
     [form.ingredient_id, products],
   );
 
+  const locationId = Number(form.location_id) || resolveLocationId(preselectedLocationId);
+
+  const availableSuppliers = useMemo(() => {
+    if (!selectedProduct) {
+      return [];
+    }
+    return filterSuppliersForInbound(suppliers, selectedProduct.category, locationId);
+  }, [locationId, selectedProduct, suppliers]);
+
   const quantityConstraints = getQuantityConstraints(selectedProduct?.unit);
 
+  const fieldsCompleted = useMemo(() => {
+    const completed: string[] = [];
+    if (form.ingredient_id) completed.push("product_id");
+    if (form.quantity) completed.push("quantity");
+    if (form.supplier_id) completed.push("supplier_id");
+    if (form.location_id) completed.push("location_id");
+    if (form.unit_cost) completed.push("unit_cost");
+    return completed;
+  }, [form.ingredient_id, form.location_id, form.quantity, form.supplier_id, form.unit_cost]);
+
+  useOrderFormAbandonment({
+    formType: "InboundOrder",
+    productId: form.ingredient_id ? Number(form.ingredient_id) : null,
+    locationId: Number(form.location_id) || locationId,
+    fieldsCompleted,
+    active: Boolean(form.ingredient_id) && !submitting && !successMessage,
+  });
+
   useEffect(() => {
-    if (!preselectedId || products.length === 0) {
+    let cancelled = false;
+    setSuppliersLoading(true);
+    setSuppliersError(null);
+    void fetchSuppliers()
+      .then((rows) => {
+        if (!cancelled) {
+          setSuppliers(rows);
+        }
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setSuppliersError(
+            caught instanceof Error
+              ? caught.message
+              : "Could not load supplier directory.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSuppliersLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!preselectedId || products.length === 0 || suppliers.length === 0) {
       return;
     }
     const product = products.find((item) => String(item.id) === preselectedId);
     if (product) {
-      setForm(applyProductDefaults(product, EMPTY_FORM, preselectedLocationId));
+      setForm(applyProductDefaults(product, suppliers, EMPTY_FORM, preselectedLocationId));
     }
-  }, [preselectedId, preselectedLocationId, products]);
+  }, [preselectedId, preselectedLocationId, products, suppliers]);
 
   const handleProductChange = (productId: string): void => {
     const product = products.find((item) => String(item.id) === productId);
     if (!product) {
-      setForm((current) => ({ ...current, ingredient_id: productId }));
+      setForm((current) => ({ ...current, ingredient_id: productId, supplier_id: "" }));
       return;
     }
-    setForm(applyProductDefaults(product, form, form.location_id || preselectedLocationId));
+    setForm(
+      applyProductDefaults(
+        product,
+        suppliers,
+        form,
+        form.location_id || preselectedLocationId,
+      ),
+    );
   };
 
-  const handleLocationChange = (locationId: string): void => {
-    const numericId = Number(locationId);
+  const handleLocationChange = (nextLocationId: string): void => {
+    const numericId = Number(nextLocationId);
+    if (!selectedProduct) {
+      setForm((current) => ({ ...current, location_id: nextLocationId }));
+      return;
+    }
+    const defaultSupplier = pickDefaultSupplier(
+      suppliers,
+      selectedProduct.category,
+      numericId,
+    );
     setForm((current) => ({
       ...current,
-      location_id: locationId,
-      supplier_name: selectedProduct
-        ? getSupplierForLocation(selectedProduct.category, numericId)
-        : current.supplier_name,
+      location_id: nextLocationId,
+      supplier_id: defaultSupplier ? String(defaultSupplier.id) : "",
     }));
   };
 
@@ -105,10 +188,18 @@ export default function InboundOrderForm({
 
     const ingredientId = Number(form.ingredient_id);
     const quantity = Number(form.quantity);
-    const locationId = Number(form.location_id);
+    const supplierId = Number(form.supplier_id);
+    const orderLocationId = Number(form.location_id);
+    const unitCostRaw = form.unit_cost.trim();
+    const unitCost = unitCostRaw === "" ? undefined : Number(unitCostRaw);
 
     if (!ingredientId || !selectedProduct) {
       setFormError("Select a product.");
+      return;
+    }
+
+    if (!supplierId) {
+      setFormError("Select a supplier from the directory.");
       return;
     }
 
@@ -119,7 +210,12 @@ export default function InboundOrderForm({
       return;
     }
 
-    if (!RESTAURANT_LOCATIONS.some((location) => location.id === locationId)) {
+    if (unitCostRaw !== "" && (!Number.isFinite(unitCost) || (unitCost ?? 0) <= 0)) {
+      setFormError("Unit cost must be a positive number when provided.");
+      return;
+    }
+
+    if (!RESTAURANT_LOCATIONS.some((location) => location.id === orderLocationId)) {
       setFormError("Select a restaurant.");
       return;
     }
@@ -129,23 +225,31 @@ export default function InboundOrderForm({
       await createInboundOrder({
         ingredient_id: ingredientId,
         quantity,
-        supplier_name: form.supplier_name,
-        location_id: locationId,
+        supplier_id: supplierId,
+        location_id: orderLocationId,
+        ...(unitCost !== undefined ? { unit_cost: unitCost } : {}),
       });
       const resetProduct = preselectedId
         ? products.find((item) => String(item.id) === preselectedId)
         : undefined;
       setForm(
         resetProduct
-          ? applyProductDefaults(resetProduct, EMPTY_FORM, preselectedLocationId)
+          ? applyProductDefaults(
+              resetProduct,
+              suppliers,
+              EMPTY_FORM,
+              preselectedLocationId,
+            )
           : EMPTY_FORM,
       );
       setSuccessMessage(
-        `Inbound delivery for ${selectedProduct.name} recorded at ${formatLocationLabel(locationId)}.`,
+        `Inbound delivery for ${selectedProduct.name} recorded at ${formatLocationLabel(orderLocationId)}.`,
       );
     } catch (caught) {
+      const message =
+        caught instanceof Error ? caught.message : "Could not record inbound order.";
       setFormError(
-        caught instanceof Error ? caught.message : "Could not record inbound order.",
+        message,
       );
     } finally {
       setSubmitting(false);
@@ -209,17 +313,57 @@ export default function InboundOrderForm({
           </select>
         </label>
 
-        <label className="md:col-span-2">
-          <span className={LABEL_CLASS}>Supplier (from restaurant market)</span>
+        <label>
+          <span className={LABEL_CLASS}>
+            Unit cost (optional, local currency)
+          </span>
           <input
-            required
-            readOnly
-            type="text"
-            value={form.supplier_name}
-            className={`${INPUT_CLASS} cursor-not-allowed text-stone-300`}
-            placeholder="Select a product and restaurant…"
+            type="number"
+            min={0.01}
+            step="0.01"
+            value={form.unit_cost}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, unit_cost: event.target.value }))
+            }
+            className={INPUT_CLASS}
+            placeholder="e.g. 22000"
+            disabled={!selectedProduct}
           />
         </label>
+
+        <label className="md:col-span-2">
+          <span className={LABEL_CLASS}>Supplier (directory)</span>
+          <select
+            required
+            value={form.supplier_id}
+            onChange={(event) =>
+              setForm((current) => ({ ...current, supplier_id: event.target.value }))
+            }
+            className={INPUT_CLASS}
+            disabled={
+              !selectedProduct || suppliersLoading || availableSuppliers.length === 0
+            }
+          >
+            <option value="">
+              {suppliersLoading
+                ? "Loading suppliers…"
+                : availableSuppliers.length === 0
+                  ? "No active suppliers for this product and location"
+                  : "Select a supplier…"}
+            </option>
+            {availableSuppliers.map((supplier) => (
+              <option key={supplier.id} value={supplier.id}>
+                {supplier.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {suppliersError ? (
+          <p role="alert" className="md:col-span-2 text-sm text-amber-200">
+            {suppliersError}
+          </p>
+        ) : null}
 
         {formError ? (
           <p role="alert" className="md:col-span-2 text-sm text-rose-300">
@@ -239,7 +383,13 @@ export default function InboundOrderForm({
         <div className="md:col-span-2">
           <button
             type="submit"
-            disabled={submitting || productsLoading || !selectedProduct}
+            disabled={
+              submitting ||
+              productsLoading ||
+              suppliersLoading ||
+              !selectedProduct ||
+              !form.supplier_id
+            }
             className="rounded-full bg-amber-300 px-5 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submitting ? "Saving…" : "Record inbound delivery"}

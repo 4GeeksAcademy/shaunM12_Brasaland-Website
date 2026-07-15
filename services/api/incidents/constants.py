@@ -3,18 +3,25 @@
 from __future__ import annotations
 
 import sys
-from pathlib import Path
 from collections.abc import Iterable
+from pathlib import Path
 
-_HERE = Path(__file__).resolve()
-_CANDIDATES = []
-if len(_HERE.parents) > 3:
-    _CANDIDATES.append(_HERE.parents[3])  # monorepo root locally
-_CANDIDATES.extend([_HERE.parents[1], Path("/app")])  # services/api or Docker /app
-for _candidate in _CANDIDATES:
-    _candidate_str = str(_candidate)
-    if _candidate_str not in sys.path:
-        sys.path.insert(0, _candidate_str)
+
+def _ensure_repo_root_on_path() -> None:
+    current = Path(__file__).resolve()
+    for candidate in (current.parent, *current.parents):
+        if (candidate / "packages" / "shared" / "incidents_validation.py").exists():
+            if str(candidate) not in sys.path:
+                sys.path.insert(0, str(candidate))
+            return
+    # Docker bind-mount fallback: packages live under /app/packages.
+    if str(Path("/app")) not in sys.path and (
+        Path("/app/packages/shared/incidents_validation.py").exists()
+    ):
+        sys.path.insert(0, "/app")
+
+
+_ensure_repo_root_on_path()
 
 from packages.shared.incidents_validation import LEGACY_CATEGORY_MAP, LEGACY_STATUS_MAP
 
@@ -85,6 +92,6 @@ STATUS_TRANSITIONS: dict[str, tuple[str, ...]] = {
     "discarded": (),
 }
 
+
 def is_allowed(value: str, allowed: Iterable[str]) -> bool:
     return value in set(allowed)
-

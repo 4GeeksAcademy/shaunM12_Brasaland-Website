@@ -1,1 +1,1 @@
-"""Shared Python package exports for Brasaland monorepo helpers."""
+"""Shared cross-service utilities for Brasaland."""

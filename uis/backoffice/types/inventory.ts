@@ -19,6 +19,7 @@ export interface Product {
   country: ProductCountry | string;
   is_active: boolean;
   current_stock: number;
+  min_stock_threshold: number;
 }
 
 export interface ProductCreateInput {
@@ -33,8 +34,9 @@ export interface ProductCreateInput {
 export interface InboundOrderCreateInput {
   ingredient_id: number;
   quantity: number;
-  supplier_name: string;
+  supplier_id: number;
   location_id: number;
+  unit_cost?: number;
 }
 
 export interface OutboundOrderCreateInput {
@@ -50,8 +52,10 @@ export interface InboundOrder {
   ingredient_name: string;
   ingredient_sku: string;
   quantity: number;
+  supplier_id: number;
   supplier_name: string;
   location_id: number;
+  unit_cost?: number | null;
   created_at: string;
   user_uuid: string;
 }

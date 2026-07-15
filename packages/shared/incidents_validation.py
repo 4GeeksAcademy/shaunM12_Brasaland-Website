@@ -93,4 +93,5 @@ def parse_legacy_date(value: str | None) -> datetime | None:
     cleaned = value.strip()
     if not cleaned:
         return None
+    # CSV format is YYYY-MM-DD; keep it strict and explicit.
     return datetime.strptime(cleaned, "%Y-%m-%d")

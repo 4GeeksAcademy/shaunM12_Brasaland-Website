@@ -1,7 +1,7 @@
 """Centralised application settings for the Brasaland API.
 
-Loads environment variables from ``services/api/.env`` (if present) and exposes
-the JWT/auth configuration used by the authentication layer.
+Loads environment variables from the repository root ``.env`` (if present) and
+exposes the JWT/auth configuration used by the authentication layer.
 
 Fails closed: importing this module raises if ``JWT_SECRET_KEY`` is missing, so
 the API can never run with an insecure hardcoded default secret.
@@ -14,17 +14,24 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Load services/api/.env when present. Real environment variables always win,
-# so this is a no-op in deployments that inject config another way.
-_ENV_PATH = Path(__file__).resolve().parent / ".env"
-load_dotenv(_ENV_PATH)
+# Canonical source is the repository root ``.env``. For portability (docker
+# context paths, direct module runs), probe several likely locations and load
+# the first existing file. Real environment variables always win.
+_CONFIG_DIR = Path(__file__).resolve().parent
+_SEARCH_ROOTS = [_CONFIG_DIR]
+_SEARCH_ROOTS.extend(_CONFIG_DIR.parents)
+for _root in _SEARCH_ROOTS:
+    _candidate = _root / ".env"
+    if _candidate.exists():
+        load_dotenv(_candidate)
+        break
 
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
 if not JWT_SECRET_KEY:
     raise RuntimeError(
-        "JWT_SECRET_KEY is not set. Copy services/api/.env.example to "
-        "services/api/.env and provide a long random secret. The API refuses to "
-        "start without a signing secret."
+        "JWT_SECRET_KEY is not set. Copy .env.example to .env at the repository "
+        "root and provide a long random secret. The API refuses to start without "
+        "a signing secret."
     )
 
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
@@ -78,3 +85,50 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 # Optional. When set, code that opts into SQLModel can use this URI. TinyDB
 # paths and table accessors in ``database.py`` are unchanged.
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+def resolve_telemetry_enabled(
+    *,
+    env_value: str | None,
+    is_dev: bool,
+    database_url: str | None,
+) -> bool:
+    if env_value is not None:
+        return _as_bool(env_value, default=False)
+    return bool(is_dev and database_url)
+
+
+def resolve_telemetry_sink(
+    *,
+    env_value: str | None,
+    is_dev: bool,
+    database_url: str | None,
+) -> str:
+    if env_value is not None:
+        return env_value.strip().lower()
+    if is_dev and database_url:
+        return "both"
+    return "stdout"
+
+
+# --- Telemetry (Wave 1) ------------------------------------------------------
+_telemetry_enabled_env = os.getenv("TELEMETRY_ENABLED")
+TELEMETRY_ENABLED = resolve_telemetry_enabled(
+    env_value=_telemetry_enabled_env,
+    is_dev=IS_DEV,
+    database_url=DATABASE_URL,
+)
+
+_telemetry_sink_env = os.getenv("TELEMETRY_SINK")
+TELEMETRY_SINK = resolve_telemetry_sink(
+    env_value=_telemetry_sink_env,
+    is_dev=IS_DEV,
+    database_url=DATABASE_URL,
+)
+
+TELEMETRY_SAMPLE_RATE = float(os.getenv("TELEMETRY_SAMPLE_RATE", "1.0"))
+# Telemetry endpoint behavior phase:
+# - stub: Phase 2 shape verification endpoint
+# - storage: Phase 3 mixed-batch ingestion + persistence
+TELEMETRY_PHASE_MODE = os.getenv("TELEMETRY_PHASE_MODE", "storage").strip().lower()
+# Stub/ingestion endpoint path used by frontend telemetry service.
+TELEMETRY_ENDPOINT = os.getenv("TELEMETRY_ENDPOINT", "/telemetry/events")

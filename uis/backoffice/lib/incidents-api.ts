@@ -17,9 +17,20 @@ function getBaseUrl(): string {
   return "";
 }
 
+function toFriendlyIncidentMessage(message: string): string {
+  const normalized = message.toLowerCase();
+  if (normalized.includes("unexpected end of json input")) {
+    return "The incident service returned an invalid response. Please try again.";
+  }
+  if (normalized.includes("failed to fetch")) {
+    return "Cannot reach the incident analyzer API. Please verify the API is running.";
+  }
+  return message;
+}
+
 async function readError(response: Response): Promise<string> {
   const errorText = await response.text();
-  return formatApiError(response.status, errorText);
+  return toFriendlyIncidentMessage(formatApiError(response.status, errorText));
 }
 
 export async function analyzeIncidentFile(file: File): Promise<IncidentAnalysisResult> {
@@ -44,8 +55,13 @@ export async function analyzeIncidentFile(file: File): Promise<IncidentAnalysisR
   if (!response.ok) {
     throw new Error(await readError(response));
   }
-
-  return (await response.json()) as IncidentAnalysisResult;
+  try {
+    return (await response.json()) as IncidentAnalysisResult;
+  } catch {
+    throw new Error(
+      "The incident analyzer returned an unreadable response. Please try again.",
+    );
+  }
 }
 
 export async function downloadIncidentResults(): Promise<Blob> {

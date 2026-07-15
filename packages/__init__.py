@@ -1,1 +1,1 @@
-"""Brasaland shared package namespace."""
+"""Top-level shared package namespace for Brasaland monorepo helpers."""

@@ -19,12 +19,15 @@ from inventory.routes import router as inventory_router
 from inventory.seed import ensure_inventory_schema, seed_inventory_if_empty
 from suppliers.routes import router as suppliers_router
 from suppliers.repository import seed_suppliers
+from telemetry.routes import router as telemetry_router
+from telemetry.models import ensure_telemetry_schema
 from users.routes import router as users_router
 from sqlmodel import SQLModel
 from sqlmodel import Session
 
 import inventory.models  # noqa: F401 — register ORM tables with SQLModel metadata
 import incidents.models  # noqa: F401 — register ORM tables with SQLModel metadata
+import telemetry.models  # noqa: F401 — register telemetry ORM tables
 
 
 @asynccontextmanager
@@ -34,6 +37,7 @@ async def lifespan(_: FastAPI):
     if config.DATABASE_URL:
         SQLModel.metadata.create_all(get_engine())
         with Session(get_engine()) as session:
+            ensure_telemetry_schema(session)
             ensure_inventory_schema(session)
         seed_inventory_if_empty()
     yield
@@ -62,6 +66,7 @@ app.include_router(users_router, prefix="/users")
 app.include_router(suppliers_router, prefix="/api/suppliers", dependencies=_protected)
 app.include_router(inventory_router, prefix="/inventory")
 app.include_router(incidents_router, prefix="/api/incidents", dependencies=_protected)
+app.include_router(telemetry_router, prefix="/telemetry")
 
 
 @app.get("/api/health")

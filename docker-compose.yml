@@ -1,0 +1,46 @@
+services:
+  ui:
+    build:
+      context: ./uis
+      dockerfile: Dockerfile
+    command: ["sh", "/app/uis/start.sh"]
+    env_file:
+      - ./.env
+    environment:
+      BACKOFFICE_API_PROXY_TARGET: ${BACKOFFICE_API_PROXY_TARGET_DOCKER}
+      INCIDENTS_API_PROXY_TARGET: ${INCIDENTS_API_PROXY_TARGET_DOCKER}
+    ports:
+      - "3000:3000"
+      - "3001:3001"
+    volumes:
+      - ./uis:/app/uis
+      - ./src:/app/src
+      - ui_website_node_modules:/app/uis/website/node_modules
+      - ui_backoffice_node_modules:/app/uis/backoffice/node_modules
+    depends_on:
+      - backend
+    networks:
+      - brasaland-dev-net
+
+  backend:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    env_file:
+      - ./.env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/api:/app
+      - ./packages:/app/packages
+      - ./docs:/app/docs:ro
+    networks:
+      - brasaland-dev-net
+
+networks:
+  brasaland-dev-net:
+    name: brasaland-dev-net
+
+volumes:
+  ui_website_node_modules:
+  ui_backoffice_node_modules:

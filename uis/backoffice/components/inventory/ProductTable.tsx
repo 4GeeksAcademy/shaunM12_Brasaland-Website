@@ -63,7 +63,10 @@ export default function ProductTable({
             </thead>
             <tbody className="divide-y divide-stone-800/80">
               {products.map((product) => {
-                const level = getStockLevel(product.current_stock);
+                const level = getStockLevel(
+                  product.current_stock,
+                  product.min_stock_threshold,
+                );
                 return (
                   <tr key={product.id} className="text-stone-200">
                     <td className="px-4 py-3 font-medium text-amber-50">{product.name}</td>

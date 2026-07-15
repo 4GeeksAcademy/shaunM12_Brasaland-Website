@@ -1,19 +1,22 @@
 /**
- * UI-only stock level thresholds for inventory dashboards.
+ * Stock level thresholds for inventory dashboards.
  *
- * The API does not define low-stock rules — these values drive colour badges
- * on the products page only. Threshold is compared in each product's own unit
- * (kg, litre, unit, etc.).
+ * Prefer ``min_stock_threshold`` from the API (resolved per restaurant when
+ * ``location_id`` is set). ``LOW_STOCK_THRESHOLD`` is the UI fallback when the
+ * API value is unavailable.
  */
 export const LOW_STOCK_THRESHOLD = 10;
 
 export type StockLevel = "healthy" | "low" | "out";
 
-export function getStockLevel(currentStock: number): StockLevel {
+export function getStockLevel(
+  currentStock: number,
+  minStockThreshold: number = LOW_STOCK_THRESHOLD,
+): StockLevel {
   if (currentStock <= 0) {
     return "out";
   }
-  if (currentStock <= LOW_STOCK_THRESHOLD) {
+  if (currentStock <= minStockThreshold) {
     return "low";
   }
   return "healthy";
