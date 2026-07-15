@@ -37,6 +37,28 @@ def last_unit_cost(
     return None
 
 
+def latest_unit_cost_at_location(
+    session: Session,
+    *,
+    product_id: int,
+    location_id: int,
+) -> float | None:
+    """Most recent inbound unit_cost for product at location (for waste cost telemetry)."""
+    query = (
+        select(IngredientEntry)
+        .where(
+            IngredientEntry.ingredient_id == product_id,
+            IngredientEntry.location_id == location_id,
+            IngredientEntry.unit_cost != None,  # noqa: E711
+        )
+        .order_by(IngredientEntry.created_at.desc())  # type: ignore[attr-defined]
+    )
+    for row in session.exec(query).all():
+        if row.unit_cost is not None:
+            return float(row.unit_cost)
+    return None
+
+
 def maybe_emit_ingredient_price_variance(
     session: Session,
     *,

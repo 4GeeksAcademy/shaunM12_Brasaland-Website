@@ -12,7 +12,10 @@ from database import get_db
 from telemetry.constants import STOCK_MUTATION_FIELDS
 from telemetry.context import EmitContext
 from telemetry.emit import emit_event
-from telemetry.price import maybe_emit_ingredient_price_variance
+from telemetry.price import (
+    latest_unit_cost_at_location,
+    maybe_emit_ingredient_price_variance,
+)
 from users.models import UserResponse
 from . import repository
 from .supplier_validation import (
@@ -305,9 +308,17 @@ def log_outbound_order(
         "created_by": str(current_user.id),
     }
     if order.reason == "waste":
+        waste_props: dict[str, Any] = {**base_props, "reason": "unspecified"}
+        unit_cost = latest_unit_cost_at_location(
+            session,
+            product_id=order.ingredient_id,
+            location_id=order.location_id,
+        )
+        if unit_cost is not None:
+            waste_props["unit_cost"] = unit_cost
         emit_event(
             "stock_waste_registered",
-            {**base_props, "reason": "unspecified"},
+            waste_props,
             ctx=ctx,
             session=session,
         )

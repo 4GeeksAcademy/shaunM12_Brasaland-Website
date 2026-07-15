@@ -162,6 +162,7 @@ Every emitted event must include these fields (`event-schemas.json` → `envelop
     "product_category": "meat",
     "quantity": 1.0,
     "unit": "kg",
+    "unit_cost": 20000.0,
     "reason": "unspecified",
     "location_id": 1,
     "country": "CO",
@@ -301,7 +302,7 @@ Full allowlists: `event-schemas.json` → `events`.
 | `inbound_order_created` | API | `inventory/routes.py` after inbound create |
 | `inbound_order_failed` | API | Inbound validation / 404 |
 | `outbound_order_created` | API | Outbound create when `reason=consumption` |
-| `stock_waste_registered` | API | Outbound create when `reason=waste` |
+| `stock_waste_registered` | API | Outbound create when `reason=waste` (optional `unit_cost` from latest inbound at location) |
 | `outbound_order_failed` | API | `InsufficientStockError` / validation |
 | `stock_threshold_triggered` | API | Repository after order + stock compare |
 | `direct_stock_edit_rejected` | API | `PATCH /inventory/products/{id}` guard |
