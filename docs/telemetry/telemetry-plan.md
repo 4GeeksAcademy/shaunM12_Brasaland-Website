@@ -326,7 +326,9 @@ services/api/telemetry/
   routes.py
   analysis.py
   throttle.py
-  seed.py
+
+services/api/seeds/
+  telemetry.py          # local verification reseed
 
 uis/backoffice/lib/
   telemetry.ts

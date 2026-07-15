@@ -9,8 +9,7 @@ from sqlalchemy import text
 from sqlmodel import Session
 
 from database import get_engine
-
-from .models import TelemetryEvent, ensure_telemetry_schema
+from telemetry.models import TelemetryEvent, ensure_telemetry_schema
 
 # Locations 1–9 = CO/COP, 10–14 = US/USD (matches weekly_location_kpis).
 _CO_LOCATIONS = list(range(1, 10))

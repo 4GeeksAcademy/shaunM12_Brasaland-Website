@@ -8,15 +8,20 @@ from sqlmodel import Session, SQLModel, select
 from sqlalchemy import inspect, text
 
 from database import get_engine
-from suppliers import repository as suppliers_repository
-from .constants import default_min_stock_for_category
-from .models import Ingredient, IngredientEntry, IngredientExit, IngredientLocationSettings
-from .seed_data import (
+from inventory.constants import default_min_stock_for_category
+from inventory.models import (
+    Ingredient,
+    IngredientEntry,
+    IngredientExit,
+    IngredientLocationSettings,
+)
+from inventory.supplier_validation import find_supplier_id_by_name
+from seeds.inventory_data import (
     DEMO_ORDERS,
     INGREDIENTS,
     LOCATION_THRESHOLD_OVERRIDES,
 )
-from .supplier_validation import find_supplier_id_by_name
+from suppliers import repository as suppliers_repository
 
 # Default actor when seeding outside an authenticated request.
 _DEFAULT_USER_UUID = "1"

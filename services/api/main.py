@@ -16,7 +16,7 @@ from incident_analyzer import analyze_from_bytes, build_results_rows
 from incident_analyzer.store import get_result, save_result
 from incidents.routes import router as incidents_router
 from inventory.routes import router as inventory_router
-from inventory.seed import ensure_inventory_schema, seed_inventory_if_empty
+from seeds.inventory import ensure_inventory_schema, seed_inventory_if_empty
 from suppliers.routes import router as suppliers_router
 from suppliers.repository import seed_suppliers
 from telemetry.routes import router as telemetry_router

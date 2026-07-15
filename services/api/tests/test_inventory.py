@@ -17,7 +17,7 @@ pytestmark = pytest.mark.skipif(
 @pytest.fixture(scope="module", autouse=True)
 def _seed_inventory_catalogue():
     """Fresh per-location demo data so stock and inactive flags match this suite."""
-    from inventory.seed import purge_test_ingredients, reset_and_seed_inventory
+    from seeds.inventory import purge_test_ingredients, reset_and_seed_inventory
 
     purge_test_ingredients()
     reset_and_seed_inventory()

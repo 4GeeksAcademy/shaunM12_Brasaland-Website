@@ -10,7 +10,7 @@ FastAPI service for Brasaland backoffice tools: incident CSV analysis and the pr
 - `users/` — user management (models, TinyDB repository, CRUD routes)
 - `config.py` — loads `.env` and exposes JWT settings (fails closed if the secret is missing)
 - `database.py` — TinyDB initialisation
-- `seed.py` — initial supplier seed loader
+- `seeds/` — all demo/bootstrap seed loaders and datasets (`suppliers`, `inventory`, `incidents`, `telemetry`)
 
 This service uses **[uv](https://docs.astral.sh/uv/)**. The virtual environment lives in `services/api/.venv` and is created/managed by `uv` from `pyproject.toml`. Never commit `.venv`.
 
@@ -78,10 +78,24 @@ uv run uvicorn main:app --reload --port 8000
 
 ## Seed
 
-On first API startup, suppliers are auto-seeded when the database is empty. To seed manually (skips duplicates):
+All seed entrypoints live under `seeds/`. On first API startup, suppliers are
+auto-seeded when TinyDB is empty, and inventory is seeded when the catalogue is
+empty. Manual commands (from repo root):
 
 ```bash
-npm run api:seed      # or: cd services/api && uv run seed
+npm run api:seed              # suppliers (skips duplicates)
+npm run api:inventory-seed    # wipe + reseed inventory catalogue
+npm run api:incidents-seed    # load historical incidents CSV
+npm run api:telemetry-seed    # wipe + reseed telemetry mock rows
+```
+
+Or from `services/api`:
+
+```bash
+uv run seed
+uv run python -m seeds.inventory
+uv run python -m seeds.incidents
+uv run python -m seeds.telemetry
 ```
 
 ## Authentication
