@@ -6,9 +6,15 @@ import sys
 from pathlib import Path
 from collections.abc import Iterable
 
-_REPO_ROOT = Path(__file__).resolve().parents[3]
-if str(_REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(_REPO_ROOT))
+_HERE = Path(__file__).resolve()
+_CANDIDATES = []
+if len(_HERE.parents) > 3:
+    _CANDIDATES.append(_HERE.parents[3])  # monorepo root locally
+_CANDIDATES.extend([_HERE.parents[1], Path("/app")])  # services/api or Docker /app
+for _candidate in _CANDIDATES:
+    _candidate_str = str(_candidate)
+    if _candidate_str not in sys.path:
+        sys.path.insert(0, _candidate_str)
 
 from packages.shared.incidents_validation import LEGACY_CATEGORY_MAP, LEGACY_STATUS_MAP
 

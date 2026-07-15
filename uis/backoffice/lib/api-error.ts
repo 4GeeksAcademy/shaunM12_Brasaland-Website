@@ -6,7 +6,10 @@ interface FastApiErrorDetailItem {
 }
 
 interface FastApiError {
-  detail?: string | FastApiErrorDetailItem[];
+  detail?:
+    | string
+    | FastApiErrorDetailItem[]
+    | { field?: string; message?: string };
 }
 
 /** A single human-readable message for a failed response body. */
@@ -22,6 +25,14 @@ export function formatApiError(status: number, body: string): string {
       }
     } else if (typeof parsed.detail === "string" && parsed.detail) {
       return parsed.detail;
+    } else if (
+      parsed.detail &&
+      typeof parsed.detail === "object" &&
+      "message" in parsed.detail
+    ) {
+      const field = parsed.detail.field;
+      const message = parsed.detail.message ?? "Validation error";
+      return field ? `${field}: ${message}` : message;
     }
   } catch {
     // fall through to raw body

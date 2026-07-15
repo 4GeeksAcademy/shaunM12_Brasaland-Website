@@ -22,6 +22,10 @@ __pycache__/
 results.csv
 **/results.csv
 
+# Pipeline extract / eval artifacts (generated locally)
+data/eval/
+data/raw/
+
 # Test coverage artifacts
 coverage/
 **/coverage/
