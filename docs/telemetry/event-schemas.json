@@ -461,6 +461,7 @@
         "product_category",
         "quantity",
         "unit",
+        "unit_cost",
         "reason",
         "location_id",
         "country",
@@ -477,6 +478,11 @@
         },
         "quantity": { "type": "number", "required": true },
         "unit": { "type": "string", "required": true },
+        "unit_cost": {
+          "type": "number",
+          "required": false,
+          "description": "Optional monetary unit cost for Milestone 6 waste cost KPI; omit when unknown (pipeline excludes from cost sums)"
+        },
         "reason": {
           "type": "string",
           "required": true,
