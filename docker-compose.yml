@@ -26,6 +26,13 @@ services:
     build:
       context: .
       dockerfile: services/Dockerfile
+    # Override image CMD: keep API stable (no WatchFiles reload storms).
+    command:
+      [
+        "sh",
+        "-c",
+        "uv sync --frozen --no-dev && uv run uvicorn main:app --host 0.0.0.0 --port 8000",
+      ]
     env_file:
       - ./.env
     environment:

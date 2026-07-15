@@ -12,6 +12,7 @@ COPY packages /app/packages
 
 EXPOSE 8000
 
-# Exclude .venv from --reload: uv sync writes site-packages under the bind-mounted
-# /app and would otherwise restart the API mid-request (UI sees "socket hang up").
-CMD ["sh", "-c", "uv sync --frozen --no-dev && uv run uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude '.venv' --reload-exclude '**/.venv/**' --reload-exclude '**/site-packages/**'"]
+# No --reload in Docker: WatchFiles still fires on .venv/site-packages (named volume
+# under /app) and drops /auth/login + /auth/me mid-request (UI socket hang up).
+# Bind-mounted code is picked up with `docker compose restart backend`.
+CMD ["sh", "-c", "uv sync --frozen --no-dev && uv run uvicorn main:app --host 0.0.0.0 --port 8000"]
