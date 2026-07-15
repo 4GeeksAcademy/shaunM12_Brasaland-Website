@@ -87,6 +87,7 @@ npm run api:seed              # suppliers (skips duplicates)
 npm run api:inventory-seed    # wipe + reseed inventory catalogue
 npm run api:incidents-seed    # load historical incidents CSV
 npm run api:telemetry-seed    # wipe + reseed telemetry mock rows
+npm run api:nightly-export    # DEV-53: CSV export + pipeline (uses TARGET_DATE optional)
 ```
 
 Or from `services/api`:
@@ -96,7 +97,11 @@ uv run seed
 uv run python -m seeds.inventory
 uv run python -m seeds.incidents
 uv run python -m seeds.telemetry
+uv run python ../../scripts/nightly_export.py
 ```
+
+Nightly scheduling is **outside** this API process — see `scripts/nightly_scheduler.py`
+and the `nightly-worker` service in `docker-compose.yml` (cron `0 2 * * *` America/Bogota).
 
 ## Authentication
 

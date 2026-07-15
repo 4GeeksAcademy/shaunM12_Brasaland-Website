@@ -52,6 +52,37 @@ services:
     networks:
       - brasaland-dev-net
 
+  # DEV-53: independent nightly orchestrator (not inside FastAPI).
+  # Equivalent cron: 0 2 * * * with TZ=America/Bogota → scripts/nightly_export.py
+  nightly-worker:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command:
+      [
+        "sh",
+        "-c",
+        "uv sync --frozen --no-dev && uv run python /workspace/scripts/nightly_scheduler.py",
+      ]
+    env_file:
+      - ./.env
+    environment:
+      TZ: America/Bogota
+      BRASALAND_REPO_ROOT: /workspace
+      NIGHTLY_PIPELINE_CMD: uv run python /workspace/data/pipelines/pipeline.py
+      PYTHONPATH: /app:/workspace
+    volumes:
+      - ./services/api:/app
+      - backend_api_venv:/app/.venv
+      - ./packages:/app/packages
+      - ./data:/workspace/data
+      - ./scripts:/workspace/scripts:ro
+    depends_on:
+      - backend
+    networks:
+      - brasaland-dev-net
+    restart: unless-stopped
+
 networks:
   brasaland-dev-net:
     name: brasaland-dev-net

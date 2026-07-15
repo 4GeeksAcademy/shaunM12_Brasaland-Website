@@ -28,6 +28,7 @@
     "api:inventory-seed": "sh -c 'cd services/api && uv run python -m seeds.inventory'",
     "api:incidents-seed": "sh -c 'cd services/api && uv run python -m seeds.incidents'",
     "api:telemetry-seed": "sh -c 'cd services/api && uv run python -m seeds.telemetry'",
+    "api:nightly-export": "sh -c 'cd services/api && uv run python ../../scripts/nightly_export.py'",
     "api:test": "sh -c 'cd services/api && uv run pytest -q'",
     "test": "vitest run",
     "test:watch": "vitest",

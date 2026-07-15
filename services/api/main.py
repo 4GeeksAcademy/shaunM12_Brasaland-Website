@@ -23,6 +23,7 @@ from telemetry.routes import router as telemetry_router
 from telemetry.models import ensure_telemetry_schema
 from reporting.routes import router as reporting_router
 from reporting.models import ensure_reporting_schema
+from job_runner.models import ensure_job_runs_schema
 from users.routes import router as users_router
 from sqlmodel import SQLModel
 from sqlmodel import Session
@@ -31,6 +32,7 @@ import inventory.models  # noqa: F401 — register ORM tables with SQLModel meta
 import incidents.models  # noqa: F401 — register ORM tables with SQLModel metadata
 import telemetry.models  # noqa: F401 — register telemetry ORM tables
 import reporting.models  # noqa: F401 — register reporting ORM tables
+import job_runner.models  # noqa: F401 — register job_runs ORM table
 
 
 @asynccontextmanager
@@ -40,11 +42,13 @@ async def lifespan(_: FastAPI):
     if config.DATABASE_URL:
         with Session(get_engine()) as session:
             ensure_reporting_schema(session)
+            ensure_job_runs_schema(session)
         SQLModel.metadata.create_all(get_engine())
         with Session(get_engine()) as session:
             ensure_telemetry_schema(session)
             ensure_inventory_schema(session)
             ensure_reporting_schema(session)
+            ensure_job_runs_schema(session)
         seed_inventory_if_empty()
     yield
 

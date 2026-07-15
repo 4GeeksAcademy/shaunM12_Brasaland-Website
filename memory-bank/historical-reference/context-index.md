@@ -30,6 +30,7 @@ Ordered index of historical reference context documents.
 - `context-16-milestone-6-resilient-data-pipeline.md` — Milestone 6 Phase 2 resilient Prefect pipeline + reporting APIs
 - `context-16-milestone-6-pipeline-subflows-tests.md` — Milestone 6 Phase 3 subflows, tests, `/reporting` dashboard
 - Shared design: `docs/pipelines/PIPELINE_DESIGN.md` (pointer: `data/pipelines/PIPELINE_DESIGN.md`)
+- `context-17-background-processes-nightly-telemetry.md` — DEV-53 nightly telemetry export + pipeline trigger (`job_runs`)
 
 ## Numbering Notes
 
@@ -37,4 +38,5 @@ Ordered index of historical reference context documents.
 - `context-14` is reserved for containerization.
 - `context-15` is reserved for telemetry (plan, alignment, capture, storage, report companions).
 - `context-16` is reserved for Milestone 6 data pipeline: Phase 1 design, Phase 2 resilient pipeline, Phase 3 subflows/tests/dashboard.
+- `context-17` is reserved for background processes / nightly telemetry script (DEV-53).
 - `context-9` currently has three related companion files by design.

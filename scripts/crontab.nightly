@@ -1,0 +1,9 @@
+# DEV-53 nightly telemetry orchestrator
+# Schedule: 0 2 * * * America/Bogota (set TZ=America/Bogota on the worker)
+# Prefer the Docker worker running scripts/nightly_scheduler.py; this file is the
+# equivalent crontab for supercronic / host cron.
+#
+# Example (host):
+#   0 2 * * * cd /path/to/repo/services/api && /path/to/uv run python ../../scripts/nightly_export.py
+#
+0 2 * * * python /workspace/scripts/nightly_export.py

@@ -34,7 +34,7 @@ pythonpath = ["../..", "."]
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["suppliers", "incident_analyzer", "auth", "users", "mailer", "inventory", "incidents", "telemetry", "reporting", "seeds"]
+packages = ["suppliers", "incident_analyzer", "auth", "users", "mailer", "inventory", "incidents", "telemetry", "reporting", "seeds", "job_runner"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "database.py" = "database.py"
