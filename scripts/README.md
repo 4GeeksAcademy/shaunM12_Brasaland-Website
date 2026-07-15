@@ -9,6 +9,36 @@ This folder contains **helper scripts** for the monorepo: development automation
 
 ---
 
+## `nightly_export.py` / `nightly_scheduler.py` — DEV-53 Nightly Telemetry
+
+Independent nightly orchestrator (context-17): export yesterday’s UTC telemetry to
+`data/raw/telemetry_YYYY-MM-DD.csv`, trigger the Milestone 6 pipeline subprocess,
+and record lifecycle in `reporting.job_runs`.
+
+### Manual run
+
+```bash
+# from repo root (uses services/api uv env)
+npm run api:nightly-export
+
+# override date
+TARGET_DATE=2026-07-14 npm run api:nightly-export
+```
+
+Or:
+
+```bash
+cd services/api && uv run python ../../scripts/nightly_export.py
+```
+
+### Schedule
+
+- Cron equivalent: `0 2 * * *` with `TZ=America/Bogota`
+- Docker: `nightly-worker` service runs `scripts/nightly_scheduler.py` (not inside FastAPI)
+- Host crontab reference: `scripts/crontab.nightly`
+
+---
+
 ## `analyze.py` — Incident File Analyzer (Phase 1)
 
 Analyzes Brasaland incident CSV files: validates records against context-5 rules, prints a formatted summary, and optionally exports metrics to `results.csv`.
