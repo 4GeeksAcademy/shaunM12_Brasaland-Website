@@ -1,6 +1,7 @@
 # Carpeta `skills`
 
-Esta carpeta contiene las **skills de agentes** (capacidades reusables) que ayudan a trabajar de forma consistente en el monorepo: investigación, análisis de datos, revisión de código, scraping, matemáticas, etc.
+**Skills de agentes** reutilizables (investigación, análisis de datos, revisión de código, scraping, matemáticas, …) para asistir de forma consistente en los hitos.
 
-- **Propósito principal**: estandarizar cómo los agentes de IA asisten al equipo en los distintos hitos del proyecto transversal.
-- **Recomendación**: documenta cada skill que añadas (cuándo usarla, inputs/outputs esperados, ejemplos) y mantén una estructura clara por subcarpetas para facilitar su descubrimiento.
+> Inglés: [README.md](./README.md) · Padre: [../README.es.md](../README.es.md)
+
+Documenta cada skill en su subcarpeta (cuándo usarla, entradas/salidas, ejemplos). Este archivo es el índice, no el detalle de cada skill.

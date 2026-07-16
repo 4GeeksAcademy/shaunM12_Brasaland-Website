@@ -1,122 +1,91 @@
-# AI Engineering Company Project — Student Template
+# Brasaland Website — AI Engineering Monorepo
 
 [![4Geeks Academy](https://img.shields.io/badge/4Geeks-Academy-blue)](https://4geeksacademy.com)
 [![AI Engineering](https://img.shields.io/badge/track-AI%20Engineering-green)](https://4geeksacademy.com/es/programas-de-carrera/ingenieria-ia)
 
-_Base template for transversal projects in the AI Engineering Career Program — 4Geeks Academy._
+Brasaland transversal project for the **4Geeks Academy AI Engineering** program: FastAPI backend, Next.js public site and backoffice, shared TypeScript utilities, data pipelines, and agent tooling.
 
-> _Instrucciones disponibles en español en [README.es.md](./README.es.md)._
+> Spanish instructions: [README.es.md](./README.es.md)
 
 ---
 
 ## Purpose
 
-This repository is the **starter template** for transversal projects. You will work on real company scenarios (Brasaland, TrackFlow, Nexova), building deliverables that map to course milestones (Web, Programming, Backend, Telemetry, RAG, Agents, Workflows, Real-time).
+Build deliverables for Brasaland company scenarios across course milestones (Web, Programming, Backend, Telemetry, RAG, Agents, Workflows, Real-time).
 
-- Create a template from this repository.
-- Replace the placeholder `CONTEXT.md` with your assigned company context.
-- Use `skills/` and the directory-level `README.md` files as working guidance.
+Business context: [CONTEXT.md](./CONTEXT.md)  
+Historical milestone notes: [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
 
 ---
 
-## Repository structure
+## Repository map
 
 ```text
-brasaland-website/
-├── README.md
-├── README.es.md
-├── CONTEXT.md                # Brasaland business context
-├── package.json             # Root tooling (TypeScript utils, scripts, tests)
-├── services/
-│   └── api/                  # FastAPI backend (auth, suppliers, incidents, mailer)
-├── uis/
-│   ├── backoffice/           # Next.js internal operations app
-│   └── website/              # Next.js public website
-├── src/                      # Shared TypeScript utilities (types + data helpers)
-├── tests/                    # Tests for src/ utilities
-├── scripts/                  # Node + Python tooling (CLIs, data generation)
-├── data/                     # Datasets (incident CSVs, etc.)
-├── agents/                   # Agent patterns/templates and tools docs
-├── docs/                     # Project and architecture documentation
-└── skills/                   # Reusable agent skills
+├── services/api/     FastAPI backend (auth, inventory, incidents, telemetry, reporting)
+├── uis/              Next.js apps (website + backoffice)
+├── src/              Shared TypeScript utilities (Milestone 2)
+├── scripts/          CLIs, nightly export, data helpers
+├── data/             Datasets, pipeline transforms, raw/eval artifacts
+├── docs/             Architecture and design docs
+├── agents/           Agent patterns and tools
+├── skills/           Reusable agent skills
+├── packages/shared/  Shared Python validation helpers
+└── memory-bank/      Working notes and historical context files
 ```
+
+Details live next to each area — use the documentation map below.
 
 ---
 
-## How to start
+## Quick start
 
-1. **Clone** your repository (or open it in Codespaces).
-2. **Install** root dependencies with `npm install`; backend deps with `npm run api:install`.
-3. **Review** each top-level folder `README.md` to understand intended responsibilities.
-4. **Run** the backend (`npm run api:dev`) and a frontend (`cd uis/backoffice && npm run dev`).
+```bash
+# Root tooling
+npm install
+cp .env.example .env   # set JWT_SECRET_KEY and other secrets
+
+# Backend (http://127.0.0.1:8000)
+npm run api:install
+npm run api:dev
+
+# Backoffice (http://localhost:3000) — second terminal
+cd uis/backoffice && npm install && npm run dev
+```
+
+Public site: `cd uis/website && npm install && npm run dev`  
+Docker Compose: see `docker-compose.yml` (`backend`, `ui`, `nightly-worker`).
+
+---
+
+## Documentation map
+
+| Area | README | What you’ll find there |
+| ---- | ------ | ---------------------- |
+| API | [services/api/README.md](./services/api/README.md) | Setup, env, auth, seeds, endpoints, tests |
+| UIs (index) | [uis/README.md](./uis/README.md) | Apps in this folder |
+| Public website | [uis/website/README.md](./uis/website/README.md) | Next.js corporate site |
+| Backoffice | [uis/backoffice/README.md](./uis/backoffice/README.md) | Ops UI, proxies, env |
+| Scripts | [scripts/README.md](./scripts/README.md) | Analyzer, nightly export/scheduler |
+| Docs | [docs/README.md](./docs/README.md) | Pipeline & telemetry design links |
+| Agents | [agents/README.md](./agents/README.md) | Agent templates catalog |
+| Skills | [skills/README.md](./skills/README.md) | Agent skills catalog |
+
+Shared TypeScript (`src/`) commands: `npm run typecheck`, `npm test`, `npm run demo`.  
+Root serve helpers: `npm run serve` / `serve:src` / `serve:stop` (see `package.json`).
 
 ---
 
 ## Milestones (reference)
 
-| Milestone | Focus        | Typical deliverables                        |
-| --------- | ------------ | ------------------------------------------- |
-| 0         | Prework      | Environment setup, first prompts            |
-| 1         | Web          | Corporate website, forms, SEO               |
-| 2         | Programming  | Business logic, scoring, calculations       |
-| 3         | AI-driven UI | AI-generated interfaces                     |
-| 4         | Next.js      | Portals, loyalty app, operations UI         |
-| 5         | Backend      | Central API (locations, menus, sales, etc.) |
-| 6         | Telemetry    | Data pipeline, dashboards                   |
-| 7         | RAG & Memory | Semantic knowledge base, search             |
-| 8         | Agents       | Support, onboarding, training agents        |
-| 9         | Workflows    | n8n automations                             |
-| 10        | Real-time    | Live dashboards, alerts, streaming          |
-
----
-
-## Milestone 2 implementation (Programming Fundamentals)
-
-This repository now includes a TypeScript implementation for Milestone 2 under `src/`:
-
-```text
-src/
-├── demo.ts
-├── index.ts
-├── index.html
-├── types/
-│   └── models.ts
-└── utils/
-	├── collections.ts
-	├── search.ts
-	├── transformations.ts
-	└── validations.ts
-```
-
-Automated tests are located in `tests/`.
-
-### Development commands
-
-```bash
-npm install
-npm run typecheck
-npm test
-npm run demo
-npm start
-npm run serve
-npm run serve:src
-npm run serve:root
-npm run serve:required
-npm run serve:logs
-npm run serve:stop
-```
-
-`npm run serve` serves the site from the repository root (detached mode).
-`npm run serve:src` serves the operations interface from `src/` directly (detached mode).
-`npm run serve:root` serves the repository root (detached mode).
-`npm run serve:required` runs the exact required command: `npx http-server . -p 3000 -a 0.0.0.0`.
-`npm run serve:logs` shows recent server log output.
-`npm run serve:stop` stops the detached server.
-If you typed `npm serve run`, that command is invalid and will not start the server.
-
-Migration note: the legacy folder `Brasaland webpage/` has been retired. The TypeScript implementation now lives under `src/`.
-
-These commands satisfy the requirement to expose a clear TypeScript validation/execution workflow during development.
+| Milestone | Focus | Typical deliverables |
+| --------- | ----- | -------------------- |
+| 0 | Prework | Environment setup |
+| 1 | Web | Corporate website |
+| 2 | Programming | Business logic under `src/` |
+| 3–4 | UI / Next.js | Portals and ops UI under `uis/` |
+| 5 | Backend | API under `services/api/` |
+| 6 | Telemetry / pipeline | Telemetry, reporting, Prefect pipeline |
+| 7–10 | RAG, agents, workflows, real-time | Agents, skills, further automation |
 
 ---
 
@@ -129,8 +98,5 @@ These commands satisfy the requirement to expose a clear TypeScript validation/e
 
 ## Contributors
 
-This template was built as part of the 4Geeks Academy AI Engineering Career Program by [@marcogonzalo](https://www.linkedin.com/in/marcogonzalo) and [@alezanchezr](https://x.com/alesanchezr) and many other contributors. Find out more about our [AI Engineering Course](https://4geeksacademy.com/en/career-programs/ai-engineering), and [other courses](https://4geeksacademy.com/en/program-comparison).
-
-You can find other templates and resources like this at the [4Geeks Academy GitHub page](https://github.com/4geeksacademy).
-
-_This template is maintained by 4Geeks Academy for the AI Engineering track. For exclusive use in the programme._
+Template lineage from the 4Geeks Academy AI Engineering program ([@marcogonzalo](https://www.linkedin.com/in/marcogonzalo), [@alezanchezr](https://x.com/alesanchezr), and contributors).  
+[AI Engineering Course](https://4geeksacademy.com/en/career-programs/ai-engineering) · [GitHub org](https://github.com/4geeksacademy)

@@ -1,158 +1,102 @@
 # Brasaland API
 
-FastAPI service for Brasaland backoffice tools: incident CSV analysis and the procurement supplier directory.
+FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralized incidents, telemetry, and reporting.
+
+> Parent overview: [../../README.md](../../README.md)
 
 ## Package layout
 
-- `incident_analyzer/` — milestone 5 incident CSV analysis
-- `suppliers/` — Milestone 09 supplier directory (Pydantic models, TinyDB repository, routes)
-- `auth/` — JWT authentication (password hashing, token encode/decode, `get_current_user`)
-- `users/` — user management (models, TinyDB repository, CRUD routes)
-- `config.py` — loads `.env` and exposes JWT settings (fails closed if the secret is missing)
-- `database.py` — TinyDB initialisation
-- `seeds/` — all demo/bootstrap seed loaders and datasets (`suppliers`, `inventory`, `incidents`, `telemetry`)
+| Path | Role |
+| ---- | ---- |
+| `auth/`, `users/`, `mailer/` | JWT auth, users, transactional email |
+| `suppliers/` | Supplier directory (TinyDB) |
+| `inventory/` | Ingredient catalogue and stock orders (Postgres) |
+| `incidents/`, `incident_analyzer/` | Centralized incidents + CSV analyzer |
+| `telemetry/` | Event capture, storage, on-demand report |
+| `reporting/` | Weekly KPI APIs + pipeline trigger |
+| `job_runner/` | Nightly job status (`reporting.job_runs`) — used by `scripts/nightly_export.py` |
+| `seeds/` | Demo/bootstrap loaders (suppliers, inventory, incidents, telemetry) |
+| `config.py`, `database.py` | Env / TinyDB + Postgres helpers |
 
-This service uses **[uv](https://docs.astral.sh/uv/)**. The virtual environment lives in `services/api/.venv` and is created/managed by `uv` from `pyproject.toml`. Never commit `.venv`.
+Uses **[uv](https://docs.astral.sh/uv/)**. Venv: `services/api/.venv` (never commit).
 
 ## Setup
-
-Install dependencies (creates `services/api/.venv`):
 
 ```bash
 cd services/api
 uv sync
+# or from repo root: npm run api:install
 ```
 
 ### Environment
 
-Authentication needs a signing secret. Copy the root template and set a strong value:
+Copy the repo root template and set secrets:
 
 ```bash
-cd /workspaces/shaunM12_Brasaland-Website
-cp .env.example .env
-# then edit .env, e.g.:
-python -c "import secrets; print(secrets.token_hex(32))"
+cp ../../.env.example ../../.env
+# JWT_SECRET_KEY required — e.g. python -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-`/.env` is gitignored; the API refuses to start if `JWT_SECRET_KEY` is unset.
+| Variable | Purpose |
+| -------- | ------- |
+| `JWT_SECRET_KEY` | Required; API fails closed if missing |
+| `DATABASE_URL` | Postgres/Supabase for inventory, incidents, telemetry, reporting |
+| `EMAIL_PROVIDER` | `console` (default) / `resend` / `sendgrid` |
+| `EMAIL_FROM`, `RESEND_API_KEY`, `SENDGRID_API_KEY` | Mail sender config |
+| `PASSWORD_RESET_EXPIRES_MINUTES`, `RESET_REQUESTS_PER_HOUR` | Reset token / rate limits |
 
-#### Email (password reset & verification)
-
-Transactional email is sent through a configurable provider. In dev the default
-`EMAIL_PROVIDER=console` just logs/prints the message (including the reset link),
-so the flow works with no external setup.
-
-| Variable          | Example                 | Purpose                                        |
-| ----------------- | ----------------------- | ---------------------------------------------- |
-| `EMAIL_PROVIDER`  | `console`/`resend`/`sendgrid` | Selects the sender backend               |
-| `EMAIL_FROM`      | `onboarding@resend.dev` | Sender address                                 |
-| `RESEND_API_KEY`  | (secret)                | Required when `EMAIL_PROVIDER=resend`           |
-| `SENDGRID_API_KEY`| (secret)                | Required when `EMAIL_PROVIDER=sendgrid`         |
-| `PASSWORD_RESET_EXPIRES_MINUTES` | `30`     | Reset-token lifetime                           |
-| `RESET_REQUESTS_PER_HOUR`        | `10`     | Reset requests per email per hour (then `429`) |
-
-API keys are read from environment variables only and must never be committed.
-With Resend's onboarding sender (`onboarding@resend.dev`) on a free account, email
-is delivered only to the Resend account owner's address until a domain is verified.
-
-Or from the repo root:
-
-```bash
-npm run api:install   # alias for: cd services/api && uv sync
-```
+API keys come from the environment only — never commit them.
 
 ## Run
 
-From the repo root:
-
 ```bash
-npm run api:dev       # http://127.0.0.1:8000
+npm run api:dev    # from repo root → http://127.0.0.1:8000
+# or: uv run uvicorn main:app --reload --port 8000
 ```
 
-Or directly:
+Swagger UI: `/docs` (Authorize with a login token for protected routes).
+
+## Seeds
+
+Loaders live under `seeds/`. Startup auto-seeds empty suppliers TinyDB and empty inventory.
 
 ```bash
-cd services/api
-uv run uvicorn main:app --reload --port 8000
+npm run api:seed              # suppliers
+npm run api:inventory-seed
+npm run api:incidents-seed
+npm run api:telemetry-seed
 ```
 
-## Seed
-
-All seed entrypoints live under `seeds/`. On first API startup, suppliers are
-auto-seeded when TinyDB is empty, and inventory is seeded when the catalogue is
-empty. Manual commands (from repo root):
-
-```bash
-npm run api:seed              # suppliers (skips duplicates)
-npm run api:inventory-seed    # wipe + reseed inventory catalogue
-npm run api:incidents-seed    # load historical incidents CSV
-npm run api:telemetry-seed    # wipe + reseed telemetry mock rows
-npm run api:nightly-export    # DEV-53: CSV export + pipeline (uses TARGET_DATE optional)
-```
-
-Or from `services/api`:
-
-```bash
-uv run seed
-uv run python -m seeds.inventory
-uv run python -m seeds.incidents
-uv run python -m seeds.telemetry
-uv run python ../../scripts/nightly_export.py
-```
-
-Nightly scheduling is **outside** this API process — see `scripts/nightly_scheduler.py`
-and the `nightly-worker` service in `docker-compose.yml` (cron `0 2 * * *` America/Bogota).
+Nightly CSV export + pipeline trigger is **outside** this process — see [scripts/README.md](../../scripts/README.md) (`npm run api:nightly-export`).
 
 ## Authentication
 
-JWT bearer auth. All supplier, incident, and (non-registration) user routes
-require a valid token; only `GET /api/health` and the public auth routes are open.
+JWT bearer on supplier, incident, inventory, reporting, and most user routes. Open: `GET /api/health` and public auth routes.
 
-Mounted at `/auth` (per the AUTH-01 spec):
+| Method | Path | Notes |
+| ------ | ---- | ----- |
+| `POST` | `/auth/register` | `{email, password}` → token |
+| `POST` | `/auth/login` | form: `username`=email, `password` |
+| `GET` | `/auth/me` | current user |
+| `POST` | `/auth/forgot-password` | always `200`; rate-limited |
+| `POST` | `/auth/reset-password` | `{token, new_password}` |
 
-- `POST /auth/register` — JSON `{email, password}`, creates a user and returns a token
-- `POST /auth/login` — form-encoded (`username` = email, `password`), returns a token
-- `GET /auth/me` — current user's profile (requires token)
-- `POST /auth/forgot-password` — JSON `{email}`; always returns `200` (never reveals
-  whether the email exists); emails a reset link when the user exists. Returns `429`
-  after `RESET_REQUESTS_PER_HOUR` requests for the same email within an hour.
-- `POST /auth/reset-password` — JSON `{token, new_password}`; validates the signed,
-  single-use reset JWT (signature + expiry + unused `jti`), updates the password, and
-  revokes existing sessions. Returns `400` for an invalid/expired/used token.
+`/users`: `POST` public; other methods need a token (`PUT` self or admin).
 
-User management at `/users`; `POST` is public, the rest require a token.
-`PUT /users/{id}` is allowed only for the user themselves or an admin.
+## Main endpoint groups
 
-In Swagger (`/docs`), click **Authorize**, log in with email/password, then call
-protected routes. Without a token, protected routes return `401`.
-
-## Incident endpoints
-
-- `POST /api/incidents` — create a centralized incident
-- `GET /api/incidents` — list incidents with optional filters (`status`, `origin`, `branch`, `category`)
-- `GET /api/incidents/{id}` — incident detail
-- `PATCH /api/incidents/{id}/status` — lifecycle-safe status update
-- `GET /api/incidents/summary` — grouped totals by status/category/origin/branch
-- `POST /api/incidents/analyze` — multipart CSV upload, returns JSON summary
-- `GET /api/incidents/results/export` — downloads the last analysis as `results.csv`
-- `GET /api/health` — health check
-
-## Supplier endpoints
-
-Mounted at `/api/suppliers` (matches the Next.js proxy):
-
-- `POST /api/suppliers` — register supplier (422 on invalid input)
-- `GET /api/suppliers?country=&category=` — list with optional filters
-- `GET /api/suppliers/{id}` — supplier detail (404 if missing)
-- `PATCH /api/suppliers/{id}/rate` — update rate and `rate_updated_at`
-- `PATCH /api/suppliers/{id}/status` — activate or suspend
-- `PATCH /api/suppliers/{id}/notes` — update procurement notes
-- `DELETE /api/suppliers/{id}` — remove erroneous record (404 if missing)
+| Area | Base | Highlights |
+| ---- | ---- | ---------- |
+| Incidents | `/api/incidents` | CRUD/list/summary/status; `POST …/analyze`, `GET …/results/export` |
+| Suppliers | `/api/suppliers` | CRUD-ish register/list/detail; rate, status, notes patches |
+| Inventory | `/inventory` | Products and inbound/outbound orders |
+| Telemetry | `/telemetry` | Ingest + report |
+| Reporting | `/reporting` | Weekly location KPIs; `POST /reporting/pipeline-runs` (202) |
+| Health | `/api/health` | Liveness |
 
 ## Tests
 
 ```bash
-npm run api:test      # or: cd services/api && uv run pytest tests/ -q
+npm run api:test
+# or: uv run pytest tests/ -q
 ```
-
-Or from the repo root: `npm run api:test`.

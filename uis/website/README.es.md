@@ -1,14 +1,18 @@
-# Sitio Web Brasaland
+# Brasaland Website
 
-Sitio corporativo publico construido con Next.js + TypeScript.
+Sitio corporativo público (Next.js + TypeScript).
+
+> Índice padre: [../README.es.md](../README.es.md) · Inglés: [README.md](./README.md)
 
 ## Rutas
 
-- `/`: home corporativa migrada del milestone 1, incluyendo todas las secciones y cambio de idioma.
+- `/` — home corporativa (contenido Milestone 1, toggle bilingüe)
 
 ## Desarrollo
 
 ```bash
+cp ../../.env.example ../../.env
+cd uis/website
 npm install
 npm run dev
 ```
@@ -16,6 +20,5 @@ npm run dev
 ## Build
 
 ```bash
-npm run build
-npm run start
+npm run build && npm run start
 ```

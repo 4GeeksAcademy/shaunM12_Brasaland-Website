@@ -1,26 +1,38 @@
-# Backoffice Brasaland
+# Brasaland Backoffice
 
-Aplicacion interna construida con Next.js + TypeScript.
+App interna Next.js + TypeScript (incidentes, proveedores, inventario, reporting, …).
 
-## Rutas
+> Índice padre: [../README.es.md](../README.es.md) · API: [../../services/api/README.md](../../services/api/README.md) · Inglés: [README.md](./README.md)
 
-- `/`: vista de entrada basica tipo dashboard.
+## Rutas principales
 
-## Integracion con Milestone 2
+| Ruta | Propósito |
+| ---- | --------- |
+| `/` | Pipeline de talento (tracker 4Geeks) |
+| `/candidates/[id]` | Detalle de candidato |
+| `/data-processing` | Dashboard Milestone 2 (`src/`) |
+| `/incidents` | Gestor de incidentes + analizador CSV |
+| `/suppliers` | Directorio de proveedores |
+| `/inventory` | Inventario de ingredientes |
+| `/reporting` | KPIs semanales por ubicación |
 
-La logica de negocio se importa desde su ubicacion original del monorepo en [src](../../src), sin copiar codigo.
-El dashboard muestra en pantalla resultados calculados (reportes, filtros y busquedas).
+Las páginas que llaman a la API necesitan FastAPI en el puerto 8000.
 
 ## Desarrollo
 
 ```bash
-npm install
-npm run dev
+# Terminal 1 — API
+npm run api:install && npm run api:dev
+
+# Terminal 2 — backoffice
+cp ../../.env.example ../../.env
+cd uis/backoffice && npm install && npm run dev
 ```
+
+Variables desde el `.env` de la **raíz** del repo. Ver [README.md](./README.md) en inglés para la lista completa.
 
 ## Build
 
 ```bash
-npm run build
-npm run start
+npm run build && npm run start
 ```

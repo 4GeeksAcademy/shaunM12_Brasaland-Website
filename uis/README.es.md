@@ -1,13 +1,14 @@
-# Carpeta `apps`
+# Carpeta `uis`
 
-Esta carpeta contiene **todas las aplicaciones del monorepo** relacionadas con la compañía para el proyecto transversal de AI Engineering (por ejemplo: aplicaciones web, APIs, dashboards internos, portales de clientes, etc.).
+Aplicaciones Next.js del monorepo Brasaland (sitio público y backoffice interno).
 
-Cada subcarpeta dentro de `uis/` debe corresponder a **una aplicación concreta** (por ejemplo `web-portal`, `admin-api`, `backoffice-dashboard`) e incluir su propia documentación técnica y funcional.
+> Inglés: [README.md](./README.md) · Padre: [../README.es.md](../README.es.md)
 
-- **Propósito principal**: centralizar en un único monorepo todas las aplicaciones que dan soporte a los casos de uso de la compañía.
-- **Recomendación**: documenta en este archivo (o en sub-READMEs) las aplicaciones que vayas añadiendo, su objetivo, tecnología usada y cómo ejecutarlas en desarrollo, pruebas y producción.
+## Apps
 
-## Aplicaciones en esta carpeta
+| App | README | Rol |
+| --- | ------ | --- |
+| `website/` | [website/README.md](./website/README.md) | Sitio corporativo público |
+| `backoffice/` | [backoffice/README.md](./backoffice/README.md) | UI interna (incidentes, proveedores, inventario, reporting, …) |
 
-- `website`: Sitio corporativo público (Next.js + TypeScript) con el contenido del milestone 1 migrado a `/`.
-- `backoffice`: Aplicación interna de dashboard (Next.js + TypeScript) con integración de salidas de lógica de negocio del milestone 2.
+Cada app tiene su propio `package.json`, variables de entorno y comandos. Usa esos READMEs para el día a día; este archivo es solo el índice.

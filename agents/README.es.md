@@ -1,8 +1,7 @@
 # Carpeta `agents`
 
-Esta carpeta contiene los **agentes de IA** del monorepo (asistentes, copilotos internos, agentes de soporte/operaciones, etc.) que se construyen como parte de los hitos transversales de AI Engineering.
+Patrones y tools de agentes de IA del monorepo Brasaland (soporte, onboarding, copilots de operaciones, …).
 
-Cada subcarpeta dentro de `agents/` debería representar **un agente concreto** (por ejemplo `support-agent`, `onboarding-agent`, `sales-assistant`) con su propia documentación: objetivo, capacidades, fuentes de conocimiento/memoria, herramientas disponibles y cómo probarlo.
+> Inglés: [README.md](./README.md) · Padre: [../README.es.md](../README.es.md)
 
-- **Propósito principal**: centralizar el desarrollo de agentes reutilizables para la compañía dentro del monorepo.
-- **Recomendación**: documenta aquí el catálogo de agentes que se vaya creando y enlaza a los READMEs de cada agente.
+Cada agente concreto debe vivir en su subcarpeta con README (objetivo, tools, memoria, cómo probarlo). Ver también `_template/` y `tools/`. Este archivo es solo el índice.

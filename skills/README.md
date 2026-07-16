@@ -1,8 +1,7 @@
 # `skills` folder
 
-This folder contains **agent skills** (reusable capabilities) that help you work consistently across the monorepo: research, data analysis, code review, scraping, math, and more.
+Reusable **agent skills** (research, data analysis, code review, scraping, math, …) for consistent AI assistance across milestones.
 
-- **Main purpose**: standardize how AI agents assist the team across the cross-functional project milestones.
-- **Recommendation**: document each skill you add (when to use it, expected inputs/outputs, examples) and keep a clear subfolder structure so skills are easy to discover.
+> Spanish: [README.es.md](./README.es.md) · Parent: [../README.md](../README.md)
 
-> _Spanish version: [README.es.md](./README.es.md)._
+Document each skill you add (when to use it, inputs/outputs, examples) in its own subfolder. This file is the catalog entry point, not a dump of every skill’s docs.
