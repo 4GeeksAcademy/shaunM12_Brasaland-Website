@@ -1,80 +1,89 @@
-# Proyecto de Compañía - Ingeniería de IA — Plantilla para estudiantes
+# Brasaland Website — Monorepo de Ingeniería de IA
 
 [![4Geeks Academy](https://img.shields.io/badge/4Geeks-Academy-blue)](https://4geeksacademy.com)
 [![AI Engineering](https://img.shields.io/badge/track-AI%20Engineering-green)](https://4geeksacademy.com/es/programas-de-carrera/ingenieria-ia)
 
-_Plantilla base para proyectos transversales del Programa de Carrera en Ingeniería de IA — 4Geeks Academy._
+Proyecto transversal Brasaland del programa **Ingeniería de IA — 4Geeks Academy**: backend FastAPI, sitio y backoffice Next.js, utilidades TypeScript compartidas, pipelines de datos y tooling de agentes.
 
-_Las instrucciones están [disponibles en inglés](./README.md)._
+> Instrucciones en inglés: [README.md](./README.md)
 
 ---
 
 ## Propósito
 
-Este repositorio es la **plantilla de inicio** para los proyectos transversales. Trabajarás con escenarios de empresas reales (Brasaland, TrackFlow, Nexova) construyendo entregables que se corresponden con los hitos del curso (Web, Programación, Backend, Telemetría, RAG, Agentes, Workflows, Tiempo real).
+Construir entregables del escenario Brasaland a lo largo de los hitos del curso (Web, Programación, Backend, Telemetría, RAG, Agentes, Workflows, Tiempo real).
 
-- Crea una plantilla a partir de este repositorio.
-- Reemplaza el `CONTEXT.md` placeholder por el contexto de tu empresa asignada.
-- Usa `skills/` y los `README.md` por carpeta como guía de trabajo.
-
----
-
-## Estado actual de la plantilla
-
-Actualmente el repositorio ofrece una **estructura base de carpetas y documentación**, pero todavía no incluye aplicaciones ejecutables ni scripts globales en la raíz.
-
-- `CONTEXT.md` es un placeholder y debe sustituirse por el contexto de la empresa asignada.
-- No existe todavía un `AGENTS.md` en la raíz.
-- Existe metadata del paquete compartido en `packages/shared/package.json` (`@repo/shared-types`), pero aún no hay runner de workspace en raíz.
+Contexto de negocio: [CONTEXT.md](./CONTEXT.md)  
+Notas históricas por hito: [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
 
 ---
 
-## Estructura del repositorio
+## Mapa del repositorio
 
 ```text
-ai-engineering-company-project-template/
-├── README.md
-├── README.es.md
-├── CONTEXT.md                # Placeholder a reemplazar con el contexto asignado
-├── agents/                   # Patrones/plantillas de agentes y documentación de tools
-├── uis/                      # Aplicaciones del producto (web, APIs, dashboards)
-├── data/                     # raw, process, pipelines, eval
-├── docs/                     # Documentación de proyecto y arquitectura
-├── packages/
-│   └── shared/               # Paquete compartido (@repo/shared-types)
-├── scripts/                  # Convenciones/documentación de scripts
-├── shared/                   # Recursos/convenciones compartidas a nivel repo
-├── skills/                   # Skills reutilizables para agentes
-└── workflows/                # Documentación de automatizaciones/orquestación
+├── services/api/     Backend FastAPI (auth, inventario, incidentes, telemetría, reporting)
+├── uis/              Apps Next.js (website + backoffice)
+├── src/              Utilidades TypeScript compartidas (Milestone 2)
+├── scripts/          CLIs, export nocturno, helpers de datos
+├── data/             Datasets, transforms del pipeline, artefactos raw/eval
+├── docs/             Arquitectura y diseños
+├── agents/           Patrones y tools de agentes
+├── skills/           Skills reutilizables
+├── packages/shared/  Validación Python compartida
+└── memory-bank/      Notas de trabajo y contextos históricos
 ```
+
+El detalle vive junto a cada área — usa el mapa de documentación de abajo.
 
 ---
 
-## Cómo empezar
+## Inicio rápido
 
-1. **Usa este repositorio como plantilla** y crea tu propio repo de proyecto.
-2. **Clona** tu repositorio (o ábrelo en Codespaces).
-3. **Reemplaza** `CONTEXT.md` con el contexto completo de tu empresa asignada.
-4. **Revisa** los `README.md` de cada carpeta raíz para entender responsabilidades (`uis/`, `data/`, `skills/`, etc.).
-5. **Empieza a implementar** entregables por hito en `uis/`, reutilizando `packages/shared/` y `data/` según corresponda.
+```bash
+npm install
+cp .env.example .env   # define JWT_SECRET_KEY y demás secretos
+
+npm run api:install
+npm run api:dev
+
+# Backoffice (otra terminal)
+cd uis/backoffice && npm install && npm run dev
+```
+
+Sitio público: `cd uis/website && npm install && npm run dev`  
+Docker Compose: ver `docker-compose.yml` (`backend`, `ui`, `nightly-worker`).
+
+---
+
+## Mapa de documentación
+
+| Área | README | Contenido |
+| ---- | ------ | --------- |
+| API | [services/api/README.md](./services/api/README.md) | Setup, env, auth, seeds, endpoints, tests |
+| UIs (índice) | [uis/README.md](./uis/README.md) | Apps de esta carpeta |
+| Sitio público | [uis/website/README.md](./uis/website/README.md) | Sitio corporativo Next.js |
+| Backoffice | [uis/backoffice/README.md](./uis/backoffice/README.md) | UI de operaciones, proxies, env |
+| Scripts | [scripts/README.md](./scripts/README.md) | Analizador, export/scheduler nocturno |
+| Docs | [docs/README.md](./docs/README.md) | Enlaces a diseño de pipeline y telemetría |
+| Agentes | [agents/README.md](./agents/README.md) | Catálogo de plantillas |
+| Skills | [skills/README.md](./skills/README.md) | Catálogo de skills |
+
+TypeScript compartido (`src/`): `npm run typecheck`, `npm test`, `npm run demo`.  
+Servidores auxiliares en raíz: `npm run serve` / `serve:src` / `serve:stop` (ver `package.json`).
 
 ---
 
 ## Hitos (referencia)
 
-| Hito | Enfoque       | Entregables típicos                              |
-| ---- | ------------- | ------------------------------------------------ |
-| 0    | Prework       | Configuración del entorno, primeros prompts      |
-| 1    | Web           | Sitio corporativo, formularios, SEO              |
-| 2    | Programación  | Lógica de negocio, puntuación, cálculos          |
-| 3    | UI con IA     | Interfaces generadas con IA                      |
-| 4    | Next.js       | Portales, app de fidelización, UI de operaciones |
-| 5    | Backend       | API central (ubicaciones, menús, ventas, etc.)   |
-| 6    | Telemetría    | Pipeline de datos, dashboards                    |
-| 7    | RAG y memoria | Base de conocimiento semántica, búsqueda         |
-| 8    | Agentes       | Agentes de soporte, onboarding, formación        |
-| 9    | Workflows     | Automatizaciones con n8n                         |
-| 10   | Tiempo real   | Dashboards en vivo, alertas, streaming           |
+| Hito | Enfoque | Entregables típicos |
+| ---- | ------- | ------------------- |
+| 0 | Prework | Entorno |
+| 1 | Web | Sitio corporativo |
+| 2 | Programación | Lógica en `src/` |
+| 3–4 | UI / Next.js | Apps en `uis/` |
+| 5 | Backend | API en `services/api/` |
+| 6 | Telemetría / pipeline | Telemetría, reporting, Prefect |
+| 7–10 | RAG, agentes, workflows, tiempo real | Agentes, skills, automatización |
 
 ---
 
@@ -87,8 +96,5 @@ ai-engineering-company-project-template/
 
 ## Contribuidores
 
-Esta plantilla fue creada como parte del Programa de Carrera de Ingeniería de IA de 4Geeks Academy por [@marcogonzalo](https://www.linkedin.com/in/marcogonzalo) y [@alezanchezr](https://x.com/alesanchezr), junto a otros muchos colaboradores. Descubre más sobre nuestro [Curso de Ingeniería de IA](https://4geeksacademy.com/es/programas-de-carrera/ingenieria-ia) y sobre [otros cursos](https://4geeksacademy.com/es/comparar-programas).
-
-Puedes encontrar otras plantillas y recursos similares en la [página de GitHub de 4Geeks Academy](https://github.com/4geeksacademy).
-
-_Esta plantilla la mantiene 4Geeks Academy para el track de Ingeniería de IA. Uso exclusivo del programa._
+Plantilla del programa de Ingeniería de IA de 4Geeks Academy ([@marcogonzalo](https://www.linkedin.com/in/marcogonzalo), [@alezanchezr](https://x.com/alesanchezr) y colaboradores).  
+[Curso de Ingeniería de IA](https://4geeksacademy.com/es/programas-de-carrera/ingenieria-ia) · [GitHub](https://github.com/4geeksacademy)

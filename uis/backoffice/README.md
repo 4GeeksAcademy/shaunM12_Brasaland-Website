@@ -1,66 +1,49 @@
 # Brasaland Backoffice
 
-Internal app built with Next.js + TypeScript.
+Internal Next.js + TypeScript ops app (incidents, suppliers, inventory, reporting, …).
 
-## Routes
+> Parent index: [../README.md](../README.md) · API: [../../services/api/README.md](../../services/api/README.md)
 
-- `/`: Executive Assistant talent pipeline (4Geeks tracker API)
-- `/candidates/[id]`: Candidate detail, notes, and status updates
-- `/data-processing`: Milestone 2 operations dashboard and aggregated reports
-- `/incidents`: Incident CSV upload and analysis (requires local FastAPI)
-- `/suppliers`: Procurement supplier directory (requires local FastAPI)
+## Main routes
 
-## Integration with Milestone 2
+| Path | Purpose |
+| ---- | ------- |
+| `/` | Executive Assistant talent pipeline (4Geeks tracker) |
+| `/candidates/[id]` | Candidate detail |
+| `/data-processing` | Milestone 2 ops dashboard (`src/` logic) |
+| `/incidents` | Incident manager + CSV analyzer |
+| `/suppliers` | Supplier directory |
+| `/inventory` | Ingredient inventory |
+| `/reporting` | Weekly location KPI dashboard |
 
-Business logic is imported from the original monorepo module in [src](../../src), without copying code.
-The data-processing page renders computed outputs (reports, filters, searches) in the interface.
+Pages that call the API need FastAPI on port 8000.
 
 ## Development
 
-Backoffice pages that call incidents or suppliers need the Python API (uv) running on port 8000.
-
-**Terminal 1 — from repo root:**
+**Terminal 1 — API (repo root):**
 
 ```bash
-npm run api:install   # once (cd services/api && uv sync)
-npm run api:dev       # http://127.0.0.1:8000 (auto-seeds an empty DB)
+npm run api:install
+npm run api:dev
 ```
 
 **Terminal 2 — backoffice:**
 
 ```bash
-cd /workspaces/shaunM12_Brasaland-Website
-cp .env.example .env   # once (root env source of truth)
+cp ../../.env.example ../../.env   # once
 cd uis/backoffice
 npm install
-npm run dev           # http://localhost:3000
+npm run dev    # http://localhost:3000
 ```
 
-Open:
+Incidents/suppliers/inventory/reporting are proxied to FastAPI via `next.config.mjs`. Env is loaded from the **repo root** `.env` (see `/.env.example`).
 
-- http://localhost:3000/suppliers
-- http://localhost:3000/incidents
-- http://localhost:3000/data-processing
-- http://localhost:3000/
-
-The candidate tracker uses the external 4Geeks API by default in development. Incidents and suppliers are proxied to the local FastAPI service via `next.config.mjs` rewrites.
-
-## Environment variables
-
-Environment values are sourced from the repository root `.env` file (see
-`/.env.example`).
-
-Relevant variables include:
-
-- `NEXT_PUBLIC_TRACKER_API_BASE_URL` — candidate tracker API base URL
-- `BACKOFFICE_API_PROXY_TARGET` or `INCIDENTS_API_PROXY_TARGET` — FastAPI origin (default `http://127.0.0.1:8000`)
-- `NEXT_PUBLIC_INCIDENTS_API_BASE_URL` / `NEXT_PUBLIC_SUPPLIERS_API_BASE_URL` — optional direct API base URLs (bypass Next.js proxy)
+Useful vars: `BACKOFFICE_API_PROXY_TARGET` / `INCIDENTS_API_PROXY_TARGET` (default `http://127.0.0.1:8000`), optional `NEXT_PUBLIC_*_API_BASE_URL` to bypass the proxy, `NEXT_PUBLIC_TRACKER_API_BASE_URL` for the tracker.
 
 ## Build
 
 ```bash
-npm run build
-npm run start
+npm run build && npm run start
 ```
 
-For production, deploy FastAPI separately and set the proxy target or `NEXT_PUBLIC_*_API_BASE_URL` variables to the hosted API origin.
+In production, deploy FastAPI separately and point the proxy (or `NEXT_PUBLIC_*`) at the hosted API.

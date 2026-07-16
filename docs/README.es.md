@@ -1,6 +1,16 @@
 # Carpeta `docs`
 
-Esta carpeta contiene la **documentación transversal** del monorepo: guías de arquitectura, decisiones técnicas, convenciones, procesos, y cualquier material compartido entre aplicaciones, pipelines, agentes y workflows.
+Documentación transversal de diseño y arquitectura (no atada a un solo paquete).
 
-- **Propósito principal**: tener un punto único para la documentación “global” del proyecto (no específica de una sola app/agente).
-- **Recomendación**: organiza la documentación por temas (arquitectura, despliegue, datos, seguridad, observabilidad, etc.) y mantén enlaces desde los READMEs de cada componente hacia estas guías.
+> Inglés: [README.md](./README.md) · Padre: [../README.es.md](../README.es.md)
+
+## Índice
+
+| Doc | Tema |
+| --- | ---- |
+| [pipelines/PIPELINE_DESIGN.md](./pipelines/PIPELINE_DESIGN.md) | Diseño del pipeline Milestone 6 (KPIs semanales por ubicación) |
+| [telemetry/telemetry-plan.md](./telemetry/telemetry-plan.md) | Plan de telemetría / captura |
+| [ARCHITECTURE.PROPOSAL.md](./ARCHITECTURE.PROPOSAL.md) | Notas de arquitectura |
+| [qa-checklist-milestone-1.md](./qa-checklist-milestone-1.md) | Checklist QA Milestone 1 |
+
+Detalles de implementación: [services/api/README.md](../services/api/README.md) y [uis/](../uis/). Contextos históricos: [memory-bank/historical-reference/context-index.md](../memory-bank/historical-reference/context-index.md).

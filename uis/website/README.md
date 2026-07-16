@@ -1,28 +1,26 @@
 # Brasaland Website
 
-Public corporate website built with Next.js + TypeScript.
+Public corporate website (Next.js + TypeScript).
+
+> Parent index: [../README.md](../README.md)
 
 ## Routes
 
-- `/`: corporate home page migrated from milestone 1, including all sections and bilingual language toggle.
+- `/` — corporate home (Milestone 1 content, bilingual language toggle)
 
 ## Development
 
 ```bash
-cd /workspaces/shaunM12_Brasaland-Website
-cp .env.example .env   # once (root env source of truth)
+cp ../../.env.example ../../.env   # once, repo root
 cd uis/website
 npm install
 npm run dev
 ```
 
-Available variable:
-
-- `NEXT_PUBLIC_TRACKER_API_BASE_URL`: base URL for tracker API integrations.
+Env: `NEXT_PUBLIC_TRACKER_API_BASE_URL` (tracker API base, if used).
 
 ## Build
 
 ```bash
-npm run build
-npm run start
+npm run build && npm run start
 ```

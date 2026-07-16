@@ -1,8 +1,16 @@
 # `docs` folder
 
-This folder holds **cross-cutting documentation** for the monorepo: architecture guides, technical decisions, conventions, processes, and any material shared across applications, pipelines, agents, and workflows.
+Cross-cutting design and architecture docs (not owned by a single app package).
 
-- **Main purpose**: provide a single place for “global” project documentation (not tied to one app or agent only).
-- **Recommendation**: organize docs by topic (architecture, deployment, data, security, observability, etc.) and keep links from each component’s README to these guides.
+> Spanish: [README.es.md](./README.es.md) · Parent: [../README.md](../README.md)
 
-> _Spanish version: [README.es.md](./README.es.md)._
+## Index
+
+| Doc | Topic |
+| --- | ----- |
+| [pipelines/PIPELINE_DESIGN.md](./pipelines/PIPELINE_DESIGN.md) | Milestone 6 weekly location KPI pipeline design |
+| [telemetry/telemetry-plan.md](./telemetry/telemetry-plan.md) | Telemetry event / capture plan |
+| [ARCHITECTURE.PROPOSAL.md](./ARCHITECTURE.PROPOSAL.md) | Architecture proposal notes |
+| [qa-checklist-milestone-1.md](./qa-checklist-milestone-1.md) | Milestone 1 QA checklist |
+
+Implementation details for APIs and UIs live in [services/api/README.md](../services/api/README.md) and [uis/](../uis/). Historical milestone briefs: [memory-bank/historical-reference/context-index.md](../memory-bank/historical-reference/context-index.md).
