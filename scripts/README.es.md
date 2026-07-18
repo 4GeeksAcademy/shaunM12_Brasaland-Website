@@ -32,6 +32,8 @@ TARGET_DATE=2026-07-14 npm run api:nightly-export
 **Docker:** servicio `nightly-worker` en `docker-compose.yml`  
 Helpers de estado: `services/api/job_runner/`
 
+Este camino **no** es Celery. Las ejecuciones manuales on-demand del pipeline usan Redis + Celery (`celery-worker`) — ver [services/api/README.md](../services/api/README.md#celery-worker-dev-55) y [context-18](../memory-bank/historical-reference/context-18-message-queues-async-tasks.md).
+
 ---
 
 ## Analizador de incidentes (`analyze.py`)

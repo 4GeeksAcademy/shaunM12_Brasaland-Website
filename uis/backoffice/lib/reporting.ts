@@ -34,6 +34,7 @@ export interface PipelineRunLatest {
 }
 
 export interface PipelineRunAccepted {
+  task_id: string;
   status: string;
   message: string;
 }

@@ -24,7 +24,9 @@ from telemetry.models import ensure_telemetry_schema
 from reporting.routes import router as reporting_router
 from reporting.models import ensure_reporting_schema
 from job_runner.models import ensure_job_runs_schema
+from task_dead_letters.models import ensure_task_dead_letters_schema
 from users.routes import router as users_router
+from tasks.routes import router as tasks_router
 from sqlmodel import SQLModel
 from sqlmodel import Session
 
@@ -33,6 +35,7 @@ import incidents.models  # noqa: F401 — register ORM tables with SQLModel meta
 import telemetry.models  # noqa: F401 — register telemetry ORM tables
 import reporting.models  # noqa: F401 — register reporting ORM tables
 import job_runner.models  # noqa: F401 — register job_runs ORM table
+import task_dead_letters.models  # noqa: F401 — register task_dead_letters ORM table
 
 
 @asynccontextmanager
@@ -43,12 +46,14 @@ async def lifespan(_: FastAPI):
         with Session(get_engine()) as session:
             ensure_reporting_schema(session)
             ensure_job_runs_schema(session)
+            ensure_task_dead_letters_schema(session)
         SQLModel.metadata.create_all(get_engine())
         with Session(get_engine()) as session:
             ensure_telemetry_schema(session)
             ensure_inventory_schema(session)
             ensure_reporting_schema(session)
             ensure_job_runs_schema(session)
+            ensure_task_dead_letters_schema(session)
         seed_inventory_if_empty()
     yield
 
@@ -78,6 +83,7 @@ app.include_router(inventory_router, prefix="/inventory")
 app.include_router(incidents_router, prefix="/api/incidents", dependencies=_protected)
 app.include_router(telemetry_router, prefix="/telemetry")
 app.include_router(reporting_router, prefix="/reporting", dependencies=_protected)
+app.include_router(tasks_router, prefix="/tasks", dependencies=_protected)
 
 
 @app.get("/api/health")

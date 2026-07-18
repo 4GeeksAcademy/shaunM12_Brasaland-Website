@@ -34,6 +34,8 @@ Or: `cd services/api && uv run python ../../scripts/nightly_export.py`
 **Docker:** `nightly-worker` in `docker-compose.yml` runs `nightly_scheduler.py`  
 Status helpers: `services/api/job_runner/`
 
+This path is **not** Celery. On-demand manual pipeline runs use Redis + Celery (`celery-worker`) — see [services/api/README.md](../services/api/README.md#celery-worker-dev-55) and [context-18](../memory-bank/historical-reference/context-18-message-queues-async-tasks.md).
+
 ---
 
 ## Incident analyzer (`analyze.py`)

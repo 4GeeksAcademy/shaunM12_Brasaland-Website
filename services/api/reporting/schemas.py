@@ -44,7 +44,8 @@ class PipelineRunOut(BaseModel):
 
 
 class PipelineRunAccepted(BaseModel):
+    task_id: str
     status: str = "accepted"
     message: str = Field(
-        default="Weekly location performance pipeline started in the background"
+        default="Weekly location performance pipeline enqueued"
     )

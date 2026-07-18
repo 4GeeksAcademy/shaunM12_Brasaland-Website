@@ -31,6 +31,7 @@ Ordered index of historical reference context documents.
 - `context-16-milestone-6-pipeline-subflows-tests.md` — Milestone 6 Phase 3 subflows, tests, `/reporting` dashboard
 - Shared design: `docs/pipelines/PIPELINE_DESIGN.md` (pointer: `data/pipelines/PIPELINE_DESIGN.md`)
 - `context-17-background-processes-nightly-telemetry.md` — DEV-53 nightly telemetry export + pipeline trigger (`job_runs`)
+- `context-18-message-queues-async-tasks.md` — DEV-55 Redis + Celery async tasks (`POST /reporting/pipeline-runs`, `GET /tasks/{task_id}`, DLQ)
 
 ## Numbering Notes
 
@@ -39,4 +40,5 @@ Ordered index of historical reference context documents.
 - `context-15` is reserved for telemetry (plan, alignment, capture, storage, report companions).
 - `context-16` is reserved for Milestone 6 data pipeline: Phase 1 design, Phase 2 resilient pipeline, Phase 3 subflows/tests/dashboard.
 - `context-17` is reserved for background processes / nightly telemetry script (DEV-53).
+- `context-18` is reserved for message queues / async tasks with Redis and Celery (DEV-55).
 - `context-9` currently has three related companion files by design.
