@@ -2,7 +2,7 @@
 
 Sitio corporativo público (Next.js + TypeScript).
 
-> Índice padre: [../README.es.md](../README.es.md) · Inglés: [README.md](./README.md)
+> Visión general: [../../README.es.md](../../README.es.md) · Inglés: [README.md](./README.md)
 
 ## Rutas
 

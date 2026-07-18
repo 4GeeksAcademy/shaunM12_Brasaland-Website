@@ -13,7 +13,8 @@ FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralize
 | `inventory/` | Ingredient catalogue and stock orders (Postgres) |
 | `incidents/`, `incident_analyzer/` | Centralized incidents + CSV analyzer |
 | `telemetry/` | Event capture, storage, on-demand report |
-| `reporting/` | Weekly KPI APIs + pipeline trigger |
+| `reporting/` | Weekly KPI APIs + pipeline trigger (enqueues Celery; see DEV-55) |
+| `celery_app.py` | Celery app (Redis broker + result backend) + async pipeline task |
 | `job_runner/` | Nightly job status (`reporting.job_runs`) — used by `scripts/nightly_export.py` |
 | `seeds/` | Demo/bootstrap loaders (suppliers, inventory, incidents, telemetry) |
 | `config.py`, `database.py` | Env / TinyDB + Postgres helpers |
@@ -41,6 +42,7 @@ cp ../../.env.example ../../.env
 | -------- | ------- |
 | `JWT_SECRET_KEY` | Required; API fails closed if missing |
 | `DATABASE_URL` | Postgres/Supabase for inventory, incidents, telemetry, reporting |
+| `REDIS_URL` | Celery broker + result backend (DEV-55); local `redis://127.0.0.1:6379/0`, Compose `redis://redis:6379/0` |
 | `EMAIL_PROVIDER` | `console` (default) / `resend` / `sendgrid` |
 | `EMAIL_FROM`, `RESEND_API_KEY`, `SENDGRID_API_KEY` | Mail sender config |
 | `PASSWORD_RESET_EXPIRES_MINUTES`, `RESET_REQUESTS_PER_HOUR` | Reset token / rate limits |
@@ -56,6 +58,39 @@ npm run api:dev    # from repo root → http://127.0.0.1:8000
 
 Swagger UI: `/docs` (Authorize with a login token for protected routes).
 
+### Celery worker (DEV-55)
+
+`POST /reporting/pipeline-runs` enqueues work; a **separate** worker process consumes the queue. Design: [context-18](../../memory-bank/historical-reference/context-18-message-queues-async-tasks.md).
+
+**Start (local)**
+
+```bash
+# Terminal 1 — Redis
+docker compose up -d redis
+
+# Terminal 2 — API
+npm run api:dev
+
+# Terminal 3 — worker (must connect to REDIS_URL before relying on enqueue)
+cd services/api
+uv run celery -A celery_app worker --loglevel=info
+```
+
+**Start (Compose)**
+
+```bash
+docker compose up -d redis celery-worker
+# Optional monitor: docker compose up -d flower  → http://127.0.0.1:5555
+```
+
+**Stop**
+
+- Local worker: `Ctrl+C` in the worker terminal
+- Compose: `docker compose stop celery-worker` (Redis/Flower can stay up)
+- Stopping the API does **not** stop the worker or drop queued Redis messages
+
+Course equivalent: `celery -A services.celery_app worker` → this repo uses `-A celery_app` from `services/api`.
+
 ## Seeds
 
 Loaders live under `seeds/`. Startup auto-seeds empty suppliers TinyDB and empty inventory.
@@ -67,7 +102,7 @@ npm run api:incidents-seed
 npm run api:telemetry-seed
 ```
 
-Nightly CSV export + pipeline trigger is **outside** this process — see [scripts/README.md](../../scripts/README.md) (`npm run api:nightly-export`).
+Nightly CSV export + pipeline trigger is **outside** this process and **outside** Celery — see [scripts/README.md](../../scripts/README.md) (`npm run api:nightly-export`).
 
 ## Authentication
 
@@ -91,7 +126,8 @@ JWT bearer on supplier, incident, inventory, reporting, and most user routes. Op
 | Suppliers | `/api/suppliers` | CRUD-ish register/list/detail; rate, status, notes patches |
 | Inventory | `/inventory` | Products and inbound/outbound orders |
 | Telemetry | `/telemetry` | Ingest + report |
-| Reporting | `/reporting` | Weekly location KPIs; `POST /reporting/pipeline-runs` (202) |
+| Reporting | `/reporting` | Weekly location KPIs; `POST /reporting/pipeline-runs` (202 + `task_id` via Celery) |
+| Tasks | `/tasks` | `GET /tasks/{task_id}` — Celery status (`pending` / `started` / `success` / `failure`) |
 | Health | `/api/health` | Liveness |
 
 ## Tests

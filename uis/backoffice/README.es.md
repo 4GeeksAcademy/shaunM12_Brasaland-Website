@@ -2,7 +2,7 @@
 
 App interna Next.js + TypeScript (incidentes, proveedores, inventario, reporting, …).
 
-> Índice padre: [../README.es.md](../README.es.md) · API: [../../services/api/README.md](../../services/api/README.md) · Inglés: [README.md](./README.md)
+> Visión general: [../../README.es.md](../../README.es.md) · API: [../../services/api/README.md](../../services/api/README.md) · Inglés: [README.md](./README.md)
 
 ## Rutas principales
 
@@ -14,9 +14,9 @@ App interna Next.js + TypeScript (incidentes, proveedores, inventario, reporting
 | `/incidents` | Gestor de incidentes + analizador CSV |
 | `/suppliers` | Directorio de proveedores |
 | `/inventory` | Inventario de ingredientes |
-| `/reporting` | KPIs semanales por ubicación |
+| `/reporting` | KPIs semanales por ubicación (`POST /reporting/pipeline-runs` devuelve `task_id`; necesita Redis + worker Celery — ver README de la API) |
 
-Las páginas que llaman a la API necesitan FastAPI en el puerto 8000.
+Las páginas que llaman a la API necesitan FastAPI en el puerto 8000. Para **Run pipeline** en `/reporting`, arranca también Redis y el worker Celery ([services/api/README.md](../../services/api/README.md#celery-worker-dev-55)).
 
 ## Desarrollo
 
@@ -24,7 +24,11 @@ Las páginas que llaman a la API necesitan FastAPI en el puerto 8000.
 # Terminal 1 — API
 npm run api:install && npm run api:dev
 
-# Terminal 2 — backoffice
+# Terminal 2 — Redis + worker Celery (para encolar el pipeline de reporting)
+docker compose up -d redis
+cd services/api && uv run celery -A celery_app worker --loglevel=info
+
+# Terminal 3 — backoffice
 cp ../../.env.example ../../.env
 cd uis/backoffice && npm install && npm run dev
 ```

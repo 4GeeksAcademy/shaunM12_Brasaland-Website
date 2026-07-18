@@ -82,7 +82,11 @@ export default function ReportingPage(): React.JSX.Element {
     setError("");
     try {
       const accepted = await triggerPipelineRun();
-      setMessage(accepted.message || "Pipeline started.");
+      setMessage(
+        accepted.message
+          ? `${accepted.message} (task_id: ${accepted.task_id})`
+          : `Pipeline enqueued (task_id: ${accepted.task_id}).`,
+      );
       // Poll a few times for completion without blocking the UI forever.
       for (let attempt = 0; attempt < 8; attempt += 1) {
         await new Promise((resolve) => setTimeout(resolve, 1500));

@@ -86,6 +86,14 @@ SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
 # paths and table accessors in ``database.py`` are unchanged.
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+# --- Redis / Celery (DEV-55) -------------------------------------------------
+# Broker + result backend. Local default matches Compose-published Redis.
+# Docker services should override to redis://redis:6379/0.
+REDIS_URL = (
+    os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0").strip()
+    or "redis://127.0.0.1:6379/0"
+)
+
 def resolve_telemetry_enabled(
     *,
     env_value: str | None,

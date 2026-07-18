@@ -33,7 +33,7 @@ Historical milestone notes: [memory-bank/historical-reference/context-index.md](
 └── memory-bank/      Working notes and historical context files
 ```
 
-Details live next to each area — use the documentation map below.
+Details live in the READMEs listed below (API, UIs, scripts).
 
 ---
 
@@ -53,7 +53,26 @@ cd uis/backoffice && npm install && npm run dev
 ```
 
 Public site: `cd uis/website && npm install && npm run dev`  
-Docker Compose: see `docker-compose.yml` (`backend`, `ui`, `nightly-worker`).
+Docker Compose: see `docker-compose.yml` (`backend`, `ui`, `nightly-worker`, `redis`, `celery-worker`, `flower`).
+
+### Celery worker (DEV-55)
+
+Manual pipeline runs are enqueued to Redis and processed by a **separate** Celery worker (not inside FastAPI). Design locks: [context-18](./memory-bank/historical-reference/context-18-message-queues-async-tasks.md). Ops detail: [services/api/README.md](./services/api/README.md#celery-worker-dev-55).
+
+```bash
+# Redis broker (Compose)
+docker compose up -d redis
+
+# Worker (separate terminal; from services/api)
+cd services/api && uv run celery -A celery_app worker --loglevel=info
+
+# Optional: Flower monitor → http://127.0.0.1:5555
+docker compose up -d flower
+
+# Stop worker: Ctrl+C in the worker terminal (or stop the celery-worker Compose service)
+```
+
+Set `REDIS_URL` in `.env` (see `.env.example`). Nightly export remains a different process (`nightly-worker`) — do not conflate with Celery.
 
 ---
 
@@ -61,17 +80,20 @@ Docker Compose: see `docker-compose.yml` (`backend`, `ui`, `nightly-worker`).
 
 | Area | README | What you’ll find there |
 | ---- | ------ | ---------------------- |
-| API | [services/api/README.md](./services/api/README.md) | Setup, env, auth, seeds, endpoints, tests |
-| UIs (index) | [uis/README.md](./uis/README.md) | Apps in this folder |
+| API | [services/api/README.md](./services/api/README.md) | Setup, env, auth, seeds, endpoints, Celery, tests |
 | Public website | [uis/website/README.md](./uis/website/README.md) | Next.js corporate site |
 | Backoffice | [uis/backoffice/README.md](./uis/backoffice/README.md) | Ops UI, proxies, env |
-| Scripts | [scripts/README.md](./scripts/README.md) | Analyzer, nightly export/scheduler |
-| Docs | [docs/README.md](./docs/README.md) | Pipeline & telemetry design links |
-| Agents | [agents/README.md](./agents/README.md) | Agent templates catalog |
-| Skills | [skills/README.md](./skills/README.md) | Agent skills catalog |
+| Scripts | [scripts/README.md](./scripts/README.md) | Analyzer, nightly export/scheduler; Celery ≠ nightly |
+
+Design docs (no folder README — open the files directly):
+
+- [docs/pipelines/PIPELINE_DESIGN.md](./docs/pipelines/PIPELINE_DESIGN.md)
+- [docs/telemetry/telemetry-plan.md](./docs/telemetry/telemetry-plan.md)
+- [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
 
 Shared TypeScript (`src/`) commands: `npm run typecheck`, `npm test`, `npm run demo`.  
-Root serve helpers: `npm run serve` / `serve:src` / `serve:stop` (see `package.json`).
+Root serve helpers: `npm run serve` / `serve:src` / `serve:stop` (see `package.json`).  
+`agents/` and `skills/` hold course scaffolding; see those folders when you reach those milestones.
 
 ---
 

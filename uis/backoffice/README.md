@@ -2,7 +2,7 @@
 
 Internal Next.js + TypeScript ops app (incidents, suppliers, inventory, reporting, …).
 
-> Parent index: [../README.md](../README.md) · API: [../../services/api/README.md](../../services/api/README.md)
+> Parent overview: [../../README.md](../../README.md) · API: [../../services/api/README.md](../../services/api/README.md)
 
 ## Main routes
 
@@ -14,9 +14,9 @@ Internal Next.js + TypeScript ops app (incidents, suppliers, inventory, reportin
 | `/incidents` | Incident manager + CSV analyzer |
 | `/suppliers` | Supplier directory |
 | `/inventory` | Ingredient inventory |
-| `/reporting` | Weekly location KPI dashboard |
+| `/reporting` | Weekly location KPI dashboard (`POST /reporting/pipeline-runs` returns `task_id`; needs Redis + Celery worker — see API README) |
 
-Pages that call the API need FastAPI on port 8000.
+Pages that call the API need FastAPI on port 8000. For **Run pipeline** on `/reporting`, also start Redis and the Celery worker ([services/api/README.md](../../services/api/README.md#celery-worker-dev-55)).
 
 ## Development
 
@@ -27,7 +27,14 @@ npm run api:install
 npm run api:dev
 ```
 
-**Terminal 2 — backoffice:**
+**Terminal 2 — Redis + Celery worker (for reporting pipeline enqueue):**
+
+```bash
+docker compose up -d redis
+cd services/api && uv run celery -A celery_app worker --loglevel=info
+```
+
+**Terminal 3 — backoffice:**
 
 ```bash
 cp ../../.env.example ../../.env   # once

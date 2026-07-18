@@ -3,18 +3,17 @@
 from __future__ import annotations
 
 import logging
-import threading
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session
 
 from auth.dependencies import get_current_user
+from celery_app import run_weekly_pipeline_task
 from database import get_db
 from users.models import UserResponse
 
 from . import repository
-from .runner import run_weekly_pipeline
 from .schemas import (
     PipelineRunAccepted,
     PipelineRunOut,
@@ -63,14 +62,10 @@ def get_latest_pipeline_run(
 def trigger_pipeline_run(
     _: UserResponse = Depends(get_current_user),
 ) -> PipelineRunAccepted:
-    # Daemon thread (not BackgroundTasks): return 202 immediately and keep ETL off
-    # the request lifecycle so proxy timeouts / reloads do not kill the accept path.
-    thread = threading.Thread(
-        target=run_weekly_pipeline,
-        kwargs={"lookback_weeks": 2},
-        daemon=True,
-        name="weekly-location-performance-pipeline",
+    # Producer only: enqueue to Redis and return immediately (worker consumes).
+    async_result = run_weekly_pipeline_task.delay(lookback_weeks=2)
+    logger.info(
+        "Enqueued weekly location performance pipeline task_id=%s",
+        async_result.id,
     )
-    thread.start()
-    logger.info("Accepted weekly location performance pipeline run")
-    return PipelineRunAccepted()
+    return PipelineRunAccepted(task_id=async_result.id)

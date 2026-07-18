@@ -38,6 +38,8 @@ services:
     environment:
       # Repo-root ``data/`` is mounted below; runner resolves pipelines via this.
       BRASALAND_REPO_ROOT: /workspace
+      # Containers must use the Compose service hostname, not localhost.
+      REDIS_URL: redis://redis:6379/0
     ports:
       - "8000:8000"
     volumes:
@@ -49,8 +51,78 @@ services:
       - ./packages:/app/packages
       - ./docs:/app/docs:ro
       - ./data:/workspace/data
+    depends_on:
+      - redis
     networks:
       - brasaland-dev-net
+
+  # DEV-55: Redis broker + Celery result backend (no eviction of queued messages).
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--maxmemory-policy", "noeviction"]
+    ports:
+      - "6379:6379"
+    networks:
+      - brasaland-dev-net
+    restart: unless-stopped
+
+  # DEV-55: independent Celery worker (not inside FastAPI / uvicorn).
+  celery-worker:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command:
+      [
+        "sh",
+        "-c",
+        "uv sync --frozen --no-dev && uv run celery -A celery_app worker --loglevel=info",
+      ]
+    env_file:
+      - ./.env
+    environment:
+      BRASALAND_REPO_ROOT: /workspace
+      REDIS_URL: redis://redis:6379/0
+      PYTHONPATH: /app:/workspace
+    volumes:
+      - ./services/api:/app
+      - backend_api_venv:/app/.venv
+      - ./packages:/app/packages
+      - ./docs:/app/docs:ro
+      - ./data:/workspace/data
+    depends_on:
+      - redis
+    networks:
+      - brasaland-dev-net
+    restart: unless-stopped
+
+  # DEV-55: Flower queue monitor (dev).
+  flower:
+    build:
+      context: .
+      dockerfile: services/Dockerfile
+    command:
+      [
+        "sh",
+        "-c",
+        "uv sync --frozen --no-dev && uv run celery -A celery_app flower --port=5555",
+      ]
+    env_file:
+      - ./.env
+    environment:
+      BRASALAND_REPO_ROOT: /workspace
+      REDIS_URL: redis://redis:6379/0
+      PYTHONPATH: /app
+    ports:
+      - "5555:5555"
+    volumes:
+      - ./services/api:/app
+      - backend_api_venv:/app/.venv
+      - ./packages:/app/packages
+    depends_on:
+      - redis
+    networks:
+      - brasaland-dev-net
+    restart: unless-stopped
 
   # DEV-53: independent nightly orchestrator (not inside FastAPI).
   # Equivalent cron: 0 2 * * * with TZ=America/Bogota → scripts/nightly_export.py

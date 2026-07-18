@@ -2,7 +2,7 @@
 
 Public corporate website (Next.js + TypeScript).
 
-> Parent index: [../README.md](../README.md)
+> Parent overview: [../../README.md](../../README.md)
 
 ## Routes
 
