@@ -33,6 +33,7 @@ Ordered index of historical reference context documents.
 - `context-17-background-processes-nightly-telemetry.md` — DEV-53 nightly telemetry export + pipeline trigger (`job_runs`)
 - `context-18-message-queues-async-tasks.md` — DEV-55 Redis + Celery async tasks (`POST /reporting/pipeline-runs`, `GET /tasks/{task_id}`, DLQ)
 - `context-19-sales-forecasting-regression.md` — Sales forecasting with Random Forest, Brasaland course CONTEXT, 8yr/2yr split, holdout metrics (MSE, MAPE, PSI, Gini, K2), V1–V8 visuals
+- `context-20-evaluating-regression-model.md` — Evaluate context-19 RF (learning curve, walk-forward CV, structural PSI, EVALUATION-report, V9–V10); read-only on context-19 code
 
 ## Numbering Notes
 
@@ -43,4 +44,5 @@ Ordered index of historical reference context documents.
 - `context-17` is reserved for background processes / nightly telemetry script (DEV-53).
 - `context-18` is reserved for message queues / async tasks with Redis and Celery (DEV-55).
 - `context-19` is reserved for sales forecasting / regression model (Finance prediction ticket; Brasaland course CONTEXT + repo implementation locks).
+- `context-20` is reserved for evaluating the context-19 regression model (diagnostics + technical report; does not retrain or change holdout metrics).
 - `context-9` currently has three related companion files by design.
