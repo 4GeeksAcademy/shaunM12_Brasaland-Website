@@ -14,6 +14,10 @@ __pycache__/
 **/__pycache__/
 *.pyc
 
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
 # Next.js build output
 .next/
 **/.next/
@@ -26,6 +30,7 @@ results.csv
 data/eval/*.json
 data/raw/*.json
 data/raw/*.csv
+!data/raw/brasaland_sales.csv
 !data/eval/.gitkeep
 !data/raw/.gitkeep
 
