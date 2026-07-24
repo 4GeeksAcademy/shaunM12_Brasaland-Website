@@ -1,6 +1,6 @@
 """Sales forecasting utilities (context-19)."""
 
-from data.forecasting.evaluate import ForecastMetrics, evaluate_forecast
+from data.forecasting.evaluate import ForecastMetrics, evaluate_forecast, mean_absolute_percentage_error
 from data.forecasting.features import FEATURE_COLUMNS, TARGET_COLUMN, build_feature_frame, feature_matrix
 from data.forecasting.load import (
     DEFAULT_SALES_CSV,
@@ -48,6 +48,7 @@ __all__ = [
     "feature_matrix",
     "fit_random_forest",
     "load_sales",
+    "mean_absolute_percentage_error",
     "predict_mean",
     "predict_with_uncertainty",
     "prepare_scaled_matrices",

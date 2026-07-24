@@ -132,7 +132,7 @@ JWT bearer on supplier, incident, inventory, reporting, and most user routes. Op
 
 ## Sales forecasting (context-19)
 
-Random Forest monthly revenue forecast. Dataset: `data/raw/brasaland_sales.csv`. Plan: [context-19](../memory-bank/historical-reference/context-19-sales-forecasting-regression.md).
+Random Forest monthly revenue forecast on **consolidated** market rows only. Dataset: `data/raw/brasaland_sales.csv`. Plan: [context-19](../memory-bank/historical-reference/context-19-sales-forecasting-regression.md). Metrics guide (MSE, **MAPE**, PSI, Gini, K2): [docs/forecasting/README.md](../docs/forecasting/README.md). Business context: [CONTEXT-brasaland.md](../docs/forecasting/CONTEXT-brasaland.md).
 
 **Python packages** (in `pyproject.toml` via `uv`; installed with `uv sync`):
 
@@ -165,7 +165,15 @@ Open the notebook and select kernel **Brasaland Forecasting (Python 3.12)**.
 cd services/api && uv run jupyter notebook ../../notebooks/sales_forecasting.ipynb
 ```
 
-Split tests (when implemented): `uv run pytest tests/pipelines/test_sales_forecast_split.py -q`
+Holdout metrics (2024–2025 test window) include **MAPE** (~6% avg. forecast error) alongside MSE, PSI, Gini, and K2 — see `data/forecasting/evaluate.py` and V4 in the notebook.
+
+Tests:
+
+```bash
+uv run pytest tests/pipelines/test_sales_forecast_split.py \
+  tests/pipelines/test_sales_forecast_model.py \
+  tests/pipelines/test_sales_forecast_visualize.py -q
+```
 
 ## Tests
 
