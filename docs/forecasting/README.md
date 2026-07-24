@@ -1,6 +1,7 @@
 # Sales forecasting — setup and metrics
 
 **Plan:** [context-19](../../memory-bank/historical-reference/context-19-sales-forecasting-regression.md)  
+**Evaluation (context-20):** [EVALUATION-report.md](./EVALUATION-report.md) · [notebooks/evaluating_regression.ipynb](../../notebooks/evaluating_regression.ipynb)  
 **Dataset context:** [CONTEXT-brasaland.md](./CONTEXT-brasaland.md)  
 **Notebook:** [notebooks/sales_forecasting.ipynb](../../notebooks/sales_forecasting.ipynb)
 
@@ -174,8 +175,11 @@ A forecasting model can show **acceptable MSE** and still be **unsafe for Financ
 | Artifact | Location |
 | -------- | -------- |
 | Chart PNGs (V1–V8) | `docs/forecasting/outputs/` |
+| Evaluation charts (V9–V10) | `docs/forecasting/outputs/v9_learning_curve.png`, `v10_cv_fold_metrics.png` |
 | Metrics markdown (V4) | `docs/forecasting/outputs/v4_metrics_summary.md` |
+| Technical evaluation report | `docs/forecasting/EVALUATION-report.md` |
 | Interactive report | `notebooks/sales_forecasting.ipynb` |
+| Evaluation notebook | `notebooks/evaluating_regression.ipynb` |
 
 ---
 
