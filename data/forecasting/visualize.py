@@ -182,8 +182,19 @@ def plot_v3_monthly_errors(
 
 
 def metrics_table_markdown(metrics: ForecastMetrics) -> str:
+    rmse = metrics.mse**0.5
     rows = [
         ("MSE", f"{metrics.mse:,.2f}", "Average squared error in USD²; lower is better."),
+        (
+            "Avg. % error (MAPE)",
+            f"{metrics.mape_pct:.2f}%",
+            "Average absolute forecast error as a share of actual revenue; easier for stakeholders than USD².",
+        ),
+        (
+            "RMSE (from MSE)",
+            f"${rmse:,.0f}",
+            "Typical monthly error scale in USD (√MSE); complements MAPE.",
+        ),
         ("PSI", f"{metrics.psi:.4f}", "Distribution drift between actual and predicted revenue."),
         ("Gini", f"{metrics.gini:.4f}", "Ranking quality of predictions vs actuals (1.0 = perfect)."),
         ("K2", f"{metrics.k2:,.2f}", "Chi-square on binned distributions; closer to 0 is better."),

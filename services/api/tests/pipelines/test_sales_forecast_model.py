@@ -43,7 +43,8 @@ def test_train_and_evaluate_on_holdout():
     assert np.isfinite(metrics.psi)
     assert np.isfinite(metrics.gini)
     assert metrics.k2 >= 0.0
-    assert set(metrics.as_dict()) == {"mse", "psi", "gini", "k2"}
+    assert set(metrics.as_dict()) == {"mse", "mape_pct", "psi", "gini", "k2"}
+    assert metrics.mape_pct >= 0.0
 
 
 def test_predict_with_uncertainty_band_ordering():
@@ -58,6 +59,7 @@ def test_metrics_perfect_prediction_near_zero_error():
     y = np.array([500_000.0, 600_000.0, 700_000.0, 800_000.0])
     metrics = evaluate_forecast(y, y)
     assert metrics.mse == 0.0
+    assert metrics.mape_pct == 0.0
     assert abs(metrics.psi) < 1e-6
     assert abs(normalized_gini(y, y) - 1.0) < 1e-6
     assert k2_score(y, y) < 1e-5

@@ -87,6 +87,7 @@ Diseños (sin README de carpeta — abre los archivos):
 
 - [docs/pipelines/PIPELINE_DESIGN.md](./docs/pipelines/PIPELINE_DESIGN.md)
 - [docs/telemetry/telemetry-plan.md](./docs/telemetry/telemetry-plan.md)
+- [docs/forecasting/README.md](./docs/forecasting/README.md) — pronóstico de ventas (`scikit-learn`, Jupyter); métricas en holdout: MSE, **MAPE**, PSI, Gini, K2; [context-19](./memory-bank/historical-reference/context-19-sales-forecasting-regression.md)
 - [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
 
 TypeScript compartido (`src/`): `npm run typecheck`, `npm test`, `npm run demo`.  
