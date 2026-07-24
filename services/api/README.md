@@ -130,6 +130,43 @@ JWT bearer on supplier, incident, inventory, reporting, and most user routes. Op
 | Tasks | `/tasks` | `GET /tasks/{task_id}` — Celery status (`pending` / `started` / `success` / `failure`) |
 | Health | `/api/health` | Liveness |
 
+## Sales forecasting (context-19)
+
+Random Forest monthly revenue forecast. Dataset: `data/raw/brasaland_sales.csv`. Plan: [context-19](../memory-bank/historical-reference/context-19-sales-forecasting-regression.md).
+
+**Python packages** (in `pyproject.toml` via `uv`; installed with `uv sync`):
+
+| Package | Purpose |
+| ------- | ------- |
+| `scikit-learn` | Random Forest, metrics, `StandardScaler` |
+| `pandas` | CSV load and feature frames |
+| `matplotlib` | Charts V1–V8 |
+| `jupyter`, `ipykernel` | `notebooks/sales_forecasting.ipynb` |
+
+Install or refresh:
+
+```bash
+cd services/api
+uv sync
+# adds ML stack if missing: uv add scikit-learn matplotlib jupyter ipykernel
+```
+
+**Jupyter kernel** (one-time per machine):
+
+```bash
+cd services/api
+uv run python -m ipykernel install --user --name brasaland-forecasting --display-name "Brasaland Forecasting (Python 3.12)"
+```
+
+Open the notebook and select kernel **Brasaland Forecasting (Python 3.12)**.
+
+```bash
+# from repo root
+cd services/api && uv run jupyter notebook ../../notebooks/sales_forecasting.ipynb
+```
+
+Split tests (when implemented): `uv run pytest tests/pipelines/test_sales_forecast_split.py -q`
+
 ## Tests
 
 ```bash

@@ -10,7 +10,8 @@
   - FastAPI + Uvicorn shared service at `services/api/` (port 8000 in local dev)
   - Pydantic v2 and email-validator for supplier request/response validation
   - TinyDB JSON persistence for the supplier directory (`services/api/data/suppliers.json`)
-  - pandas for incident CSV analysis; pytest for API tests (`services/api/tests/`)
+  - pandas for incident CSV analysis and sales forecasting (`data/raw/brasaland_sales.csv`); pytest for API tests (`services/api/tests/`)
+  - Sales forecasting (context-19): `scikit-learn`, `matplotlib`, `jupyter`, `ipykernel` in `services/api/pyproject.toml` (`uv sync`); notebook `notebooks/sales_forecasting.ipynb`; modules under `data/forecasting/`
 - **Backend/API (external):**
   - 4Geeks Talent Tracker REST API for candidate CRUD and notes (`NEXT_PUBLIC_TRACKER_API_BASE_URL`)
 - **Business logic (TypeScript):**
