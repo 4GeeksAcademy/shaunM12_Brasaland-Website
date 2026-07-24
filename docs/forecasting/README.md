@@ -48,7 +48,7 @@ In Cursor/VS Code or Jupyter, select **Brasaland Forecasting (Python 3.12)** for
 
 ## Evaluation metrics (test set only)
 
-All four metrics are computed on the **2024–2025 holdout** — 24 months the model never saw during training. Training metrics are intentionally **not** reported; they would overstate how well the model generalizes.
+Rubric metrics plus **MAPE** are computed on the **2024–2025 holdout** — 24 months the model never saw during training. Training metrics are intentionally **not** reported.
 
 Implementation: `data/forecasting/evaluate.py`  
 Notebook summary: **V4** in `notebooks/sales_forecasting.ipynb`  
@@ -58,7 +58,8 @@ Exported table: `docs/forecasting/outputs/v4_metrics_summary.md`
 
 | Metric | One-line summary | Better direction | Related chart |
 | ------ | ---------------- | ---------------- | ------------- |
-| **MSE** | Average squared forecast error | Lower | V3 (monthly errors) |
+| **MSE** | Average squared forecast error (USD²) | Lower | V3 (monthly errors) |
+| **MAPE** | Average % error vs actual revenue on holdout | Lower | V4 (metrics table) |
 | **PSI** | Distribution drift: predicted vs actual revenue mix | Lower | V5 (binned distribution) |
 | **Gini** | How well the model ranks high vs low months | Higher (max 1.0) | V1, V7 |
 | **K2** | Range-level bias across revenue buckets | Closer to 0 | V5, V8 |
@@ -69,7 +70,12 @@ Exported table: `docs/forecasting/outputs/v4_metrics_summary.md`
 
 **What it measures:** On average, how far off were the monthly revenue forecasts? Errors are **squared** before averaging, so large misses count much more than small ones.
 
-**Finance reading:** MSE is reported in **USD²**, which is hard to interpret directly. A rough dollar-scale equivalent is **RMSE = √MSE** (root mean squared error). Example: MSE ≈ 3.4 billion → RMSE ≈ **$58,000** per month on average (not a hard cap on every month, but a useful scale).
+**Finance reading:** MSE is reported in **USD²**, which is hard to interpret directly. Two companion readings (also in V4):
+
+- **RMSE = √MSE** — dollar-scale typical error (e.g. MSE ≈ 3.4 billion → RMSE ≈ **$58,000**/month).
+- **MAPE (avg. % error)** — mean of `|actual − predicted| / actual` on the holdout, as a percentage; this is how Mariana and Felipe usually read “how far off” the forecast is.
+
+**Code:** `sklearn.metrics.mean_squared_error(y_test, y_pred)` and `mean_absolute_percentage_error()` in `evaluate.py`.
 
 **Strengths:** Single number; penalizes big misses (e.g. missing a holiday peak hurts more than being off by a few thousand).
 
@@ -79,7 +85,15 @@ Exported table: `docs/forecasting/outputs/v4_metrics_summary.md`
 - MSE says nothing about whether predicted revenue is **shifted** high or low overall.
 - A model that memorizes training patterns can look acceptable on MSE while failing on unseen years.
 
-**Code:** `sklearn.metrics.mean_squared_error(y_test, y_pred)`
+---
+
+### MAPE — Mean Absolute Percentage Error
+
+**What it measures:** On average, how far off were forecasts **as a percentage of actual revenue**? Example: MAPE ≈ **6%** means typical holdout months were about six cents wrong per dollar of actual sales.
+
+**Finance reading:** Mariana and Felipe use this more naturally than MSE in USD². Report alongside MSE/RMSE in V4 and the notebook Finance summary.
+
+**Code:** `mean_absolute_percentage_error()` in `evaluate.py` — holdout only; does not feed model training.
 
 ---
 

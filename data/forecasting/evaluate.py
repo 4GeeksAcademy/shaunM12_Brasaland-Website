@@ -14,6 +14,7 @@ EPSILON = 1e-6
 @dataclass(frozen=True)
 class ForecastMetrics:
     mse: float
+    mape_pct: float
     psi: float
     gini: float
     k2: float
@@ -21,10 +22,23 @@ class ForecastMetrics:
     def as_dict(self) -> dict[str, float]:
         return {
             "mse": self.mse,
+            "mape_pct": self.mape_pct,
             "psi": self.psi,
             "gini": self.gini,
             "k2": self.k2,
         }
+
+
+def mean_absolute_percentage_error(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+) -> float:
+    """Mean absolute percentage error on holdout, as a percentage (e.g. 5.2 = 5.2%)."""
+    y_true = np.asarray(y_true, dtype=float)
+    y_pred = np.asarray(y_pred, dtype=float)
+    if len(y_true) == 0:
+        return 0.0
+    return float(np.mean(np.abs((y_true - y_pred) / y_true)) * 100.0)
 
 
 def gini_coefficient(y_true: np.ndarray, y_pred: np.ndarray) -> float:
@@ -107,11 +121,12 @@ def k2_score(
 
 
 def evaluate_forecast(y_true: np.ndarray, y_pred: np.ndarray) -> ForecastMetrics:
-    """Compute MSE, PSI, normalized Gini, and K2 on the holdout set."""
+    """Compute MSE, MAPE, PSI, normalized Gini, and K2 on the holdout set."""
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
     return ForecastMetrics(
         mse=float(mean_squared_error(y_true, y_pred)),
+        mape_pct=mean_absolute_percentage_error(y_true, y_pred),
         psi=psi_score(y_true, y_pred),
         gini=normalized_gini(y_true, y_pred),
         k2=k2_score(y_true, y_pred),

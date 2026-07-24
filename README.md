@@ -89,7 +89,7 @@ Design docs (no folder README — open the files directly):
 
 - [docs/pipelines/PIPELINE_DESIGN.md](./docs/pipelines/PIPELINE_DESIGN.md)
 - [docs/telemetry/telemetry-plan.md](./docs/telemetry/telemetry-plan.md)
-- [docs/forecasting/README.md](./docs/forecasting/README.md) — sales forecast setup (`scikit-learn`, Jupyter); [context-19](./memory-bank/historical-reference/context-19-sales-forecasting-regression.md)
+- [docs/forecasting/README.md](./docs/forecasting/README.md) — sales forecast setup (`scikit-learn`, Jupyter); holdout metrics include MSE, **MAPE**, PSI, Gini, K2; [context-19](./memory-bank/historical-reference/context-19-sales-forecasting-regression.md)
 - [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
 
 Shared TypeScript (`src/`) commands: `npm run typecheck`, `npm test`, `npm run demo`.  
