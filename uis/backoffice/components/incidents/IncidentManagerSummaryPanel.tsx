@@ -88,18 +88,18 @@ function RankedList({
 
   return (
     <div>
-      <h3 className="text-xs uppercase tracking-[0.1em] text-amber-200/80">
+      <h3 className="text-xs uppercase tracking-[0.1em] text-[color:var(--bo-accent-muted)]/80">
         {title}
       </h3>
       {entries.length === 0 ? (
-        <p className="mt-2 text-sm text-stone-400">{emptyLabel}</p>
+        <p className="mt-2 text-sm bo-muted">{emptyLabel}</p>
       ) : (
         <>
-          <ul className="mt-2 space-y-1.5 text-sm text-stone-300">
+          <ul className="mt-2 space-y-1.5 text-sm bo-muted">
             {visible.map((entry) => (
               <li key={entry.key} className="flex justify-between gap-4">
                 <span>{entry.label}</span>
-                <span className="font-semibold text-amber-100">{entry.count}</span>
+                <span className="font-semibold text-[color:var(--bo-heading)]">{entry.count}</span>
               </li>
             ))}
           </ul>
@@ -107,7 +107,7 @@ function RankedList({
             <button
               type="button"
               onClick={() => setShowAll((current) => !current)}
-              className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-amber-200/80 hover:text-amber-100"
+              className="mt-2 text-xs font-semibold uppercase tracking-[0.1em] text-[color:var(--bo-accent-muted)]/80 hover:text-[color:var(--bo-heading)]"
             >
               {showAll ? "Show less" : `Show ${hiddenCount} more`}
             </button>
@@ -155,21 +155,21 @@ export default function IncidentManagerSummaryPanel({
   );
 
   return (
-    <section className="rounded-2xl border border-amber-200/15 bg-stone-950/70 p-5">
+    <section className="rounded-2xl border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel)] p-5">
       <div className="flex flex-col gap-1 md:flex-row md:items-end md:justify-between">
-        <h2 className="text-lg font-semibold text-amber-100">Operations summary</h2>
+        <h2 className="text-lg font-semibold text-[color:var(--bo-heading)]">Operations summary</h2>
         {!loading && !error && summary ? (
-          <p className="text-xs uppercase tracking-[0.1em] text-stone-400">
+          <p className="text-xs uppercase tracking-[0.1em] bo-muted">
             {statusPulse.total} total incidents
           </p>
         ) : null}
       </div>
 
       {loading ? (
-        <p className="mt-3 text-sm text-stone-400">Loading summary…</p>
+        <p className="mt-3 text-sm bo-muted">Loading summary…</p>
       ) : null}
       {error ? (
-        <p className="mt-3 text-sm text-rose-300">
+        <p className="mt-3 text-sm text-[color:var(--bo-error-fg)]">
           Summary unavailable: {error}. The rest of this page still works.
         </p>
       ) : null}
@@ -177,23 +177,23 @@ export default function IncidentManagerSummaryPanel({
       {!loading && !error && summary ? (
         <div className="mt-4 space-y-5">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-xl border border-amber-200/20 bg-amber-300/10 px-3 py-3">
-              <p className="text-[0.65rem] uppercase tracking-[0.12em] text-amber-200/80">
+            <div className="bo-stat-accent px-3 py-3">
+              <p className="text-[0.65rem] uppercase tracking-[0.12em] text-[color:var(--bo-accent-muted)]/80">
                 Total
               </p>
-              <p className="mt-1 text-2xl font-extrabold text-amber-50">
+              <p className="mt-1 text-2xl font-extrabold text-[color:var(--bo-heading)]">
                 {statusPulse.total}
               </p>
             </div>
             {statusPulse.items.map((item) => (
               <div
                 key={item.key}
-                className="rounded-xl border border-amber-200/10 bg-stone-900/80 px-3 py-3"
+                className="rounded-xl border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-card)] px-3 py-3"
               >
-                <p className="text-[0.65rem] uppercase tracking-[0.12em] text-stone-400">
+                <p className="text-[0.65rem] uppercase tracking-[0.12em] bo-muted">
                   {item.label}
                 </p>
-                <p className="mt-1 text-2xl font-extrabold text-stone-100">
+                <p className="mt-1 text-2xl font-extrabold text-[color:var(--bo-fg)]">
                   {item.count}
                 </p>
               </div>
@@ -205,10 +205,10 @@ export default function IncidentManagerSummaryPanel({
               {originEntries.map((entry) => (
                 <span
                   key={entry.key}
-                  className="rounded-full border border-amber-200/15 bg-stone-900 px-3 py-1 text-xs text-stone-200"
+                  className="rounded-full border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-card)] px-3 py-1 text-xs bo-fg-secondary"
                 >
                   {entry.label}:{" "}
-                  <span className="font-semibold text-amber-100">{entry.count}</span>
+                  <span className="font-semibold text-[color:var(--bo-heading)]">{entry.count}</span>
                 </span>
               ))}
             </div>
@@ -231,7 +231,7 @@ export default function IncidentManagerSummaryPanel({
       ) : null}
 
       {!loading && !error && !summary ? (
-        <p className="mt-3 text-sm text-stone-400">No summary loaded yet.</p>
+        <p className="mt-3 text-sm bo-muted">No summary loaded yet.</p>
       ) : null}
     </section>
   );

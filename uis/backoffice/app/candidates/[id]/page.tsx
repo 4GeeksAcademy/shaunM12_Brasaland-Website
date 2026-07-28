@@ -177,9 +177,9 @@ export default function CandidateDetailPage(): React.JSX.Element {
   }, [candidate?.applied_at]);
 
   return (
-    <main className="min-h-screen bg-stone-950 px-4 py-10 text-stone-100 md:px-8">
+    <main className="bo-page">
       <div className="mx-auto max-w-5xl space-y-6">
-        <Link href="/" className="text-sm font-semibold text-amber-300 underline">
+        <Link href="/" className="text-sm font-semibold text-[color:var(--bo-accent)] underline">
           Back to candidate list
         </Link>
 
@@ -196,78 +196,78 @@ export default function CandidateDetailPage(): React.JSX.Element {
 
         {candidateState === "success" && candidate && (
           <>
-            <section className="space-y-3 rounded-xl border border-amber-200/20 bg-stone-900/85 p-4 shadow-2xl shadow-black/20">
-              <h1 className="text-2xl font-extrabold text-amber-300">{candidate.full_name}</h1>
-              <p className="text-sm text-stone-300">Executive Assistant candidate profile</p>
+            <section className="space-y-3 bo-card-lg shadow-2xl shadow-[color:var(--bo-shadow)]">
+              <h1 className="bo-title text-2xl text-[color:var(--bo-accent)]">{candidate.full_name}</h1>
+              <p className="text-sm bo-muted">Executive Assistant candidate profile</p>
 
               <dl className="grid gap-3 text-sm md:grid-cols-2">
                 <div>
-                  <dt className="font-semibold text-amber-200">Email</dt>
-                  <dd className="text-stone-100">{candidate.email}</dd>
+                  <dt className="font-semibold text-[color:var(--bo-accent-muted)]">Email</dt>
+                  <dd className="text-[color:var(--bo-fg)]">{candidate.email}</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-amber-200">Phone</dt>
-                  <dd className="text-stone-100">{candidate.phone}</dd>
+                  <dt className="font-semibold text-[color:var(--bo-accent-muted)]">Phone</dt>
+                  <dd className="text-[color:var(--bo-fg)]">{candidate.phone}</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-amber-200">Position</dt>
-                  <dd className="text-stone-100">{candidate.position}</dd>
+                  <dt className="font-semibold text-[color:var(--bo-accent-muted)]">Position</dt>
+                  <dd className="text-[color:var(--bo-fg)]">{candidate.position}</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-amber-200">Years of experience</dt>
-                  <dd className="text-stone-100">{candidate.experience_years}</dd>
+                  <dt className="font-semibold text-[color:var(--bo-accent-muted)]">Years of experience</dt>
+                  <dd className="text-[color:var(--bo-fg)]">{candidate.experience_years}</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-amber-200">LinkedIn</dt>
+                  <dt className="font-semibold text-[color:var(--bo-accent-muted)]">LinkedIn</dt>
                   <dd>
                     <a
                       href={candidate.linkedin_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-amber-300 underline"
+                      className="text-[color:var(--bo-accent)] underline"
                     >
                       Open LinkedIn profile
                     </a>
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-amber-200">CV</dt>
+                  <dt className="font-semibold text-[color:var(--bo-accent-muted)]">CV</dt>
                   <dd>
                     <a
                       href={candidate.cv_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="text-amber-300 underline"
+                      className="text-[color:var(--bo-accent)] underline"
                     >
                       Open CV
                     </a>
                   </dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-amber-200">Status</dt>
-                  <dd className="text-stone-100">{STATUS_LABELS[candidate.status]}</dd>
+                  <dt className="font-semibold text-[color:var(--bo-accent-muted)]">Status</dt>
+                  <dd className="text-[color:var(--bo-fg)]">{STATUS_LABELS[candidate.status]}</dd>
                 </div>
                 <div>
-                  <dt className="font-semibold text-amber-200">Stage</dt>
-                  <dd className="text-stone-100">{STAGE_LABELS[candidate.stage]}</dd>
+                  <dt className="font-semibold text-[color:var(--bo-accent-muted)]">Stage</dt>
+                  <dd className="text-[color:var(--bo-fg)]">{STAGE_LABELS[candidate.stage]}</dd>
                 </div>
                 <div className="md:col-span-2">
-                  <dt className="font-semibold text-amber-200">Application date</dt>
-                  <dd className="text-stone-100">{appliedDate}</dd>
+                  <dt className="font-semibold text-[color:var(--bo-accent-muted)]">Application date</dt>
+                  <dd className="text-[color:var(--bo-fg)]">{appliedDate}</dd>
                 </div>
               </dl>
             </section>
 
-            <section className="space-y-3 rounded-xl border border-amber-200/20 bg-stone-900/85 p-4 shadow-2xl shadow-black/20">
-              <h2 className="text-xl font-extrabold text-amber-300">Quick updates</h2>
+            <section className="space-y-3 bo-card-lg shadow-2xl shadow-[color:var(--bo-shadow)]">
+              <h2 className="bo-subtitle text-[color:var(--bo-accent)]">Quick updates</h2>
 
               <div className="grid gap-3 md:grid-cols-2">
-                <label className="text-sm text-stone-100">
+                <label className="text-sm text-[color:var(--bo-fg)]">
                   Update status
                   <select
                     value={candidate.status}
                     onChange={(event) => void updateStatus(event.target.value as Candidate["status"])}
-                    className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+                    className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
                   >
                     {STATUS_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -277,12 +277,12 @@ export default function CandidateDetailPage(): React.JSX.Element {
                   </select>
                 </label>
 
-                <label className="text-sm text-stone-100">
+                <label className="text-sm text-[color:var(--bo-fg)]">
                   Update stage
                   <select
                     value={candidate.stage}
                     onChange={(event) => void updateStage(event.target.value as Candidate["stage"])}
-                    className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+                    className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
                   >
                     {STAGE_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -294,7 +294,7 @@ export default function CandidateDetailPage(): React.JSX.Element {
               </div>
 
               {patchState === "loading" && (
-                <p className="rounded-md bg-stone-950/80 p-2 text-sm text-stone-100">Saving update...</p>
+                <p className="rounded-md bg-[color:var(--bo-input-bg)] p-2 text-sm text-[color:var(--bo-fg)]">Saving update...</p>
               )}
               {patchState === "error" && (
                 <p className="rounded-md bg-red-300/10 p-2 text-sm text-red-300">{patchError}</p>

@@ -36,21 +36,21 @@ export default function ProductTable({
   }
 
   return (
-    <section className="overflow-hidden rounded-xl border border-amber-200/20 bg-stone-900/85">
-      <div className="border-b border-amber-200/10 px-4 py-3 text-xs text-stone-400">
+    <section className="overflow-hidden rounded-xl border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)]">
+      <div className="border-b border-[color:var(--bo-panel-border)] px-4 py-3 text-xs bo-muted">
         {loading
           ? "Loading products..."
           : `${products.length} product${products.length === 1 ? "" : "s"}`}
       </div>
 
       {loading ? (
-        <p className="px-4 py-8 text-sm text-stone-400">Fetching live stock from the API…</p>
+        <p className="px-4 py-8 text-sm bo-muted">Fetching live stock from the API…</p>
       ) : products.length === 0 ? (
-        <p className="px-4 py-8 text-sm text-stone-400">No products in the catalogue yet.</p>
+        <p className="px-4 py-8 text-sm bo-muted">No products in the catalogue yet.</p>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-stone-950/60 text-xs uppercase tracking-[0.08em] text-stone-400">
+          <table className="bo-table">
+            <thead className="bg-[color:var(--bo-row-bg)] text-xs uppercase tracking-[0.08em] bo-muted">
               <tr>
                 <th className="px-4 py-3 font-semibold">Product</th>
                 <th className="px-4 py-3 font-semibold">SKU</th>
@@ -61,23 +61,23 @@ export default function ProductTable({
                 <th className="px-4 py-3 font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-stone-800/80">
+            <tbody className="divide-y divide-[color:var(--bo-row-border)]">
               {products.map((product) => {
                 const level = getStockLevel(
                   product.current_stock,
                   product.min_stock_threshold,
                 );
                 return (
-                  <tr key={product.id} className="text-stone-200">
-                    <td className="px-4 py-3 font-medium text-amber-50">{product.name}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-stone-400">{product.sku}</td>
+                  <tr key={product.id} className="bo-fg-secondary">
+                    <td className="px-4 py-3 font-medium text-[color:var(--bo-heading)]">{product.name}</td>
+                    <td className="px-4 py-3 font-mono text-xs bo-muted">{product.sku}</td>
                     <td className="px-4 py-3">
                       {CATEGORY_LABELS[product.category] ?? product.category}
                     </td>
                     <td className="px-4 py-3">
                       {COUNTRY_LABELS[product.country] ?? product.country}
                     </td>
-                    <td className="px-4 py-3 font-semibold text-amber-100">
+                    <td className="px-4 py-3 font-semibold text-[color:var(--bo-heading)]">
                       {formatStock(product.current_stock, product.unit)}
                     </td>
                     <td className="px-4 py-3">
@@ -91,13 +91,13 @@ export default function ProductTable({
                       <div className="flex flex-wrap gap-2">
                         <Link
                           href={`/inventory/orders/inbound?productId=${product.id}`}
-                          className="rounded-full border border-emerald-400/50 px-3 py-1 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/10"
+                          className="bo-btn-secondary border-[color:var(--bo-badge-healthy-ring)] text-[color:var(--bo-badge-healthy-fg)] normal-case tracking-normal"
                         >
                           Log inbound
                         </Link>
                         <Link
                           href={`/inventory/orders/outbound?productId=${product.id}`}
-                          className="rounded-full border border-amber-400/50 px-3 py-1 text-xs font-semibold text-amber-200 transition hover:bg-amber-500/10"
+                          className="bo-btn-secondary normal-case tracking-normal"
                         >
                           Log outbound
                         </Link>

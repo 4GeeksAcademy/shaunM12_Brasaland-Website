@@ -257,7 +257,7 @@ export default function InboundOrderForm({
   };
 
   return (
-    <section className="rounded-xl border border-amber-200/20 bg-stone-900/85 p-6">
+    <section className="bo-card-lg">
       <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
         <label className="md:col-span-2">
           <span className={LABEL_CLASS}>Product</span>
@@ -360,13 +360,13 @@ export default function InboundOrderForm({
         </label>
 
         {suppliersError ? (
-          <p role="alert" className="md:col-span-2 text-sm text-amber-200">
+          <p role="alert" className="md:col-span-2 text-sm text-[color:var(--bo-accent-muted)]">
             {suppliersError}
           </p>
         ) : null}
 
         {formError ? (
-          <p role="alert" className="md:col-span-2 text-sm text-rose-300">
+          <p role="alert" className="md:col-span-2 text-sm text-[color:var(--bo-error-fg)]">
             {formError}
           </p>
         ) : null}
@@ -374,7 +374,7 @@ export default function InboundOrderForm({
         {successMessage ? (
           <p
             role="status"
-            className="md:col-span-2 rounded-lg border border-emerald-400/30 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-200"
+            className="md:col-span-2 bo-alert-success border border-[color:var(--bo-success)]"
           >
             {successMessage}
           </p>
@@ -390,7 +390,7 @@ export default function InboundOrderForm({
               !selectedProduct ||
               !form.supplier_id
             }
-            className="rounded-full bg-amber-300 px-5 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="bo-btn-primary px-5 py-2 text-sm normal-case tracking-normal disabled:cursor-not-allowed"
           >
             {submitting ? "Saving…" : "Record inbound delivery"}
           </button>

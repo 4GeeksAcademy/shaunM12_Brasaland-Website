@@ -48,6 +48,6 @@ export const CATEGORY_ORDER: string[] = [
 ];
 
 export const INPUT_CLASS =
-  "mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20";
+  "mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]";
 
-export const LABEL_CLASS = "text-xs font-semibold uppercase tracking-[0.08em] text-stone-400";
+export const LABEL_CLASS = "text-xs font-semibold uppercase tracking-[0.08em] bo-muted";

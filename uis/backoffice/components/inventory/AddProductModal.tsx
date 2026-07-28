@@ -79,25 +79,25 @@ export default function AddProductModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/70 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[color:var(--bo-panel)] p-4"
       role="dialog"
       aria-modal="true"
       aria-labelledby="add-product-title"
     >
-      <div className="w-full max-w-lg rounded-2xl border border-amber-200/20 bg-stone-900 p-6 shadow-2xl">
+      <div className="w-full max-w-lg rounded-2xl border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)] p-6 shadow-2xl">
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
-            <h2 id="add-product-title" className="text-lg font-semibold text-amber-50">
+            <h2 id="add-product-title" className="text-lg font-semibold text-[color:var(--bo-heading)]">
               Add product
             </h2>
-            <p className="mt-1 text-sm text-stone-400">
+            <p className="mt-1 text-sm bo-muted">
               Adds a new item to the chain-wide Brasaland catalogue (all 14 restaurants).
             </p>
           </div>
           <button
             type="button"
             onClick={handleClose}
-            className="rounded-lg px-2 py-1 text-stone-400 transition hover:bg-stone-800 hover:text-stone-200"
+            className="rounded-lg px-2 py-1 bo-muted transition hover:bg-[color:var(--bo-accent-soft)] hover:bo-fg-secondary"
             aria-label="Close"
           >
             ✕
@@ -167,7 +167,7 @@ export default function AddProductModal({
           </div>
 
           {error ? (
-            <p className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-sm text-rose-200">
+            <p className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-sm text-[color:var(--bo-error-fg)]">
               {error}
             </p>
           ) : null}
@@ -177,14 +177,14 @@ export default function AddProductModal({
               type="button"
               onClick={handleClose}
               disabled={submitting}
-              className="rounded-full border border-stone-600 px-4 py-2 text-sm font-semibold text-stone-300 transition hover:bg-stone-800 disabled:opacity-50"
+              className="rounded-full border border-[color:var(--bo-input-border)] px-4 py-2 text-sm font-semibold bo-muted transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-400 disabled:opacity-50"
+              className="bo-btn-primary px-4 py-2 text-sm normal-case tracking-normal"
             >
               {submitting ? "Saving…" : "Create product"}
             </button>

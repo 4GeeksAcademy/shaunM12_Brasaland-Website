@@ -38,10 +38,10 @@ function MetricCard({
   detail?: string;
 }): React.JSX.Element {
   return (
-    <article className="rounded-xl border border-amber-500/30 bg-amber-900/20 p-4">
-      <p className="text-xs uppercase tracking-[0.12em] text-amber-200">{label}</p>
-      <p className="mt-1 text-3xl font-extrabold text-amber-100">{value}</p>
-      {detail ? <p className="text-xs text-amber-200/80">{detail}</p> : null}
+    <article className="bo-stat-accent">
+      <p className="text-xs uppercase tracking-[0.12em] text-[color:var(--bo-accent-muted)]">{label}</p>
+      <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-heading)]">{value}</p>
+      {detail ? <p className="text-xs text-[color:var(--bo-accent-muted)]/80">{detail}</p> : null}
     </article>
   );
 }
@@ -56,18 +56,18 @@ function BreakdownList({
   total: number;
 }): React.JSX.Element {
   return (
-    <article className="rounded-2xl border border-amber-200/20 bg-stone-950/70 p-5 shadow-xl shadow-black/20">
-      <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-amber-300">{title}</h3>
+    <article className="bo-card">
+      <h3 className="bo-eyebrow">{title}</h3>
       <ul className="mt-4 space-y-2">
         {rows.map((row) => (
           <li
             key={row.label}
-            className="flex items-center justify-between rounded-lg border border-stone-700/60 bg-stone-900/80 px-3 py-2 text-sm"
+            className="bo-row"
           >
-            <span className="text-stone-200">{row.label}</span>
-            <span className="font-semibold text-amber-200">
+            <span className="bo-fg-secondary">{row.label}</span>
+            <span className="font-semibold text-[color:var(--bo-accent-muted)]">
               {formatNumber(row.value)}{" "}
-              <span className="text-xs font-normal text-stone-400">
+              <span className="text-xs font-normal bo-muted">
                 ({formatPercentage(row.value, total)})
               </span>
             </span>
@@ -104,9 +104,9 @@ export default function IncidentSummary({
   return (
     <div className="space-y-6">
       {result.schemaError ? (
-        <section className="rounded-2xl border border-rose-500/40 bg-rose-950/30 p-5">
-          <h2 className="text-lg font-bold text-rose-200">Schema error</h2>
-          <p className="mt-2 text-sm text-rose-100">{result.schemaError}</p>
+        <section className="bo-alert-error rounded-2xl p-5">
+          <h2 className="text-lg font-bold text-[color:var(--bo-error-fg)]">Schema error</h2>
+          <p className="mt-2 text-sm text-[color:var(--bo-error-fg)]">{result.schemaError}</p>
         </section>
       ) : null}
 
@@ -126,9 +126,9 @@ export default function IncidentSummary({
       </section>
 
       {result.invalidCount > 0 ? (
-        <section className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-5">
-          <h2 className="text-lg font-bold text-rose-200">Invalid records breakdown</h2>
-          <p className="mt-1 text-sm text-rose-100/90">
+        <section className="bo-alert-error rounded-2xl p-5">
+          <h2 className="text-lg font-bold text-[color:var(--bo-error-fg)]">Invalid records breakdown</h2>
+          <p className="mt-1 text-sm text-[color:var(--bo-error-fg)]/90">
             The uploaded file contains {formatNumber(result.invalidCount)} invalid or incomplete record
             {result.invalidCount === 1 ? "" : "s"}.
           </p>
@@ -136,15 +136,15 @@ export default function IncidentSummary({
             {invalidRows.map(([reason, count]) => (
               <li
                 key={reason}
-                className="flex items-center justify-between rounded-lg border border-rose-800/50 bg-stone-950/70 px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-lg border border-rose-800/50 bg-[color:var(--bo-panel)] px-3 py-2 text-sm"
               >
-                <span className="text-rose-100">{reason}</span>
-                <span className="font-semibold text-rose-200">{formatNumber(count)}</span>
+                <span className="text-[color:var(--bo-error-fg)]">{reason}</span>
+                <span className="font-semibold text-[color:var(--bo-error-fg)]">{formatNumber(count)}</span>
               </li>
             ))}
           </ul>
           {result.invalidRowSamples.length > 0 ? (
-            <p className="mt-3 text-xs text-rose-200/80">
+            <p className="mt-3 text-xs text-[color:var(--bo-error-fg)]/80">
               Sample CSV rows: {result.invalidRowSamples.slice(0, 10).join(", ")}
               {result.invalidRowSamples.length > 10 ? ", ..." : ""}
             </p>
@@ -165,11 +165,11 @@ export default function IncidentSummary({
         />
       </section>
 
-      <section className="rounded-2xl border border-amber-200/20 bg-stone-950/70 p-5 shadow-xl shadow-black/20">
-        <h3 className="text-sm font-semibold uppercase tracking-[0.12em] text-amber-300">
+      <section className="bo-card">
+        <h3 className="bo-eyebrow">
           Satisfaction index (closed cases)
         </h3>
-        <p className="mt-2 text-sm text-stone-300">
+        <p className="mt-2 text-sm bo-muted">
           Scored cases: {formatNumber(result.satisfactionClosedCount)} of{" "}
           {formatNumber(result.closedCaseCount)}
           {result.avgSatisfactionClosed !== null
@@ -180,10 +180,10 @@ export default function IncidentSummary({
           {satisfactionRows.map((row) => (
             <li
               key={row.label}
-              className="flex items-center justify-between rounded-lg border border-stone-700/60 bg-stone-900/80 px-3 py-2 text-sm"
+              className="bo-row"
             >
-              <span className="text-stone-200">{row.label}</span>
-              <span className="font-semibold text-amber-200">{formatNumber(row.value)}</span>
+              <span className="bo-fg-secondary">{row.label}</span>
+              <span className="font-semibold text-[color:var(--bo-accent-muted)]">{formatNumber(row.value)}</span>
             </li>
           ))}
         </ul>

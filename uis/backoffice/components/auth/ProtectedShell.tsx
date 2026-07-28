@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthProvider";
 import { isPublicPath, LOGIN_PATH } from "@/lib/auth-config";
 import BackofficeTabs from "@/components/backoffice-tabs";
+import ThemeToggle from "@/components/theme-toggle";
 import AuthGuard from "./AuthGuard";
 
 function SessionBar(): React.JSX.Element {
@@ -18,26 +19,35 @@ function SessionBar(): React.JSX.Element {
   };
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200/10 bg-stone-950 px-4 py-2 text-xs text-stone-300">
+    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[color:var(--bo-panel-border)] bg-[color:var(--bo-shell-bg)] px-4 py-2 text-xs text-[color:var(--bo-shell-fg)]">
       <div className="flex flex-wrap items-center gap-3">
-        <Link href="/" className="font-semibold text-amber-300">
+        <Link href="/" className="font-semibold text-[color:var(--bo-accent)]">
           Brasaland Backoffice
         </Link>
-        <Link href="/account/profile" className="transition hover:text-amber-200">
+        <Link
+          href="/account/profile"
+          className="transition hover:text-[color:var(--bo-accent)]"
+        >
           Profile
         </Link>
         {user?.is_admin ? (
-          <Link href="/account/users" className="transition hover:text-amber-200">
+          <Link
+            href="/account/users"
+            className="transition hover:text-[color:var(--bo-accent)]"
+          >
             Users
           </Link>
         ) : null}
       </div>
       <div className="flex items-center gap-3">
-        {user ? <span className="text-stone-400">{user.email}</span> : null}
+        <ThemeToggle />
+        {user ? (
+          <span className="text-[color:var(--bo-muted)]">{user.email}</span>
+        ) : null}
         <button
           type="button"
           onClick={handleLogout}
-          className="rounded-full border border-amber-300/70 px-3 py-1 font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
+          className="bo-btn-secondary normal-case tracking-normal"
         >
           Log out
         </button>
@@ -64,7 +74,7 @@ export default function ProtectedShell({
   return (
     <AuthGuard>
       <SessionBar />
-      <div className="border-b border-amber-200/10 bg-stone-950 px-4 py-2">
+      <div className="border-b border-[color:var(--bo-panel-border)] bg-[color:var(--bo-shell-bg)] px-4 py-2">
         <BackofficeTabs />
       </div>
       {children}

@@ -110,26 +110,26 @@ export default function CandidateForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-amber-200/20 bg-stone-900/85 p-4 shadow-2xl shadow-black/20">
-      <h3 className="text-lg font-extrabold text-amber-300">
+    <form onSubmit={handleSubmit} className="space-y-3 bo-card-lg shadow-2xl shadow-[color:var(--bo-shadow)]">
+      <h3 className="text-lg font-extrabold text-[color:var(--bo-accent)]">
         {mode === "create" ? "Register candidate" : "Edit candidate"}
       </h3>
 
       <div className="grid gap-3 md:grid-cols-2">
-        <label className="text-sm text-amber-100">
+        <label className="text-sm text-[color:var(--bo-heading)]">
           Full name
           <input
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/90 px-3 py-2 text-amber-100 placeholder-stone-400 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             value={form.full_name}
             onChange={(event) => onInputChange("full_name", event.target.value)}
             placeholder="Full name"
           />
         </label>
 
-        <label className="text-sm text-amber-100">
+        <label className="text-sm text-[color:var(--bo-heading)]">
           Email
           <input
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/90 px-3 py-2 text-amber-100 placeholder-stone-400 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             type="email"
             value={form.email}
             onChange={(event) => onInputChange("email", event.target.value)}
@@ -137,50 +137,50 @@ export default function CandidateForm({
           />
         </label>
 
-        <label className="text-sm text-amber-100">
+        <label className="text-sm text-[color:var(--bo-heading)]">
           Phone
           <input
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/90 px-3 py-2 text-amber-100 placeholder-stone-400 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             value={form.phone}
             onChange={(event) => onInputChange("phone", event.target.value)}
             placeholder="Phone"
           />
         </label>
 
-        <label className="text-sm text-amber-100">
+        <label className="text-sm text-[color:var(--bo-heading)]">
           Position
           <input
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/90 px-3 py-2 text-amber-100 placeholder-stone-400 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             value={form.position}
             onChange={(event) => onInputChange("position", event.target.value)}
             placeholder="Position"
           />
         </label>
 
-        <label className="text-sm text-amber-100">
+        <label className="text-sm text-[color:var(--bo-heading)]">
           LinkedIn URL
           <input
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/90 px-3 py-2 text-amber-100 placeholder-stone-400 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             value={form.linkedin_url}
             onChange={(event) => onInputChange("linkedin_url", event.target.value)}
             placeholder="LinkedIn URL"
           />
         </label>
 
-        <label className="text-sm text-amber-100">
+        <label className="text-sm text-[color:var(--bo-heading)]">
           CV URL
           <input
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/90 px-3 py-2 text-amber-100 placeholder-stone-400 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             value={form.cv_url}
             onChange={(event) => onInputChange("cv_url", event.target.value)}
             placeholder="CV URL"
           />
         </label>
 
-        <label className="text-sm text-amber-100">
+        <label className="text-sm text-[color:var(--bo-heading)]">
           Status
           <select
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/90 px-3 py-2 text-amber-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             value={form.status}
             onChange={(event) => onInputChange("status", event.target.value as CandidateInput["status"])}
           >
@@ -192,10 +192,10 @@ export default function CandidateForm({
           </select>
         </label>
 
-        <label className="text-sm text-amber-100">
+        <label className="text-sm text-[color:var(--bo-heading)]">
           Stage
           <select
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/90 px-3 py-2 text-amber-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             value={form.stage}
             onChange={(event) => onInputChange("stage", event.target.value as CandidateInput["stage"])}
           >
@@ -207,10 +207,10 @@ export default function CandidateForm({
           </select>
         </label>
 
-        <label className="text-sm text-amber-100 md:col-span-2">
+        <label className="text-sm text-[color:var(--bo-heading)] md:col-span-2">
           Years of experience
           <input
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/90 px-3 py-2 text-amber-100 placeholder-stone-400 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             type="number"
             min={0}
             value={form.experience_years}

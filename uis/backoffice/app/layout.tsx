@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { IBM_Plex_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthProvider";
+import { ThemeProvider } from "@/context/ThemeProvider";
 import ProtectedShell from "@/components/auth/ProtectedShell";
 
 const backofficeFont = IBM_Plex_Sans({
@@ -20,11 +21,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>): React.JSX.Element {
   return (
-    <html lang="en">
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem("brasaland_backoffice_theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t;}catch(e){}})();`,
+          }}
+        />
+      </head>
       <body className={`${backofficeFont.className} antialiased`}>
-        <AuthProvider>
-          <ProtectedShell>{children}</ProtectedShell>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <ProtectedShell>{children}</ProtectedShell>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

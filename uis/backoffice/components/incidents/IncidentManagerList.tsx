@@ -75,27 +75,27 @@ export default function IncidentManagerList({
 
   if (loading) {
     return (
-      <section className="rounded-2xl border border-amber-200/15 bg-stone-950/70 p-5">
-        <h2 className="text-lg font-semibold text-amber-100">Incident list</h2>
-        <p className="mt-3 text-sm text-stone-400">Loading incidents…</p>
+      <section className="rounded-2xl border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel)] p-5">
+        <h2 className="text-lg font-semibold text-[color:var(--bo-heading)]">Incident list</h2>
+        <p className="mt-3 text-sm bo-muted">Loading incidents…</p>
       </section>
     );
   }
 
   if (error) {
     return (
-      <section className="rounded-2xl border border-amber-200/15 bg-stone-950/70 p-5">
-        <h2 className="text-lg font-semibold text-amber-100">Incident list</h2>
-        <p className="mt-3 text-sm text-rose-300">{error}</p>
+      <section className="rounded-2xl border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel)] p-5">
+        <h2 className="text-lg font-semibold text-[color:var(--bo-heading)]">Incident list</h2>
+        <p className="mt-3 text-sm text-[color:var(--bo-error-fg)]">{error}</p>
       </section>
     );
   }
 
   if (!incidents || incidents.length === 0) {
     return (
-      <section className="rounded-2xl border border-amber-200/15 bg-stone-950/70 p-5">
-        <h2 className="text-lg font-semibold text-amber-100">Incident list</h2>
-        <p className="mt-3 text-sm text-stone-400">
+      <section className="rounded-2xl border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel)] p-5">
+        <h2 className="text-lg font-semibold text-[color:var(--bo-heading)]">Incident list</h2>
+        <p className="mt-3 text-sm bo-muted">
           No incidents yet. Create one above or seed historical CSV rows.
         </p>
       </section>
@@ -106,11 +106,11 @@ export default function IncidentManagerList({
   const rangeEnd = Math.min(page * PAGE_SIZE, total);
 
   return (
-    <section className="overflow-x-auto rounded-2xl border border-amber-200/15 bg-stone-950/70">
-      <div className="flex flex-col gap-2 border-b border-amber-200/10 px-5 py-4 md:flex-row md:items-center md:justify-between">
+    <section className="overflow-x-auto rounded-2xl border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel)]">
+      <div className="flex flex-col gap-2 border-b border-[color:var(--bo-panel-border)] px-5 py-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <h2 className="text-lg font-semibold text-amber-100">Incident list</h2>
-          <p className="mt-1 text-xs text-stone-400">
+          <h2 className="text-lg font-semibold text-[color:var(--bo-heading)]">Incident list</h2>
+          <p className="mt-1 text-xs bo-muted">
             Showing {rangeStart}–{rangeEnd} of {total}
           </p>
         </div>
@@ -119,28 +119,28 @@ export default function IncidentManagerList({
             type="button"
             disabled={page <= 1}
             onClick={() => setPage((current) => Math.max(1, current - 1))}
-            className="rounded-full border border-amber-200/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-amber-100 transition hover:border-amber-300/40 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-full border border-[color:var(--bo-card-border)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-[color:var(--bo-heading)] transition hover:border-[color:var(--bo-accent-border)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Previous
           </button>
-          <span className="text-xs text-stone-300">
+          <span className="text-xs bo-muted">
             Page {page} of {totalPages}
           </span>
           <button
             type="button"
             disabled={page >= totalPages}
             onClick={() => setPage((current) => Math.min(totalPages, current + 1))}
-            className="rounded-full border border-amber-200/20 px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-amber-100 transition hover:border-amber-300/40 disabled:cursor-not-allowed disabled:opacity-40"
+            className="rounded-full border border-[color:var(--bo-card-border)] px-3 py-1 text-xs font-semibold uppercase tracking-[0.1em] text-[color:var(--bo-heading)] transition hover:border-[color:var(--bo-accent-border)] disabled:cursor-not-allowed disabled:opacity-40"
           >
             Next
           </button>
         </div>
       </div>
       {rowError ? (
-        <p className="px-5 pt-3 text-sm text-rose-300">{rowError}</p>
+        <p className="px-5 pt-3 text-sm text-[color:var(--bo-error-fg)]">{rowError}</p>
       ) : null}
-      <table className="min-w-full text-left text-sm">
-        <thead className="border-b border-amber-200/10 text-xs uppercase tracking-[0.1em] text-amber-200/80">
+      <table className="bo-table">
+        <thead className="border-b border-[color:var(--bo-panel-border)] text-xs uppercase tracking-[0.1em] text-[color:var(--bo-accent-muted)]/80">
           <tr>
             <th className="px-4 py-3">ID</th>
             <th className="px-4 py-3">Title</th>
@@ -159,15 +159,15 @@ export default function IncidentManagerList({
               ),
             ];
             return (
-              <tr key={incident.id} className="border-b border-amber-200/5">
-                <td className="px-4 py-3 text-stone-400">{incident.id}</td>
-                <td className="px-4 py-3 text-stone-100">{incident.title}</td>
-                <td className="px-4 py-3 text-stone-300">{incident.branch}</td>
-                <td className="px-4 py-3 text-stone-300">{incident.category}</td>
-                <td className="px-4 py-3 text-stone-300">{incident.origin}</td>
+              <tr key={incident.id} className="border-b border-[color:var(--bo-panel-border)]">
+                <td className="px-4 py-3 bo-muted">{incident.id}</td>
+                <td className="px-4 py-3 text-[color:var(--bo-fg)]">{incident.title}</td>
+                <td className="px-4 py-3 bo-muted">{incident.branch}</td>
+                <td className="px-4 py-3 bo-muted">{incident.category}</td>
+                <td className="px-4 py-3 bo-muted">{incident.origin}</td>
                 <td className="px-4 py-3">
                   <select
-                    className="rounded-lg border border-amber-200/20 bg-stone-900 px-2 py-1 text-stone-100 disabled:opacity-50"
+                    className="rounded-lg border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)] px-2 py-1 text-[color:var(--bo-fg)] disabled:opacity-50"
                     value={incident.status}
                     disabled={pendingId === incident.id || options.length === 1}
                     onChange={(event) => {

@@ -140,3 +140,24 @@ TELEMETRY_SAMPLE_RATE = float(os.getenv("TELEMETRY_SAMPLE_RATE", "1.0"))
 TELEMETRY_PHASE_MODE = os.getenv("TELEMETRY_PHASE_MODE", "storage").strip().lower()
 # Stub/ingestion endpoint path used by frontend telemetry service.
 TELEMETRY_ENDPOINT = os.getenv("TELEMETRY_ENDPOINT", "/telemetry/events")
+
+# --- Qdrant / RAG (Milestone 7 / context-21) ---------------------------------
+QDRANT_URL = (
+    os.getenv("QDRANT_URL", "http://127.0.0.1:6333").strip()
+    or "http://127.0.0.1:6333"
+)
+QDRANT_COLLECTION = (
+    os.getenv("QDRANT_COLLECTION", "brasaland_knowledge").strip()
+    or "brasaland_knowledge"
+)
+RAG_TOP_K = int(os.getenv("RAG_TOP_K", "5"))
+RAG_MIN_SCORE = float(os.getenv("RAG_MIN_SCORE", "0.30"))
+BRASALAND_KNOWLEDGE_BASE_DIR = os.getenv("BRASALAND_KNOWLEDGE_BASE_DIR", "").strip() or None
+
+EMBEDDING_BASE_URL = os.getenv("EMBEDDING_BASE_URL", "").strip() or None
+EMBEDDING_API_KEY = os.getenv("EMBEDDING_API_KEY", "").strip() or None
+EMBEDDING_MODEL_ID = os.getenv("EMBEDDING_MODEL_ID", "").strip() or None
+
+GENERATION_BASE_URL = os.getenv("GENERATION_BASE_URL", "").strip() or None
+GENERATION_API_KEY = os.getenv("GENERATION_API_KEY", "").strip() or None
+GENERATION_MODEL_ID = os.getenv("GENERATION_MODEL_ID", "").strip() or None

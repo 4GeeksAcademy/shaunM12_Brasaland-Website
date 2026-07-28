@@ -133,12 +133,12 @@ export default function ProductCatalog({
           </label>
 
           <div className="flex flex-wrap items-center gap-3">
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-300">
+            <label className="flex cursor-pointer items-center gap-2 text-sm bo-muted">
               <input
                 type="checkbox"
                 checked={includeInactive}
                 onChange={(event) => onIncludeInactiveChange(event.target.checked)}
-                className="rounded border-stone-600 bg-stone-900 text-amber-500 focus:ring-amber-400"
+                className="rounded border-[color:var(--bo-input-border)] bg-[color:var(--bo-card)] text-[color:var(--bo-heading)]0 focus:ring-amber-400"
               />
               Show discontinued
             </label>
@@ -152,8 +152,8 @@ export default function ProductCatalog({
           </div>
         </div>
 
-        <div className="overflow-hidden rounded-xl border border-amber-200/20 bg-stone-900/85">
-          <div className="border-b border-amber-200/10 px-4 py-3 text-xs text-stone-400">
+        <div className="overflow-hidden rounded-xl border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)]">
+          <div className="border-b border-[color:var(--bo-panel-border)] px-4 py-3 text-xs bo-muted">
             {loading
               ? "Loading products..."
               : selectedLocation
@@ -162,17 +162,17 @@ export default function ProductCatalog({
           </div>
 
           {toggleError ? (
-            <p className="border-b border-rose-400/20 bg-rose-500/10 px-4 py-2 text-sm text-rose-200">
+            <p className="border-b border-rose-400/20 bg-rose-500/10 px-4 py-2 text-sm text-[color:var(--bo-error-fg)]">
               {toggleError}
             </p>
           ) : null}
 
           {loading ? (
-            <p className="px-4 py-8 text-sm text-stone-400">
+            <p className="px-4 py-8 text-sm bo-muted">
               Fetching live stock for this restaurant…
             </p>
           ) : products.length === 0 ? (
-            <p className="px-4 py-8 text-sm text-stone-400">
+            <p className="px-4 py-8 text-sm bo-muted">
               No products for this restaurant
               {includeInactive ? "" : " (try showing discontinued items)"}.
             </p>
@@ -180,11 +180,11 @@ export default function ProductCatalog({
             <div className="overflow-x-auto">
               {grouped.map(({ category, items }) => (
                 <div key={category}>
-                  <div className="bg-stone-950/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-amber-200/80">
+                  <div className="bg-[color:var(--bo-input-bg)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.1em] text-[color:var(--bo-accent-muted)]/80">
                     {CATEGORY_LABELS[category] ?? category}
                   </div>
-                  <table className="min-w-full text-left text-sm">
-                    <thead className="bg-stone-950/40 text-xs uppercase tracking-[0.08em] text-stone-500">
+                  <table className="bo-table">
+                    <thead className="bg-[color:var(--bo-row-bg)] text-xs uppercase tracking-[0.08em] bo-muted">
                       <tr>
                         <th className="px-4 py-2 font-semibold">Product</th>
                         <th className="px-4 py-2 font-semibold">SKU</th>
@@ -194,7 +194,7 @@ export default function ProductCatalog({
                         <th className="px-4 py-2 font-semibold">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-stone-800/80">
+                    <tbody className="divide-y divide-[color:var(--bo-row-border)]">
                       {items.map((product) => {
                         const level = getStockLevel(
                           product.current_stock,
@@ -203,15 +203,15 @@ export default function ProductCatalog({
                         return (
                           <tr
                             key={product.id}
-                            className={`text-stone-200 ${!product.is_active ? "opacity-70" : ""}`}
+                            className={`bo-fg-secondary ${!product.is_active ? "opacity-70" : ""}`}
                           >
-                            <td className="px-4 py-3 font-medium text-amber-50">
+                            <td className="px-4 py-3 font-medium text-[color:var(--bo-heading)]">
                               {product.name}
                             </td>
-                            <td className="px-4 py-3 font-mono text-xs text-stone-400">
+                            <td className="px-4 py-3 font-mono text-xs bo-muted">
                               {product.sku}
                             </td>
-                            <td className="px-4 py-3 font-semibold text-amber-100">
+                            <td className="px-4 py-3 font-semibold text-[color:var(--bo-heading)]">
                               {formatStock(product.current_stock, product.unit)}
                             </td>
                             <td className="px-4 py-3">
@@ -229,7 +229,7 @@ export default function ProductCatalog({
                                 className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50 ${
                                   product.is_active
                                     ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/40 hover:bg-emerald-500/25"
-                                    : "bg-stone-500/15 text-stone-400 ring-1 ring-stone-500/40 hover:bg-stone-500/25"
+                                    : "bg-stone-500/15 bo-muted ring-1 ring-stone-500/40 hover:bg-stone-500/25"
                                 }`}
                               >
                                 {product.is_active ? "Active" : "Discontinued"}
@@ -239,13 +239,13 @@ export default function ProductCatalog({
                               <div className="flex flex-wrap gap-2">
                                 <Link
                                   href={`/inventory/orders/inbound?productId=${product.id}&locationId=${locationId}`}
-                                  className="rounded-full border border-emerald-400/50 px-3 py-1 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-500/10"
+                                  className="bo-btn-secondary border-[color:var(--bo-badge-healthy-ring)] text-[color:var(--bo-badge-healthy-fg)] normal-case tracking-normal"
                                 >
                                   Log inbound
                                 </Link>
                                 <Link
                                   href={`/inventory/orders/outbound?productId=${product.id}&locationId=${locationId}`}
-                                  className="rounded-full border border-amber-400/50 px-3 py-1 text-xs font-semibold text-amber-200 transition hover:bg-amber-500/10"
+                                  className="bo-btn-secondary normal-case tracking-normal"
                                 >
                                   Log outbound
                                 </Link>

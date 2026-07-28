@@ -40,6 +40,7 @@ services:
       BRASALAND_REPO_ROOT: /workspace
       # Containers must use the Compose service hostname, not localhost.
       REDIS_URL: redis://redis:6379/0
+      QDRANT_URL: http://qdrant:6333
     ports:
       - "8000:8000"
     volumes:
@@ -53,6 +54,7 @@ services:
       - ./data:/workspace/data
     depends_on:
       - redis
+      - qdrant
     networks:
       - brasaland-dev-net
 
@@ -155,6 +157,18 @@ services:
       - brasaland-dev-net
     restart: unless-stopped
 
+  # Milestone 7 / context-21: vector store for Brasaland knowledge RAG.
+  qdrant:
+    image: qdrant/qdrant:v1.13.2
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_storage:/qdrant/storage
+    networks:
+      - brasaland-dev-net
+    restart: unless-stopped
+
 networks:
   brasaland-dev-net:
     name: brasaland-dev-net
@@ -163,3 +177,4 @@ volumes:
   ui_website_node_modules:
   ui_backoffice_node_modules:
   backend_api_venv:
+  qdrant_storage:

@@ -88,17 +88,17 @@ export default function IncidentManagerForm({
       onSubmit={(event) => {
         void handleSubmit(event);
       }}
-      className="space-y-4 rounded-2xl border border-amber-200/15 bg-stone-950/70 p-5"
+      className="space-y-4 rounded-2xl border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel)] p-5"
     >
-      <h2 className="text-lg font-semibold text-amber-100">Report an incident</h2>
-      <p className="text-sm text-stone-400">
+      <h2 className="text-lg font-semibold text-[color:var(--bo-heading)]">Report an incident</h2>
+      <p className="text-sm bo-muted">
         Required fields are validated before submit. API field errors show in plain language.
       </p>
 
       <label className="block text-sm">
-        <span className="text-amber-200/80">Title</span>
+        <span className="text-[color:var(--bo-accent-muted)]/80">Title</span>
         <input
-          className="mt-1 w-full rounded-lg border border-amber-200/20 bg-stone-900 px-3 py-2"
+          className="mt-1 w-full rounded-lg border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)] px-3 py-2"
           value={form.title}
           disabled={submitting}
           onChange={(event) =>
@@ -106,14 +106,14 @@ export default function IncidentManagerForm({
           }
         />
         {fieldErrors.title ? (
-          <span className="mt-1 block text-xs text-rose-300">{fieldErrors.title}</span>
+          <span className="mt-1 block text-xs text-[color:var(--bo-error-fg)]">{fieldErrors.title}</span>
         ) : null}
       </label>
 
       <label className="block text-sm">
-        <span className="text-amber-200/80">Description</span>
+        <span className="text-[color:var(--bo-accent-muted)]/80">Description</span>
         <textarea
-          className="mt-1 w-full rounded-lg border border-amber-200/20 bg-stone-900 px-3 py-2"
+          className="mt-1 w-full rounded-lg border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)] px-3 py-2"
           rows={3}
           value={form.description}
           disabled={submitting}
@@ -122,7 +122,7 @@ export default function IncidentManagerForm({
           }
         />
         {fieldErrors.description ? (
-          <span className="mt-1 block text-xs text-rose-300">
+          <span className="mt-1 block text-xs text-[color:var(--bo-error-fg)]">
             {fieldErrors.description}
           </span>
         ) : null}
@@ -130,9 +130,9 @@ export default function IncidentManagerForm({
 
       <div className="grid gap-3 md:grid-cols-3">
         <label className="block text-sm">
-          <span className="text-amber-200/80">Category</span>
+          <span className="text-[color:var(--bo-accent-muted)]/80">Category</span>
           <select
-            className="mt-1 w-full rounded-lg border border-amber-200/20 bg-stone-900 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)] px-3 py-2"
             value={form.category}
             disabled={submitting}
             onChange={(event) =>
@@ -151,9 +151,9 @@ export default function IncidentManagerForm({
         </label>
 
         <label className="block text-sm">
-          <span className="text-amber-200/80">Origin</span>
+          <span className="text-[color:var(--bo-accent-muted)]/80">Origin</span>
           <select
-            className="mt-1 w-full rounded-lg border border-amber-200/20 bg-stone-900 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)] px-3 py-2"
             value={form.origin}
             disabled={submitting}
             onChange={(event) =>
@@ -172,9 +172,9 @@ export default function IncidentManagerForm({
         </label>
 
         <label className="block text-sm">
-          <span className="text-amber-200/80">Branch</span>
+          <span className="text-[color:var(--bo-accent-muted)]/80">Branch</span>
           <select
-            className="mt-1 w-full rounded-lg border border-amber-200/20 bg-stone-900 px-3 py-2"
+            className="mt-1 w-full rounded-lg border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)] px-3 py-2"
             value={form.branch}
             disabled={submitting}
             onChange={(event) =>
@@ -193,12 +193,12 @@ export default function IncidentManagerForm({
         </label>
       </div>
 
-      {formError ? <p className="text-sm text-rose-300">{formError}</p> : null}
+      {formError ? <p className="text-sm text-[color:var(--bo-error-fg)]">{formError}</p> : null}
 
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-full border border-amber-300 bg-amber-300/20 px-5 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-amber-100 transition hover:bg-amber-300/30 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-full border border-[color:var(--bo-accent)] bg-[color:var(--bo-tab-active-bg)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--bo-heading)] transition hover:bg-amber-300/30 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitting ? "Saving…" : "Create incident"}
       </button>

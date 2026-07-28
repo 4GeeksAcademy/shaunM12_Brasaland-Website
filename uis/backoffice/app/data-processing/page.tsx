@@ -21,27 +21,27 @@ export default async function DataProcessingPage({
   });
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
+    <main className="bo-page">
       <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
-          <p className="text-sm uppercase tracking-[0.12em] text-amber-300">Brasaland Data Processing</p>
-          <h1 className="mt-2 text-2xl font-extrabold text-amber-100 md:text-3xl">
+        <header className="bo-header">
+          <p className="bo-eyebrow">Brasaland Data Processing</p>
+          <h1 className="mt-2 bo-title">
             Operations Aggregated Reports
           </h1>
-          <p className="mt-2 max-w-3xl text-sm text-stone-300">
+          <p className="mt-2 max-w-3xl text-sm bo-muted">
             Shared milestone utility outputs visualized for quick operational review, aligned with the
             website&apos;s warm visual language.
           </p>
         </header>
 
-        <section className="rounded-2xl border border-amber-200/20 bg-stone-900/85 p-5">
+        <section className="bo-card">
           <form className="grid gap-4 md:grid-cols-3" method="get">
-            <label className="text-sm text-stone-100">
+            <label className="text-sm text-[color:var(--bo-fg)]">
               Country scope
               <select
                 name="country"
                 defaultValue={dashboard.countryFilter}
-                className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+                className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
               >
                 {DATA_PROCESSING_COUNTRY_OPTIONS.map((option) => (
                   <option key={option} value={option === "All" ? "" : option}>
@@ -51,26 +51,26 @@ export default async function DataProcessingPage({
               </select>
             </label>
 
-            <label className="text-sm text-stone-100">
+            <label className="text-sm text-[color:var(--bo-fg)]">
               Reference date
               <input
                 type="date"
                 name="referenceDate"
                 defaultValue={dashboard.referenceDate}
-                className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+                className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
               />
             </label>
 
             <div className="flex items-end gap-2">
               <button
                 type="submit"
-                className="w-full rounded-xl border border-amber-300 bg-amber-300/15 px-3 py-2 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/25"
+                className="w-full rounded-xl border border-amber-300 bg-amber-300/15 px-3 py-2 text-sm font-semibold text-[color:var(--bo-heading)] transition hover:bg-amber-300/25"
               >
                 Refresh reports
               </button>
               <Link
                 href="/data-processing"
-                className="rounded-xl border border-stone-600 px-3 py-2 text-sm text-stone-200 transition hover:bg-stone-800"
+                className="rounded-xl border border-[color:var(--bo-input-border)] px-3 py-2 text-sm bo-fg-secondary transition hover:bg-[color:var(--bo-accent-soft)]"
               >
                 Reset
               </Link>
@@ -93,47 +93,47 @@ export default async function DataProcessingPage({
             <p className="mt-1 text-3xl font-extrabold text-lime-100">${dashboard.averageTicketUSD}</p>
           </article>
           <article className="rounded-xl border border-rose-500/30 bg-rose-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-rose-200">Miami margin %</p>
-            <p className="mt-1 text-3xl font-extrabold text-rose-100">{dashboard.miamiMarginPercent}%</p>
-            <p className="text-xs text-rose-200/80">Waste cost USD ${dashboard.wasteCostUSD}</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[color:var(--bo-error-fg)]">Miami margin %</p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-error-fg)]">{dashboard.miamiMarginPercent}%</p>
+            <p className="text-xs text-[color:var(--bo-error-fg)]/80">Waste cost USD ${dashboard.wasteCostUSD}</p>
           </article>
         </section>
 
-        <section className="rounded-2xl border border-amber-200/20 bg-stone-900/80 p-5">
-          <h2 className="text-lg font-bold text-amber-200">Context3 Function Checks</h2>
-          <p className="mt-1 text-sm text-stone-300">
+        <section className="rounded-2xl border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)] p-5">
+          <h2 className="text-lg font-bold text-[color:var(--bo-accent-muted)]">Context3 Function Checks</h2>
+          <p className="mt-1 text-sm bo-muted">
             Collection/search/validation contract outputs from the duplicated data-processing core.
           </p>
           <div className="mt-4 grid gap-3 md:grid-cols-2 lg:grid-cols-5">
-            <article className="rounded-lg border border-stone-700/70 bg-stone-950/70 p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-stone-400">Sales by location</p>
-              <p className="mt-1 text-2xl font-semibold text-amber-100">{dashboard.salesByLocationCount}</p>
+            <article className="rounded-lg border border-[color:var(--bo-input-border)]/70 bg-[color:var(--bo-panel)] p-3">
+              <p className="text-xs uppercase tracking-[0.12em] bo-muted">Sales by location</p>
+              <p className="mt-1 text-2xl font-semibold text-[color:var(--bo-heading)]">{dashboard.salesByLocationCount}</p>
             </article>
-            <article className="rounded-lg border border-stone-700/70 bg-stone-950/70 p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-stone-400">Sales on date</p>
-              <p className="mt-1 text-2xl font-semibold text-amber-100">{dashboard.salesOnDateCount}</p>
+            <article className="rounded-lg border border-[color:var(--bo-input-border)]/70 bg-[color:var(--bo-panel)] p-3">
+              <p className="text-xs uppercase tracking-[0.12em] bo-muted">Sales on date</p>
+              <p className="mt-1 text-2xl font-semibold text-[color:var(--bo-heading)]">{dashboard.salesOnDateCount}</p>
             </article>
-            <article className="rounded-lg border border-stone-700/70 bg-stone-950/70 p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-stone-400">Meat menu items</p>
-              <p className="mt-1 text-2xl font-semibold text-amber-100">{dashboard.meatItemsCount}</p>
+            <article className="rounded-lg border border-[color:var(--bo-input-border)]/70 bg-[color:var(--bo-panel)] p-3">
+              <p className="text-xs uppercase tracking-[0.12em] bo-muted">Meat menu items</p>
+              <p className="mt-1 text-2xl font-semibold text-[color:var(--bo-heading)]">{dashboard.meatItemsCount}</p>
             </article>
-            <article className="rounded-lg border border-stone-700/70 bg-stone-950/70 p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-stone-400">Active locations</p>
-              <p className="mt-1 text-2xl font-semibold text-amber-100">{dashboard.activeLocationsCount}</p>
+            <article className="rounded-lg border border-[color:var(--bo-input-border)]/70 bg-[color:var(--bo-panel)] p-3">
+              <p className="text-xs uppercase tracking-[0.12em] bo-muted">Active locations</p>
+              <p className="mt-1 text-2xl font-semibold text-[color:var(--bo-heading)]">{dashboard.activeLocationsCount}</p>
             </article>
-            <article className="rounded-lg border border-stone-700/70 bg-stone-950/70 p-3">
-              <p className="text-xs uppercase tracking-[0.12em] text-stone-400">Capacity search index</p>
-              <p className="mt-1 text-2xl font-semibold text-amber-100">{dashboard.capacityBinarySearchIndex}</p>
+            <article className="rounded-lg border border-[color:var(--bo-input-border)]/70 bg-[color:var(--bo-panel)] p-3">
+              <p className="text-xs uppercase tracking-[0.12em] bo-muted">Capacity search index</p>
+              <p className="mt-1 text-2xl font-semibold text-[color:var(--bo-heading)]">{dashboard.capacityBinarySearchIndex}</p>
             </article>
           </div>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
-            <p className="rounded-lg border border-stone-700/70 bg-stone-950/70 px-3 py-2 text-sm text-stone-200">
+            <p className="rounded-lg border border-[color:var(--bo-input-border)]/70 bg-[color:var(--bo-panel)] px-3 py-2 text-sm bo-fg-secondary">
               Location lookup: {dashboard.locationByIdFound ? "Found" : "Not found"}
             </p>
-            <p className="rounded-lg border border-stone-700/70 bg-stone-950/70 px-3 py-2 text-sm text-stone-200">
+            <p className="rounded-lg border border-[color:var(--bo-input-border)]/70 bg-[color:var(--bo-panel)] px-3 py-2 text-sm bo-fg-secondary">
               Menu lookup: {dashboard.menuItemByNameFound ? "Found" : "Not found"}
             </p>
-            <p className="rounded-lg border border-stone-700/70 bg-stone-950/70 px-3 py-2 text-sm text-stone-200">
+            <p className="rounded-lg border border-[color:var(--bo-input-border)]/70 bg-[color:var(--bo-panel)] px-3 py-2 text-sm bo-fg-secondary">
               Validators: menu {dashboard.menuValidationPassed ? "ok" : "fail"}, sale {dashboard.saleValidationPassed ? "ok" : "fail"}, location {dashboard.locationValidationPassed ? "ok" : "fail"}
             </p>
           </div>
@@ -149,9 +149,9 @@ export default async function DataProcessingPage({
           <DataList title="Country revenue (USD)" rows={dashboard.countryRevenueUSD} />
         </section>
 
-        <section className="rounded-2xl border border-amber-200/20 bg-stone-950/70 p-5">
-          <h2 className="text-lg font-bold text-amber-200">Currency conversion</h2>
-          <p className="mt-1 text-sm text-stone-400">
+        <section className="rounded-2xl border border-[color:var(--bo-card-border)] bg-[color:var(--bo-panel)] p-5">
+          <h2 className="text-lg font-bold text-[color:var(--bo-accent-muted)]">Currency conversion</h2>
+          <p className="mt-1 text-sm bo-muted">
             Daily USD revenue converted at fixed rate to COP: {formatNumber(dashboard.revenueUsdAsCop)}.
           </p>
         </section>

@@ -61,20 +61,20 @@ export default function ChangePasswordForm(): React.JSX.Element {
   };
 
   const inputClass =
-    "mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20";
+    "mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]";
 
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-4 rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20"
+      className="space-y-4 bo-header"
       noValidate
     >
       <div className="space-y-1">
-        <h2 className="text-lg font-bold text-amber-200">Change password</h2>
-        <p className="text-sm text-stone-400">Choose a new password for your account.</p>
+        <h2 className="text-lg font-bold text-[color:var(--bo-accent-muted)]">Change password</h2>
+        <p className="text-sm bo-muted">Choose a new password for your account.</p>
       </div>
 
-      <label className="block text-sm text-stone-200">
+      <label className="block text-sm bo-fg-secondary">
         Current password
         <input
           type="password"
@@ -86,7 +86,7 @@ export default function ChangePasswordForm(): React.JSX.Element {
         />
       </label>
 
-      <label className="block text-sm text-stone-200">
+      <label className="block text-sm bo-fg-secondary">
         New password
         <input
           type="password"
@@ -98,7 +98,7 @@ export default function ChangePasswordForm(): React.JSX.Element {
         />
       </label>
 
-      <label className="block text-sm text-stone-200">
+      <label className="block text-sm bo-fg-secondary">
         Confirm new password
         <input
           type="password"
@@ -111,14 +111,14 @@ export default function ChangePasswordForm(): React.JSX.Element {
       </label>
 
       {status === "saved" ? (
-        <p className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+        <p className="bo-alert-success">
           Password updated.
         </p>
       ) : null}
       {error ? (
         <p
           role="alert"
-          className="rounded-md bg-rose-500/10 px-3 py-2 text-sm text-rose-200"
+          className="bo-alert-error rounded-md px-3 py-2 text-sm"
         >
           {error}
         </p>
@@ -127,7 +127,7 @@ export default function ChangePasswordForm(): React.JSX.Element {
       <button
         type="submit"
         disabled={status === "saving"}
-        className="rounded-xl border border-amber-300 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-xl border border-amber-300 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-[color:var(--bo-heading)] transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {status === "saving" ? "Updating..." : "Update password"}
       </button>

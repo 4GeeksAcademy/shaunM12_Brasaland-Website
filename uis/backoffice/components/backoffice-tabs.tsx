@@ -19,6 +19,7 @@ const TABS: BackofficeTab[] = [
   { href: "/suppliers", label: "Suppliers" },
   { href: "/inventory/products", label: "Inventory" },
   { href: "/reporting", label: "Reporting" },
+  { href: "/knowledge", label: "Knowledge" },
   { href: "/account/profile", label: "Profile" },
   { href: "/account/users", label: "Users", adminOnly: true },
 ];
@@ -54,8 +55,8 @@ export default function BackofficeTabs(): React.JSX.Element {
             aria-current={active ? "page" : undefined}
             className={
               active
-                ? "rounded-full border border-amber-300 bg-amber-300/20 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-100"
-                : "rounded-full border border-amber-300/40 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200/80 transition hover:border-amber-300/70 hover:bg-amber-300/10 hover:text-amber-100"
+                ? "rounded-full border border-[color:var(--bo-accent)] bg-[color:var(--bo-tab-active-bg)] px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--bo-accent)]"
+                : "rounded-full border border-[color:var(--bo-tab-idle-border)] px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--bo-accent)]/80 transition hover:bg-[color:var(--bo-accent-soft)] hover:text-[color:var(--bo-accent)]"
             }
           >
             {tab.label}

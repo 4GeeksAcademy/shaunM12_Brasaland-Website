@@ -112,16 +112,16 @@ export default function IncidentsPage(): React.JSX.Element {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
+    <main className="bo-page">
       <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
-          <p className="text-sm uppercase tracking-[0.12em] text-amber-300">
+        <header className="bo-header">
+          <p className="bo-eyebrow">
             Brasaland Incidents
           </p>
-          <h1 className="mt-2 text-2xl font-extrabold text-amber-100 md:text-3xl">
+          <h1 className="mt-2 bo-title">
             Centralized incident operations
           </h1>
-          <p className="mt-2 max-w-3xl text-sm text-stone-300">
+          <p className="mt-2 max-w-3xl text-sm bo-muted">
             Manage live incidents and analyze historical CSV uploads in one place for
             Felipe and the operations team.
           </p>
@@ -132,8 +132,8 @@ export default function IncidentsPage(): React.JSX.Element {
               onClick={() => setSection("manager")}
               className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
                 section === "manager"
-                  ? "border-amber-300 bg-amber-300/25 text-amber-50"
-                  : "border-amber-200/20 text-stone-300 hover:border-amber-200/40"
+                  ? "border-amber-300 bg-amber-300/25 text-[color:var(--bo-heading)]"
+                  : "border-amber-200/20 bo-muted hover:border-amber-200/40"
               }`}
             >
               Manager
@@ -143,8 +143,8 @@ export default function IncidentsPage(): React.JSX.Element {
               onClick={() => setSection("analyzer")}
               className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
                 section === "analyzer"
-                  ? "border-amber-300 bg-amber-300/25 text-amber-50"
-                  : "border-amber-200/20 text-stone-300 hover:border-amber-200/40"
+                  ? "border-amber-300 bg-amber-300/25 text-[color:var(--bo-heading)]"
+                  : "border-amber-200/20 bo-muted hover:border-amber-200/40"
               }`}
             >
               File analyzer
@@ -192,9 +192,9 @@ export default function IncidentsPage(): React.JSX.Element {
             {analyzerResult ? (
               <>
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <p className="text-sm text-stone-300">
+                  <p className="text-sm bo-muted">
                     Last analyzed file:{" "}
-                    <span className="font-semibold text-amber-100">
+                    <span className="font-semibold text-[color:var(--bo-heading)]">
                       {analyzerResult.sourcePath ?? "Unknown file"}
                     </span>
                   </p>
@@ -204,7 +204,7 @@ export default function IncidentsPage(): React.JSX.Element {
                       void handleDownload();
                     }}
                     disabled={downloading}
-                    className="rounded-xl border border-amber-300 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-xl border border-amber-300 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-[color:var(--bo-heading)] transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {downloading ? "Preparing download..." : "Download results CSV"}
                   </button>

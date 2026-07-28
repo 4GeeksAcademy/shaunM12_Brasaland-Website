@@ -34,6 +34,7 @@ Ordered index of historical reference context documents.
 - `context-18-message-queues-async-tasks.md` — DEV-55 Redis + Celery async tasks (`POST /reporting/pipeline-runs`, `GET /tasks/{task_id}`, DLQ)
 - `context-19-sales-forecasting-regression.md` — Sales forecasting with Random Forest, Brasaland course CONTEXT, 8yr/2yr split, holdout metrics (MSE, MAPE, PSI, Gini, K2), V1–V8 visuals
 - `context-20-evaluating-regression-model.md` — Evaluate context-19 RF (learning curve, walk-forward CV, structural PSI, EVALUATION-report, V9–V10); read-only on context-19 code
+- `context-21-rag-knowledge-base.md` — Milestone 7 RAG & knowledge base (Qdrant, setup/embed/retrieve/query, `/knowledge` API + backoffice UI, locked L1–L13)
 
 ## Numbering Notes
 
@@ -45,4 +46,5 @@ Ordered index of historical reference context documents.
 - `context-18` is reserved for message queues / async tasks with Redis and Celery (DEV-55).
 - `context-19` is reserved for sales forecasting / regression model (Finance prediction ticket; Brasaland course CONTEXT + repo implementation locks).
 - `context-20` is reserved for evaluating the context-19 regression model (diagnostics + technical report; does not retrain or change holdout metrics).
+- `context-21` is reserved for Milestone 7 RAG & knowledge base (Qdrant + FastAPI `/knowledge` + backoffice UI; decisions L1–L13 locked 2026-07-28).
 - `context-9` currently has three related companion files by design.
