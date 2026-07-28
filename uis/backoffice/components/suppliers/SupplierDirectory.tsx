@@ -35,8 +35,8 @@ function StatusBadge({ status }: { status: SupplierStatus }): React.JSX.Element 
     <span
       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
         isActive
-          ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/40"
-          : "bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/40"
+          ? "bo-badge-healthy rounded-full px-2 py-0.5 text-xs font-semibold"
+          : "bg-rose-500/15 text-[color:var(--bo-error-fg)] ring-1 ring-rose-400/40"
       }`}
     >
       {isActive ? "Active" : "Suspended"}
@@ -138,13 +138,13 @@ export default function SupplierDirectory({
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 rounded-xl border border-amber-200/20 bg-stone-900/85 p-4 md:grid-cols-2">
-        <label className="text-sm text-stone-100">
+      <section className="grid gap-4 bo-card-lg md:grid-cols-2">
+        <label className="text-sm text-[color:var(--bo-fg)]">
           Filter by country
           <select
             value={countryFilter}
             onChange={(event) => onCountryFilterChange(event.target.value)}
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
           >
             <option value="">All countries</option>
             {COUNTRY_OPTIONS.map((country) => (
@@ -155,12 +155,12 @@ export default function SupplierDirectory({
           </select>
         </label>
 
-        <label className="text-sm text-stone-100">
+        <label className="text-sm text-[color:var(--bo-fg)]">
           Filter by category
           <select
             value={categoryFilter}
             onChange={(event) => onCategoryFilterChange(event.target.value)}
-            className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
           >
             <option value="">All categories</option>
             {SUPPLIER_CATEGORIES.map((category) => (
@@ -172,25 +172,25 @@ export default function SupplierDirectory({
         </label>
       </section>
 
-      <section className="rounded-xl border border-amber-200/20 bg-stone-900/85 p-4">
-        <h2 className="text-lg font-bold text-amber-100">Register supplier</h2>
+      <section className="bo-card-lg">
+        <h2 className="bo-subtitle">Register supplier</h2>
         <form className="mt-4 grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
-          <label className="text-sm text-stone-100 md:col-span-2">
+          <label className="text-sm text-[color:var(--bo-fg)] md:col-span-2">
             Name
             <input
               required
               value={form.name}
               onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))}
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)]"
             />
           </label>
 
-          <label className="text-sm text-stone-100">
+          <label className="text-sm text-[color:var(--bo-fg)]">
             Country
             <select
               value={form.country}
               onChange={(event) => handleCountryChange(event.target.value as SupplierCountry)}
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)]"
             >
               {COUNTRY_OPTIONS.map((country) => (
                 <option key={country} value={country}>
@@ -200,7 +200,7 @@ export default function SupplierDirectory({
             </select>
           </label>
 
-          <label className="text-sm text-stone-100">
+          <label className="text-sm text-[color:var(--bo-fg)]">
             Status
             <select
               value={form.status}
@@ -210,14 +210,14 @@ export default function SupplierDirectory({
                   status: event.target.value as SupplierStatus,
                 }))
               }
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)]"
             >
               <option value="active">Active</option>
               <option value="suspended">Suspended</option>
             </select>
           </label>
 
-          <label className="text-sm text-stone-100">
+          <label className="text-sm text-[color:var(--bo-fg)]">
             Rate per unit ({form.currency})
             <input
               required
@@ -231,11 +231,11 @@ export default function SupplierDirectory({
                   rate_per_unit: Number(event.target.value),
                 }))
               }
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)]"
             />
           </label>
 
-          <label className="text-sm text-stone-100">
+          <label className="text-sm text-[color:var(--bo-fg)]">
             Contact email
             <input
               type="email"
@@ -243,12 +243,12 @@ export default function SupplierDirectory({
               onChange={(event) =>
                 setForm((current) => ({ ...current, contact_email: event.target.value }))
               }
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)]"
             />
           </label>
 
           <fieldset className="md:col-span-2">
-            <legend className="text-sm text-stone-100">Categories</legend>
+            <legend className="text-sm text-[color:var(--bo-fg)]">Categories</legend>
             <div className="mt-2 flex flex-wrap gap-2">
               {SUPPLIER_CATEGORIES.map((category) => {
                 const selected = form.categories.includes(category);
@@ -260,7 +260,7 @@ export default function SupplierDirectory({
                     className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
                       selected
                         ? "bg-amber-300 text-stone-950"
-                        : "border border-stone-600 text-stone-300 hover:border-amber-300/60"
+                        : "border border-[color:var(--bo-input-border)] bo-muted hover:border-[color:var(--bo-accent-border)]"
                     }`}
                   >
                     {CATEGORY_LABELS[category]}
@@ -270,13 +270,13 @@ export default function SupplierDirectory({
             </div>
           </fieldset>
 
-          <label className="text-sm text-stone-100 md:col-span-2">
+          <label className="text-sm text-[color:var(--bo-fg)] md:col-span-2">
             Notes
             <textarea
               value={form.notes ?? ""}
               onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))}
               rows={2}
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)]"
             />
           </label>
 
@@ -284,13 +284,13 @@ export default function SupplierDirectory({
             <button
               type="submit"
               disabled={submitting || form.categories.length === 0}
-              className="rounded-full bg-amber-300 px-5 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+              className="bo-btn-primary px-5 py-2 text-sm normal-case tracking-normal disabled:cursor-not-allowed"
             >
               {submitting ? "Saving..." : "Register supplier"}
             </button>
           </div>
         </form>
-        {formError ? <p className="mt-3 text-sm text-rose-300">{formError}</p> : null}
+        {formError ? <p className="mt-3 text-sm text-[color:var(--bo-error-fg)]">{formError}</p> : null}
       </section>
 
       {error ? (
@@ -301,13 +301,13 @@ export default function SupplierDirectory({
         />
       ) : null}
 
-      <section className="overflow-hidden rounded-xl border border-amber-200/20 bg-stone-900/85">
-        <div className="border-b border-stone-700 px-4 py-3 text-sm text-stone-300">
+      <section className="overflow-hidden rounded-xl border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)]">
+        <div className="border-b border-[color:var(--bo-input-border)] px-4 py-3 text-sm bo-muted">
           {visibleCountLabel}
         </div>
         <div className="overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
-            <thead className="bg-stone-950/70 text-xs uppercase tracking-wide text-amber-200/80">
+          <table className="bo-table">
+            <thead className="bg-[color:var(--bo-panel)] text-xs uppercase tracking-wide text-[color:var(--bo-accent-muted)]/80">
               <tr>
                 <th className="px-4 py-3">Name</th>
                 <th className="px-4 py-3">Country</th>
@@ -321,17 +321,17 @@ export default function SupplierDirectory({
               {suppliers.map((supplier) => {
                 const busy = rowBusyId === supplier.id;
                 return (
-                  <tr key={supplier.id} className="border-t border-stone-800/80">
-                    <td className="px-4 py-3 font-medium text-stone-100">
+                  <tr key={supplier.id} className="border-t border-[color:var(--bo-row-border)]">
+                    <td className="px-4 py-3 font-medium text-[color:var(--bo-fg)]">
                       <Link
                         href={`/suppliers/${supplier.id}`}
-                        className="text-amber-200 underline decoration-amber-300/40 underline-offset-2 transition hover:text-amber-100 hover:decoration-amber-200"
+                        className="text-[color:var(--bo-accent-muted)] underline decoration-amber-300/40 underline-offset-2 transition hover:text-[color:var(--bo-heading)] hover:decoration-amber-200"
                       >
                         {supplier.name}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-stone-300">{supplier.country}</td>
-                    <td className="px-4 py-3 text-stone-300">
+                    <td className="px-4 py-3 bo-muted">{supplier.country}</td>
+                    <td className="px-4 py-3 bo-muted">
                       {formatCategoryList(supplier.categories)}
                     </td>
                     <td className="px-4 py-3">
@@ -347,9 +347,9 @@ export default function SupplierDirectory({
                               [supplier.id]: event.target.value,
                             }))
                           }
-                          className="w-28 rounded-lg border border-stone-600 bg-stone-950/80 px-2 py-1 text-stone-100"
+                          className="w-28 rounded-lg border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-2 py-1 text-[color:var(--bo-fg)]"
                         />
-                        <span className="text-xs text-stone-400">
+                        <span className="text-xs bo-muted">
                           {formatSupplierRate(supplier.rate_per_unit, supplier.currency)}
                         </span>
                       </div>
@@ -363,7 +363,7 @@ export default function SupplierDirectory({
                           type="button"
                           disabled={busy}
                           onClick={() => void handleRateSave(supplier)}
-                          className="rounded-full border border-amber-300/60 px-3 py-1 text-xs font-semibold text-amber-200 transition hover:bg-amber-300/10 disabled:opacity-50"
+                          className="rounded-full border border-[color:var(--bo-accent-border)] px-3 py-1 text-xs font-semibold text-[color:var(--bo-accent-muted)] transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
                         >
                           Update rate
                         </button>
@@ -371,7 +371,7 @@ export default function SupplierDirectory({
                           type="button"
                           disabled={busy}
                           onClick={() => void handleStatusToggle(supplier)}
-                          className="rounded-full border border-stone-500 px-3 py-1 text-xs font-semibold text-stone-200 transition hover:bg-stone-800 disabled:opacity-50"
+                          className="rounded-full border border-stone-500 px-3 py-1 text-xs font-semibold bo-fg-secondary transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
                         >
                           {supplier.status === "active" ? "Suspend" : "Activate"}
                         </button>
@@ -382,7 +382,7 @@ export default function SupplierDirectory({
               })}
               {!loading && suppliers.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-4 py-8 text-center text-stone-400">
+                  <td colSpan={6} className="px-4 py-8 text-center bo-muted">
                     No suppliers match the current filters.
                   </td>
                 </tr>

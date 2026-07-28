@@ -25,12 +25,12 @@ export default function IncidentUpload({
   };
 
   return (
-    <section className="rounded-2xl border border-amber-200/20 bg-stone-900/85 p-5">
+    <section className="bo-card">
       <div
         className={`rounded-2xl border-2 border-dashed px-6 py-10 text-center transition ${
           dragActive
-            ? "border-amber-300 bg-amber-300/10"
-            : "border-stone-600 bg-stone-950/60"
+            ? "border-[color:var(--bo-accent)] bg-[color:var(--bo-accent-soft)]"
+            : "border-[color:var(--bo-input-border)] bg-[color:var(--bo-row-bg)]"
         }`}
         onDragEnter={(event) => {
           event.preventDefault();
@@ -53,13 +53,13 @@ export default function IncidentUpload({
           handleFile(event.dataTransfer.files[0]);
         }}
       >
-        <p className="text-sm font-semibold text-amber-100">Drag and drop your incident CSV here</p>
-        <p className="mt-2 text-xs text-stone-400">or choose a file from your computer</p>
+        <p className="text-sm font-semibold text-[color:var(--bo-heading)]">Drag and drop your incident CSV here</p>
+        <p className="mt-2 text-xs bo-muted">or choose a file from your computer</p>
         <button
           type="button"
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
-          className="mt-4 rounded-xl border border-amber-300 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-50"
+          className="bo-btn-primary mt-4 px-4 py-2 text-sm normal-case tracking-normal disabled:cursor-not-allowed"
         >
           Select CSV file
         </button>
@@ -72,7 +72,7 @@ export default function IncidentUpload({
           onChange={(event) => handleFile(event.target.files?.[0])}
         />
         {selectedName ? (
-          <p className="mt-3 text-xs text-stone-300">Selected file: {selectedName}</p>
+          <p className="mt-3 text-xs bo-muted">Selected file: {selectedName}</p>
         ) : null}
       </div>
     </section>

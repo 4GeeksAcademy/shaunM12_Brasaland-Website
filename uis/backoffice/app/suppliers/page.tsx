@@ -61,16 +61,16 @@ export default function SuppliersPage(): React.JSX.Element {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
+    <main className="bo-page">
       <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
-          <p className="text-sm uppercase tracking-[0.12em] text-amber-300">
+        <header className="bo-header">
+          <p className="bo-eyebrow">
             Brasaland Supplier Directory
           </p>
-          <h1 className="mt-2 text-2xl font-extrabold text-amber-100 md:text-3xl">
+          <h1 className="mt-2 bo-title">
             Procurement Supplier Directory
           </h1>
-          <p className="mt-2 max-w-3xl text-sm text-stone-300">
+          <p className="mt-2 max-w-3xl text-sm bo-muted">
             Single source of truth for Brasaland suppliers across Colombia and Florida. Filter by
             market and category, register new vendors, update rates, and suspend suppliers when
             needed.

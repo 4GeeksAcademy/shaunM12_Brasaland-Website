@@ -45,17 +45,17 @@ export default function IncidentDetailPage(): React.JSX.Element {
   }, [loadIncident]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
+    <main className="bo-page">
       <div className="mx-auto max-w-4xl space-y-6">
-        <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
+        <header className="bo-header">
           <Link
             href="/incidents"
-            className="text-sm font-semibold text-amber-300 transition hover:text-amber-200"
+            className="text-sm font-semibold text-[color:var(--bo-accent)] transition hover:text-[color:var(--bo-accent-muted)]"
           >
             ← Back to incidents
           </Link>
-          <p className="mt-4 text-sm uppercase tracking-[0.12em] text-amber-300">Incident Manager</p>
-          <h1 className="mt-1 text-2xl font-extrabold text-amber-100 md:text-3xl">Incident Detail</h1>
+          <p className="mt-4 bo-eyebrow">Incident Manager</p>
+          <h1 className="mt-1 bo-title">Incident Detail</h1>
         </header>
 
         {loading ? <LoadingState label="Loading incident detail..." /> : null}
@@ -69,43 +69,43 @@ export default function IncidentDetailPage(): React.JSX.Element {
         ) : null}
 
         {incident ? (
-          <section className="rounded-xl border border-amber-200/20 bg-stone-900/85 p-6">
+          <section className="bo-card-lg">
             <dl className="grid gap-4 text-sm md:grid-cols-2">
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-stone-400">id</dt>
-                <dd className="mt-1 font-semibold text-stone-100">{incident.id}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] bo-muted">id</dt>
+                <dd className="mt-1 font-semibold text-[color:var(--bo-fg)]">{incident.id}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-stone-400">title</dt>
-                <dd className="mt-1 font-semibold text-stone-100">{incident.title}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] bo-muted">title</dt>
+                <dd className="mt-1 font-semibold text-[color:var(--bo-fg)]">{incident.title}</dd>
               </div>
               <div className="md:col-span-2">
-                <dt className="text-xs uppercase tracking-[0.12em] text-stone-400">description</dt>
-                <dd className="mt-1 text-stone-100">{incident.description}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] bo-muted">description</dt>
+                <dd className="mt-1 text-[color:var(--bo-fg)]">{incident.description}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-stone-400">category</dt>
-                <dd className="mt-1 text-stone-100">{toLabel(incident.category)}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] bo-muted">category</dt>
+                <dd className="mt-1 text-[color:var(--bo-fg)]">{toLabel(incident.category)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-stone-400">status</dt>
-                <dd className="mt-1 text-stone-100">{toLabel(incident.status)}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] bo-muted">status</dt>
+                <dd className="mt-1 text-[color:var(--bo-fg)]">{toLabel(incident.status)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-stone-400">origin</dt>
-                <dd className="mt-1 text-stone-100">{toLabel(incident.origin)}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] bo-muted">origin</dt>
+                <dd className="mt-1 text-[color:var(--bo-fg)]">{toLabel(incident.origin)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-stone-400">branch</dt>
-                <dd className="mt-1 text-stone-100">{toLabel(incident.branch)}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] bo-muted">branch</dt>
+                <dd className="mt-1 text-[color:var(--bo-fg)]">{toLabel(incident.branch)}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-stone-400">created_at</dt>
-                <dd className="mt-1 text-stone-100">{incident.created_at}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] bo-muted">created_at</dt>
+                <dd className="mt-1 text-[color:var(--bo-fg)]">{incident.created_at}</dd>
               </div>
               <div>
-                <dt className="text-xs uppercase tracking-[0.12em] text-stone-400">updated_at</dt>
-                <dd className="mt-1 text-stone-100">{incident.updated_at}</dd>
+                <dt className="text-xs uppercase tracking-[0.12em] bo-muted">updated_at</dt>
+                <dd className="mt-1 text-[color:var(--bo-fg)]">{incident.updated_at}</dd>
               </div>
             </dl>
           </section>

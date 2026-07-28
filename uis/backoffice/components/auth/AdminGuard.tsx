@@ -17,9 +17,9 @@ export default function AdminGuard({
 
   if (!user?.is_admin) {
     return (
-      <div className="mx-auto max-w-md space-y-3 rounded-xl border border-rose-500/40 bg-rose-950/30 p-6 text-center text-rose-100">
+      <div className="mx-auto max-w-md space-y-3 rounded-xl border border-rose-500/40 bg-rose-950/30 p-6 text-center text-[color:var(--bo-error-fg)]">
         <h2 className="text-lg font-semibold">Admins only</h2>
-        <p className="text-sm text-rose-200/80">
+        <p className="text-sm text-[color:var(--bo-error-fg)]/80">
           You do not have permission to view this page.
         </p>
         <Link

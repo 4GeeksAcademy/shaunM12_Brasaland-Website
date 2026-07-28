@@ -182,25 +182,25 @@ export default function Page(): React.JSX.Element {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
+    <main className="bo-page">
       <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl border border-amber-200/10 bg-stone-950/95 p-6 text-amber-300 shadow-2xl shadow-black/20">
+        <header className="bo-header text-[color:var(--bo-accent)] shadow-2xl shadow-[color:var(--bo-shadow)]">
           <p className="text-sm uppercase tracking-wider">Brasaland Digital</p>
           <h1 className="mt-1 text-2xl font-extrabold md:text-3xl">
             Executive Assistant Talent Pipeline
           </h1>
-          <p className="mt-2 text-sm text-amber-100">
+          <p className="mt-2 text-sm text-[color:var(--bo-heading)]">
             Milestone 3 tracker UI powered by milestone 2 shared business logic.
           </p>
         </header>
 
-        <section className="grid gap-4 rounded-xl border border-amber-200/20 bg-stone-900/85 p-4 md:grid-cols-3">
-          <label className="text-sm text-stone-100">
+        <section className="grid gap-4 bo-card-lg md:grid-cols-3">
+          <label className="text-sm text-[color:var(--bo-fg)]">
             Filter by status
             <select
               value={status}
               onChange={(event) => setParam("status", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             >
               <option value="">All statuses</option>
               {STATUS_OPTIONS.map((option) => (
@@ -211,12 +211,12 @@ export default function Page(): React.JSX.Element {
             </select>
           </label>
 
-          <label className="text-sm text-stone-100">
+          <label className="text-sm text-[color:var(--bo-fg)]">
             Filter by stage
             <select
               value={stage}
               onChange={(event) => setParam("stage", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             >
               <option value="">All stages</option>
               {STAGE_OPTIONS.map((option) => (
@@ -227,12 +227,12 @@ export default function Page(): React.JSX.Element {
             </select>
           </label>
 
-          <label className="text-sm text-stone-100">
+          <label className="text-sm text-[color:var(--bo-fg)]">
             Search
             <input
               value={search}
               onChange={(event) => setParam("search", event.target.value)}
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
               placeholder="Search by name, phone, email, or position"
             />
           </label>
@@ -241,16 +241,16 @@ export default function Page(): React.JSX.Element {
         <div className="flex justify-end">
           <button
             onClick={clearFilters}
-            className="mt-2 rounded-full border border-amber-300 px-4 py-1 text-sm font-semibold text-amber-300 transition hover:bg-amber-300/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+            className="mt-2 rounded-full border border-amber-300 px-4 py-1 text-sm font-semibold text-[color:var(--bo-accent)] transition hover:bg-[color:var(--bo-accent-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--bo-accent)]"
           >
             Show All / Clear Filters
           </button>
         </div>
 
         <section className="grid gap-4 md:grid-cols-3">
-          <article className="rounded-xl border border-emerald-500/30 bg-emerald-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-emerald-200">Total registrations</p>
-            <p className="mt-1 text-3xl font-extrabold text-emerald-100">{insights.totalRegistrations}</p>
+          <article className="bo-stat-success">
+            <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--bo-success-fg)]">Total registrations</p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-success)]">{insights.totalRegistrations}</p>
           </article>
 
           <article className="rounded-xl border border-cyan-500/30 bg-cyan-900/20 p-4">
@@ -258,14 +258,14 @@ export default function Page(): React.JSX.Element {
             <p className="mt-1 text-3xl font-extrabold text-cyan-100">{insights.totalLocations}</p>
           </article>
 
-          <article className="rounded-xl border border-amber-500/30 bg-amber-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-amber-200">Colombia opt-in</p>
-            <p className="mt-1 text-3xl font-extrabold text-amber-100">{insights.colombiaOptInCount}</p>
+          <article className="bo-stat-accent">
+            <p className="text-xs uppercase tracking-[0.14em] text-[color:var(--bo-accent-muted)]">Colombia opt-in</p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-heading)]">{insights.colombiaOptInCount}</p>
           </article>
         </section>
 
         <section className="space-y-3">
-          <h2 className="text-xl font-extrabold text-amber-300">Candidate list</h2>
+          <h2 className="bo-subtitle text-[color:var(--bo-accent)]">Candidate list</h2>
 
           {fetchState === "loading" && <LoadingState label="Loading candidates..." />}
 
@@ -278,7 +278,7 @@ export default function Page(): React.JSX.Element {
           )}
 
           {fetchState === "success" && visibleRecords.length === 0 && (
-            <p className="rounded-md bg-stone-950/80 p-3 text-sm text-stone-100">No candidates found.</p>
+            <p className="rounded-md bg-[color:var(--bo-input-bg)] p-3 text-sm text-[color:var(--bo-fg)]">No candidates found.</p>
           )}
 
           {fetchState === "success" && visibleRecords.length > 0 && (
@@ -289,7 +289,7 @@ export default function Page(): React.JSX.Element {
                 ))}
               </ul>
 
-              <div className="mt-3 flex flex-col gap-2 rounded-lg border border-stone-700 bg-stone-950/70 p-3 text-sm text-stone-300 md:flex-row md:items-center md:justify-between">
+              <div className="mt-3 flex flex-col gap-2 rounded-lg border border-[color:var(--bo-input-border)] bg-[color:var(--bo-panel)] p-3 text-sm bo-muted md:flex-row md:items-center md:justify-between">
                 <p>
                   Showing {pageStart}-{pageEnd} of {visibleRecords.length} candidates
                 </p>
@@ -298,18 +298,18 @@ export default function Page(): React.JSX.Element {
                     type="button"
                     onClick={() => setCurrentPage((page) => Math.max(1, page - 1))}
                     disabled={currentPage === 1}
-                    className="rounded-md border border-stone-600 px-3 py-1 text-stone-100 transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-md border border-[color:var(--bo-input-border)] px-3 py-1 text-[color:var(--bo-fg)] transition hover:bg-[color:var(--bo-accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Previous
                   </button>
-                  <span className="text-xs uppercase tracking-[0.12em] text-stone-400">
+                  <span className="text-xs uppercase tracking-[0.12em] bo-muted">
                     Page {currentPage} of {totalPages}
                   </span>
                   <button
                     type="button"
                     onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))}
                     disabled={currentPage === totalPages}
-                    className="rounded-md border border-stone-600 px-3 py-1 text-stone-100 transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-md border border-[color:var(--bo-input-border)] px-3 py-1 text-[color:var(--bo-fg)] transition hover:bg-[color:var(--bo-accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Next
                   </button>

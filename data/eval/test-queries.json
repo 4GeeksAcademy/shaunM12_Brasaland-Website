@@ -1,0 +1,74 @@
+{
+  "questions": [
+    {
+      "id": "loyalty-gold-points",
+      "question": "How many points do I need for Gold tier?",
+      "expected_source_document": "loyalty-program",
+      "expected_section_contains": "Program tiers",
+      "expected_answer_notes": "Must state Gold requires 50+ points and mention the 15% permanent discount or early seasonal menu access from the manual"
+    },
+    {
+      "id": "loyalty-redemption-start",
+      "question": "When can a customer start redeeming Brasa Points?",
+      "expected_source_document": "loyalty-program",
+      "expected_section_contains": "Brasa Points",
+      "expected_answer_notes": "Must say redemption starts at 15 accumulated points, in increments of 5"
+    },
+    {
+      "id": "loyalty-delivery-prospect",
+      "question": "I'm a regular — can I use my loyalty points on delivery orders?",
+      "expected_source_document": "loyalty-program",
+      "expected_section_contains": "Frequently asked",
+      "expected_answer_notes": "Yes for app-placed delivery; same as in-store per FAQ"
+    },
+    {
+      "id": "allergen-bbq-ribs",
+      "question": "Does the BBQ Ribs dish have allergens?",
+      "expected_source_document": "menu-allergens",
+      "expected_section_contains": "Main dishes",
+      "expected_answer_notes": "Must mention soy in sauce and possible trace peanuts on some production lines — not a clean allergen-free claim"
+    },
+    {
+      "id": "allergen-no-zero-risk",
+      "question": "If I have a severe allergy, is there zero risk of cross-contamination if I order the Classic Grilled Chicken?",
+      "expected_source_document": "menu-allergens",
+      "expected_section_contains": "Protocol",
+      "expected_answer_notes": "Must NOT guarantee zero cross-contamination risk; should reflect protocol that zero risk is never guaranteed for severe allergies"
+    },
+    {
+      "id": "allergen-gluten-free-bbq",
+      "question": "Can you make the BBQ Ribs gluten-free for my client?",
+      "expected_source_document": "menu-allergens",
+      "expected_section_contains": "Main dishes",
+      "expected_answer_notes": "Must communicate there is no certified gluten-free version due to imported sauce"
+    },
+    {
+      "id": "waste-meat-note-threshold",
+      "question": "How much meat protein waste in one shift requires a mandatory explanatory note?",
+      "expected_source_document": "waste-protocol",
+      "expected_section_contains": "Daily procedure",
+      "expected_answer_notes": "Must state over 2 kg of meat protein in a single shift"
+    },
+    {
+      "id": "waste-escalation-felipe",
+      "question": "When does waste get escalated directly to Felipe Guerrero?",
+      "expected_source_document": "waste-protocol",
+      "expected_section_contains": "escalation",
+      "expected_answer_notes": "Premium meat protein waste over 5 kg in a week at one location, or three consecutive weeks of unexplained shrinkage"
+    },
+    {
+      "id": "supplier-weekly-deadline",
+      "question": "What is the deadline for the weekly supplier order?",
+      "expected_source_document": "supplier-ordering",
+      "expected_section_contains": "Supplier Ordering",
+      "expected_answer_notes": "Every Monday before 10:00 a.m. local time"
+    },
+    {
+      "id": "supplier-emergency-stock",
+      "question": "We're projected to drop below minimum protein stock — what should the location manager do?",
+      "expected_source_document": "supplier-ordering",
+      "expected_section_contains": "Minimum stock",
+      "expected_answer_notes": "Must reference 3-day minimum protein rule and emergency order with 8% surcharge; approval from Lucía Fernández if over 500 USD"
+    }
+  ]
+}

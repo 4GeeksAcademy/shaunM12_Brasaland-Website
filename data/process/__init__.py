@@ -14,3 +14,6 @@ from .weekly_location_kpis import (  # noqa: F401
     transform_waste_cost,
     transform_waste_ratio,
 )
+
+# RAG: import from ``data.process.rag`` (setup, embed) — not re-exported here
+# to keep ``python -m data.process.rag`` free of eager import side effects.

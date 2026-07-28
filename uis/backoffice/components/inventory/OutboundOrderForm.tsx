@@ -176,7 +176,7 @@ export default function OutboundOrderForm({
   };
 
   return (
-    <section className="rounded-xl border border-amber-200/20 bg-stone-900/85 p-6">
+    <section className="bo-card-lg">
       <form className="grid gap-4 md:grid-cols-2" onSubmit={handleSubmit}>
         <label className="md:col-span-2">
           <span className={LABEL_CLASS}>Restaurant</span>
@@ -213,7 +213,7 @@ export default function OutboundOrderForm({
         </label>
 
         {selectedProduct ? (
-          <p className="md:col-span-2 rounded-lg border border-amber-300/20 bg-amber-950/20 px-3 py-2 text-sm text-amber-100">
+          <p className="md:col-span-2 bo-info-panel">
             Available stock at {formatLocationLabel(locationId)}:{" "}
             <span className="font-semibold">
               {productsLoading ? "…" : `${selectedProduct.current_stock} ${selectedProduct.unit}`}
@@ -240,12 +240,12 @@ export default function OutboundOrderForm({
             disabled={!selectedProduct || productsLoading}
           />
           {exceedsStock ? (
-            <p className="mt-2 text-xs text-amber-300">
+            <p className="mt-2 text-xs text-[color:var(--bo-accent)]">
               Warning: quantity exceeds available stock at this restaurant.
             </p>
           ) : null}
           {quantityError ? (
-            <p role="alert" className="mt-2 text-xs text-rose-300">
+            <p role="alert" className="mt-2 text-xs text-[color:var(--bo-error-fg)]">
               {quantityError}
             </p>
           ) : null}
@@ -273,7 +273,7 @@ export default function OutboundOrderForm({
         </label>
 
         {formError ? (
-          <p role="alert" className="md:col-span-2 text-sm text-rose-300">
+          <p role="alert" className="md:col-span-2 text-sm text-[color:var(--bo-error-fg)]">
             {formError}
           </p>
         ) : null}
@@ -281,7 +281,7 @@ export default function OutboundOrderForm({
         {successMessage ? (
           <p
             role="status"
-            className="md:col-span-2 rounded-lg border border-emerald-400/30 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-200"
+            className="md:col-span-2 bo-alert-success border border-[color:var(--bo-success)]"
           >
             {successMessage}
           </p>
@@ -291,7 +291,7 @@ export default function OutboundOrderForm({
           <button
             type="submit"
             disabled={submitting || productsLoading || !selectedProduct}
-            className="rounded-full bg-amber-300 px-5 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-200 disabled:cursor-not-allowed disabled:opacity-60"
+            className="bo-btn-primary px-5 py-2 text-sm normal-case tracking-normal disabled:cursor-not-allowed"
           >
             {submitting ? "Saving…" : "Record outbound order"}
           </button>

@@ -105,30 +105,30 @@ export default function ReportingPage(): React.JSX.Element {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
-          <p className="text-sm uppercase tracking-[0.12em] text-amber-300">
+    <main className="bo-page">
+      <div className="bo-container space-y-6">
+        <header className="bo-header">
+          <p className="bo-eyebrow">
             Brasaland Reporting
           </p>
-          <h1 className="mt-2 text-2xl font-extrabold text-amber-100 md:text-3xl">
+          <h1 className="mt-2 bo-title">
             Weekly location performance
           </h1>
-          <p className="mt-2 max-w-3xl text-sm text-stone-300">
+          <p className="mt-2 max-w-3xl text-sm bo-muted">
             Purchase cost, waste cost, waste ratio, stockouts, and price alerts by
             restaurant for Mariana and Felipe. Only locations with activity that week
             appear (sparse). COP and USD stay separate — no FX conversion.
           </p>
         </header>
 
-        <section className="rounded-2xl border border-amber-200/15 bg-stone-950/80 p-4 md:p-5">
+        <section className="bo-section p-4 md:p-5">
           <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
             <label className="flex flex-col gap-1 text-sm">
-              <span className="uppercase tracking-[0.1em] text-amber-200/80">
+              <span className="uppercase tracking-[0.1em] text-[color:var(--bo-accent-muted)]/80">
                 ISO week (Monday UTC)
               </span>
               <select
-                className="rounded-lg border border-amber-200/20 bg-stone-900 px-3 py-2 text-stone-100"
+                className="rounded-lg border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)] px-3 py-2 text-[color:var(--bo-fg)]"
                 value={weekStart}
                 onChange={(event) => {
                   void handleWeekChange(event.target.value);
@@ -153,39 +153,43 @@ export default function ReportingPage(): React.JSX.Element {
                 void handleRunPipeline();
               }}
               disabled={running}
-              className="rounded-full border border-amber-300 bg-amber-300/20 px-5 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-amber-100 transition hover:bg-amber-300/30 disabled:cursor-not-allowed disabled:opacity-50"
+              className="bo-btn-secondary disabled:cursor-not-allowed"
             >
               {running ? "Running…" : "Run pipeline"}
             </button>
           </div>
 
-          <div className="mt-4 grid gap-2 text-sm text-stone-300 md:grid-cols-2">
+          <div className="mt-4 grid gap-2 text-sm bo-muted md:grid-cols-2">
             <p>
-              <span className="text-amber-200/80">Last run status:</span>{" "}
+              <span className="text-[color:var(--bo-accent-muted)]/80">Last run status:</span>{" "}
               {latestRun ? latestRun.status : "none yet"}
             </p>
             <p>
-              <span className="text-amber-200/80">Extracted / loaded / skipped cost:</span>{" "}
+              <span className="text-[color:var(--bo-accent-muted)]/80">Extracted / loaded / skipped cost:</span>{" "}
               {latestRun
                 ? `${latestRun.records_extracted} / ${latestRun.records_loaded} / ${latestRun.records_skipped_missing_cost}`
                 : "—"}
             </p>
           </div>
-          {message ? <p className="mt-2 text-sm text-emerald-300">{message}</p> : null}
-          {error ? <p className="mt-2 text-sm text-rose-300">{error}</p> : null}
+          {message ? (
+            <p className="mt-2 text-sm text-[color:var(--bo-success)]" role="status">
+              {message}
+            </p>
+          ) : null}
+          {error ? <p className="mt-2 text-sm text-[color:var(--bo-error-fg)]">{error}</p> : null}
         </section>
 
-        <section className="overflow-x-auto rounded-2xl border border-amber-200/15 bg-stone-950/80">
+        <section className="overflow-x-auto bo-section">
           {loading ? (
-            <p className="p-6 text-sm text-stone-400">Loading weekly KPIs…</p>
+            <p className="p-6 text-sm bo-muted">Loading weekly KPIs…</p>
           ) : rows.length === 0 ? (
-            <p className="p-6 text-sm text-stone-400">
+            <p className="p-6 text-sm bo-muted">
               No locations with activity for this week. Run the pipeline after telemetry
               events exist, or pick another ISO week.
             </p>
           ) : (
-            <table className="min-w-full text-left text-sm">
-              <thead className="border-b border-amber-200/15 text-xs uppercase tracking-[0.1em] text-amber-200/80">
+            <table className="bo-table">
+              <thead className="border-b border-[color:var(--bo-panel-border)] text-xs uppercase tracking-[0.1em] text-[color:var(--bo-accent-muted)]/80">
                 <tr>
                   <th className="px-4 py-3">Location ID</th>
                   <th className="px-4 py-3">Location</th>
@@ -202,7 +206,7 @@ export default function ReportingPage(): React.JSX.Element {
                 {rows.map((row) => (
                   <tr
                     key={row.id}
-                    className="border-b border-amber-200/10 text-stone-200 last:border-0"
+                    className="border-b border-[color:var(--bo-panel-border)] bo-fg-secondary last:border-0"
                   >
                     <td className="px-4 py-3 font-medium">{row.location_id}</td>
                     <td className="px-4 py-3">

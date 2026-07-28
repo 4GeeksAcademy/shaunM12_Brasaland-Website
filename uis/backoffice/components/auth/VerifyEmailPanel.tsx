@@ -34,19 +34,19 @@ export default function VerifyEmailPanel(): React.JSX.Element {
   }, [token]);
 
   return (
-    <div className="w-full max-w-md space-y-5 rounded-2xl border border-amber-200/15 bg-stone-950/95 p-8 text-center shadow-2xl shadow-black/30">
-      <h1 className="text-2xl font-extrabold text-amber-100">Email verification</h1>
+    <div className="w-full max-w-md space-y-5 rounded-2xl border border-[color:var(--bo-panel-border)] bg-stone-950/95 p-8 text-center shadow-2xl shadow-black/30">
+      <h1 className="bo-title text-2xl md:text-3xl">Email verification</h1>
 
       {status === "verifying" ? (
-        <p className="text-sm text-stone-300">Verifying your email...</p>
+        <p className="text-sm bo-muted">Verifying your email...</p>
       ) : null}
 
       {status === "missing" ? (
-        <p className="text-sm text-rose-200">No verification token provided.</p>
+        <p className="text-sm text-[color:var(--bo-error-fg)]">No verification token provided.</p>
       ) : null}
 
       {status === "error" ? (
-        <p className="text-sm text-rose-200">{message}</p>
+        <p className="text-sm text-[color:var(--bo-error-fg)]">{message}</p>
       ) : null}
 
       {status === "success" ? (
@@ -57,7 +57,7 @@ export default function VerifyEmailPanel(): React.JSX.Element {
 
       <Link
         href="/"
-        className="inline-block rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-amber-200 transition hover:bg-amber-300/10"
+        className="inline-block rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--bo-accent-muted)] transition hover:bg-[color:var(--bo-accent-soft)]"
       >
         Go to dashboard
       </Link>

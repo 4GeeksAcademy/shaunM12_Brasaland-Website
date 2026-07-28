@@ -29,8 +29,7 @@ export const STOCK_LEVEL_LABELS: Record<StockLevel, string> = {
 };
 
 export const STOCK_LEVEL_CLASSES: Record<StockLevel, string> = {
-  healthy:
-    "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/40",
-  low: "bg-amber-500/15 text-amber-300 ring-1 ring-amber-400/40",
-  out: "bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/40",
+  healthy: "bo-badge-healthy rounded-full px-2 py-0.5 text-xs font-semibold",
+  low: "bo-badge-warn rounded-full px-2 py-0.5 text-xs font-semibold",
+  out: "bo-badge-danger rounded-full px-2 py-0.5 text-xs font-semibold",
 };

@@ -75,9 +75,9 @@ function UsersTable(): React.JSX.Element {
       {loading ? (
         <LoadingState label="Loading users..." />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-amber-200/15 bg-stone-950/95">
+        <div className="overflow-x-auto rounded-2xl border border-[color:var(--bo-panel-border)] bg-stone-950/95">
           <table className="w-full text-left text-sm">
-            <thead className="border-b border-stone-700 text-xs uppercase tracking-[0.12em] text-stone-400">
+            <thead className="border-b border-[color:var(--bo-input-border)] text-xs uppercase tracking-[0.12em] bo-muted">
               <tr>
                 <th className="px-4 py-3">Email</th>
                 <th className="px-4 py-3">Name</th>
@@ -93,8 +93,8 @@ function UsersTable(): React.JSX.Element {
                 const disabled = busyId === row.id;
                 return (
                   <tr key={row.id} className="border-b border-stone-800/60">
-                    <td className="px-4 py-3 text-stone-100">{row.email}</td>
-                    <td className="px-4 py-3 text-stone-300">{row.name ?? "—"}</td>
+                    <td className="px-4 py-3 text-[color:var(--bo-fg)]">{row.email}</td>
+                    <td className="px-4 py-3 bo-muted">{row.name ?? "—"}</td>
                     <td className="px-4 py-3">
                       {row.is_verified ? "Yes" : "No"}
                     </td>
@@ -103,7 +103,7 @@ function UsersTable(): React.JSX.Element {
                         type="button"
                         disabled={disabled || isSelf}
                         onClick={() => patch(row, { is_admin: !row.is_admin })}
-                        className="rounded-full border border-stone-600 px-3 py-1 text-xs transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-full border border-[color:var(--bo-input-border)] px-3 py-1 text-xs transition hover:bg-[color:var(--bo-accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {row.is_admin ? "Admin" : "Member"}
                       </button>
@@ -113,7 +113,7 @@ function UsersTable(): React.JSX.Element {
                         type="button"
                         disabled={disabled || isSelf}
                         onClick={() => patch(row, { is_active: !row.is_active })}
-                        className="rounded-full border border-stone-600 px-3 py-1 text-xs transition hover:bg-stone-800 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-full border border-[color:var(--bo-input-border)] px-3 py-1 text-xs transition hover:bg-[color:var(--bo-accent-soft)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {row.is_active ? "Active" : "Disabled"}
                       </button>
@@ -123,7 +123,7 @@ function UsersTable(): React.JSX.Element {
                         type="button"
                         disabled={disabled || isSelf}
                         onClick={() => remove(row)}
-                        className="rounded-full border border-rose-400/50 px-3 py-1 text-xs font-semibold text-rose-200 transition hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-full border border-rose-400/50 px-3 py-1 text-xs font-semibold text-[color:var(--bo-error-fg)] transition hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Delete
                       </button>
@@ -141,11 +141,11 @@ function UsersTable(): React.JSX.Element {
 
 export default function UsersAdminPage(): React.JSX.Element {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-10 text-stone-100">
+    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-10 text-[color:var(--bo-fg)]">
       <div className="mx-auto max-w-4xl space-y-6">
         <header className="space-y-1">
-          <h1 className="text-2xl font-extrabold text-amber-100">User management</h1>
-          <p className="text-sm text-stone-400">
+          <h1 className="bo-title text-2xl md:text-3xl">User management</h1>
+          <p className="text-sm bo-muted">
             Admin-only. Manage roles, access, and accounts.
           </p>
         </header>

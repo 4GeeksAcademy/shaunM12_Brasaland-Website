@@ -41,7 +41,7 @@ function TypeBadge({ kind }: { kind: OrderHistoryRow["kind"] }): React.JSX.Eleme
     <span
       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
         isInbound
-          ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/40"
+          ? "bo-badge-healthy rounded-full px-2 py-0.5 text-xs font-semibold"
           : "bg-orange-500/15 text-orange-300 ring-1 ring-orange-400/40"
       }`}
     >
@@ -94,23 +94,23 @@ export default function OrdersHistoryTable({
         </select>
       </label>
 
-      <div className="overflow-hidden rounded-xl border border-amber-200/20 bg-stone-900/85">
-        <div className="border-b border-amber-200/10 px-4 py-3 text-xs text-stone-400">
+      <div className="overflow-hidden rounded-xl border border-[color:var(--bo-card-border)] bg-[color:var(--bo-card)]">
+        <div className="border-b border-[color:var(--bo-panel-border)] px-4 py-3 text-xs bo-muted">
           {loading ? "Loading orders..." : summaryLabel(locationId, rows.length)}
         </div>
 
         {loading ? (
-          <p className="px-4 py-8 text-sm text-stone-400">Fetching order history…</p>
+          <p className="px-4 py-8 text-sm bo-muted">Fetching order history…</p>
         ) : rows.length === 0 ? (
-          <p className="px-4 py-8 text-sm text-stone-400">
+          <p className="px-4 py-8 text-sm bo-muted">
             {locationId === ALL_RESTAURANTS_LOCATION_ID
               ? "No orders recorded yet."
               : "No orders recorded for this restaurant yet."}
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full text-left text-sm">
-              <thead className="bg-stone-950/60 text-xs uppercase tracking-[0.08em] text-stone-400">
+            <table className="bo-table">
+              <thead className="bg-[color:var(--bo-row-bg)] text-xs uppercase tracking-[0.08em] bo-muted">
                 <tr>
                   <th className="px-4 py-3 font-semibold">Type</th>
                   <th className="px-4 py-3 font-semibold">Product</th>
@@ -123,26 +123,26 @@ export default function OrdersHistoryTable({
                   <th className="px-4 py-3 font-semibold">Created by</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-stone-800/80">
+              <tbody className="divide-y divide-[color:var(--bo-row-border)]">
                 {rows.map((row) => (
-                  <tr key={`${row.kind}-${row.id}`} className="text-stone-200">
+                  <tr key={`${row.kind}-${row.id}`} className="bo-fg-secondary">
                     <td className="px-4 py-3">
                       <TypeBadge kind={row.kind} />
                     </td>
-                    <td className="px-4 py-3 font-medium text-amber-50">{row.ingredient_name}</td>
+                    <td className="px-4 py-3 font-medium text-[color:var(--bo-heading)]">{row.ingredient_name}</td>
                     <td className="px-4 py-3">{formatQuantity(row)}</td>
                     {showLocationColumn ? (
-                      <td className="px-4 py-3 text-xs text-stone-400">
+                      <td className="px-4 py-3 text-xs bo-muted">
                         {formatLocationLabel(row.location_id)}
                       </td>
                     ) : null}
-                    <td className="px-4 py-3 text-stone-400">
+                    <td className="px-4 py-3 bo-muted">
                       {row.kind === "inbound"
                         ? `Supplier: ${row.supplier_name ?? "—"}`
                         : `Reason: ${row.reason ?? "—"}`}
                     </td>
-                    <td className="px-4 py-3 text-stone-300">{formatDate(row.created_at)}</td>
-                    <td className="px-4 py-3 font-mono text-xs text-stone-400">{row.user_uuid}</td>
+                    <td className="px-4 py-3 bo-muted">{formatDate(row.created_at)}</td>
+                    <td className="px-4 py-3 font-mono text-xs bo-muted">{row.user_uuid}</td>
                   </tr>
                 ))}
               </tbody>

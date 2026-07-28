@@ -38,47 +38,47 @@ export default function ProfilePage(): React.JSX.Element {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-10 text-stone-100">
+    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-10 text-[color:var(--bo-fg)]">
       <div className="mx-auto max-w-xl space-y-6">
         <header className="space-y-1">
-          <h1 className="text-2xl font-extrabold text-amber-100">Your profile</h1>
-          <p className="text-sm text-stone-400">Manage your account details.</p>
+          <h1 className="bo-title text-2xl md:text-3xl">Your profile</h1>
+          <p className="text-sm bo-muted">Manage your account details.</p>
         </header>
 
         <form
           onSubmit={handleSubmit}
-          className="space-y-4 rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20"
+          className="space-y-4 bo-header"
         >
-          <label className="block text-sm text-stone-200">
+          <label className="block text-sm bo-fg-secondary">
             Email
             <input
               type="email"
               value={user?.email ?? ""}
               readOnly
               disabled
-              className="mt-1 w-full cursor-not-allowed rounded-xl border border-stone-700 bg-stone-900/60 px-3 py-2 text-stone-400"
+              className="mt-1 w-full cursor-not-allowed rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-card)]/60 px-3 py-2 bo-muted"
             />
           </label>
 
-          <label className="block text-sm text-stone-200">
+          <label className="block text-sm bo-fg-secondary">
             Name
             <input
               type="text"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              className="mt-1 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+              className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             />
           </label>
 
           {status === "saved" ? (
-            <p className="rounded-md bg-emerald-500/10 px-3 py-2 text-sm text-emerald-200">
+            <p className="bo-alert-success">
               Profile saved.
             </p>
           ) : null}
           {status === "error" && error ? (
             <p
               role="alert"
-              className="rounded-md bg-rose-500/10 px-3 py-2 text-sm text-rose-200"
+              className="bo-alert-error rounded-md px-3 py-2 text-sm"
             >
               {error}
             </p>
@@ -87,7 +87,7 @@ export default function ProfilePage(): React.JSX.Element {
           <button
             type="submit"
             disabled={status === "saving"}
-            className="rounded-xl border border-amber-300 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-amber-100 transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-xl border border-amber-300 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-[color:var(--bo-heading)] transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {status === "saving" ? "Saving..." : "Save changes"}
           </button>

@@ -27,8 +27,8 @@ function StatusBadge({ status }: { status: Supplier["status"] }): React.JSX.Elem
     <span
       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
         isActive
-          ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/40"
-          : "bg-rose-500/15 text-rose-300 ring-1 ring-rose-400/40"
+          ? "bo-badge-healthy rounded-full px-2 py-0.5 text-xs font-semibold"
+          : "bg-rose-500/15 text-[color:var(--bo-error-fg)] ring-1 ring-rose-400/40"
       }`}
     >
       {STATUS_LABELS[status]}
@@ -148,12 +148,12 @@ export default function SupplierDetailPage(): React.JSX.Element {
   };
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-8 text-stone-100 md:px-8">
+    <main className="bo-page">
       <div className="mx-auto max-w-4xl space-y-6">
-        <header className="rounded-2xl border border-amber-200/15 bg-stone-950/95 p-6 shadow-2xl shadow-black/20">
+        <header className="bo-header">
           <Link
             href="/suppliers"
-            className="text-sm font-semibold text-amber-300 transition hover:text-amber-200"
+            className="text-sm font-semibold text-[color:var(--bo-accent)] transition hover:text-[color:var(--bo-accent-muted)]"
           >
             ← Back to directory
           </Link>
@@ -171,64 +171,64 @@ export default function SupplierDetailPage(): React.JSX.Element {
 
         {supplier ? (
           <>
-            <section className="rounded-xl border border-amber-200/20 bg-stone-900/85 p-6">
+            <section className="bo-card-lg">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <h1 className="text-2xl font-extrabold text-amber-100">{supplier.name}</h1>
-                  <p className="mt-1 text-sm text-stone-400">Supplier ID {supplier.id}</p>
+                  <h1 className="bo-title text-2xl md:text-3xl">{supplier.name}</h1>
+                  <p className="mt-1 text-sm bo-muted">Supplier ID {supplier.id}</p>
                 </div>
                 <StatusBadge status={supplier.status} />
               </div>
 
               <dl className="mt-6 grid gap-4 sm:grid-cols-2">
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-stone-400">Country</dt>
-                  <dd className="mt-1 text-stone-100">{supplier.country}</dd>
+                  <dt className="text-xs uppercase tracking-wide bo-muted">Country</dt>
+                  <dd className="mt-1 text-[color:var(--bo-fg)]">{supplier.country}</dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-stone-400">Contact email</dt>
-                  <dd className="mt-1 text-stone-100">
+                  <dt className="text-xs uppercase tracking-wide bo-muted">Contact email</dt>
+                  <dd className="mt-1 text-[color:var(--bo-fg)]">
                     {supplier.contact_email ? (
                       <a
                         href={`mailto:${supplier.contact_email}`}
-                        className="text-amber-200 underline decoration-amber-300/40 underline-offset-2"
+                        className="text-[color:var(--bo-accent-muted)] underline decoration-amber-300/40 underline-offset-2"
                       >
                         {supplier.contact_email}
                       </a>
                     ) : (
-                      <span className="text-stone-500">Not provided</span>
+                      <span className="bo-muted">Not provided</span>
                     )}
                   </dd>
                 </div>
                 <div className="sm:col-span-2">
-                  <dt className="text-xs uppercase tracking-wide text-stone-400">Categories</dt>
+                  <dt className="text-xs uppercase tracking-wide bo-muted">Categories</dt>
                   <dd className="mt-2 flex flex-wrap gap-2">
                     {supplier.categories.map((category) => (
                       <span
                         key={category}
-                        className="rounded-full bg-amber-300/15 px-3 py-1 text-xs font-semibold text-amber-200 ring-1 ring-amber-300/30"
+                        className="rounded-full bg-amber-300/15 px-3 py-1 text-xs font-semibold text-[color:var(--bo-accent-muted)] ring-1 ring-amber-300/30"
                       >
                         {CATEGORY_LABELS[category]}
                       </span>
                     ))}
                   </dd>
-                  <p className="mt-2 text-sm text-stone-400">
+                  <p className="mt-2 text-sm bo-muted">
                     {formatCategoryList(supplier.categories)}
                   </p>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-stone-400">Rate updated</dt>
-                  <dd className="mt-1 text-stone-100">
+                  <dt className="text-xs uppercase tracking-wide bo-muted">Rate updated</dt>
+                  <dd className="mt-1 text-[color:var(--bo-fg)]">
                     {new Date(supplier.rate_updated_at).toLocaleString()}
                   </dd>
                 </div>
               </dl>
             </section>
 
-            <section className="rounded-xl border border-amber-200/20 bg-stone-900/85 p-6">
-              <h2 className="text-lg font-bold text-amber-100">Rate & status</h2>
+            <section className="bo-card-lg">
+              <h2 className="bo-subtitle">Rate & status</h2>
               <div className="mt-4 flex flex-wrap items-end gap-3">
-                <label className="text-sm text-stone-100">
+                <label className="text-sm text-[color:var(--bo-fg)]">
                   Rate per unit ({supplier.currency})
                   <input
                     type="number"
@@ -237,17 +237,17 @@ export default function SupplierDetailPage(): React.JSX.Element {
                     value={rateDraft}
                     onChange={(event) => setRateDraft(event.target.value)}
                     disabled={busy}
-                    className="mt-1 block w-40 rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100"
+                    className="mt-1 block w-40 rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)]"
                   />
                 </label>
-                <p className="pb-2 text-sm text-stone-400">
+                <p className="pb-2 text-sm bo-muted">
                   Current: {formatSupplierRate(supplier.rate_per_unit, supplier.currency)}
                 </p>
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => void handleRateSave()}
-                  className="rounded-full border border-amber-300/60 px-4 py-2 text-sm font-semibold text-amber-200 transition hover:bg-amber-300/10 disabled:opacity-50"
+                  className="rounded-full border border-[color:var(--bo-accent-border)] px-4 py-2 text-sm font-semibold text-[color:var(--bo-accent-muted)] transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
                 >
                   Update rate
                 </button>
@@ -255,16 +255,16 @@ export default function SupplierDetailPage(): React.JSX.Element {
                   type="button"
                   disabled={busy}
                   onClick={() => void handleStatusToggle()}
-                  className="rounded-full border border-stone-500 px-4 py-2 text-sm font-semibold text-stone-200 transition hover:bg-stone-800 disabled:opacity-50"
+                  className="rounded-full border border-stone-500 px-4 py-2 text-sm font-semibold bo-fg-secondary transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
                 >
                   {supplier.status === "active" ? "Suspend supplier" : "Activate supplier"}
                 </button>
               </div>
             </section>
 
-            <section className="rounded-xl border border-amber-200/20 bg-stone-900/85 p-6">
-              <h2 className="text-lg font-bold text-amber-100">Notes</h2>
-              <p className="mt-1 text-sm text-stone-400">
+            <section className="bo-card-lg">
+              <h2 className="bo-subtitle">Notes</h2>
+              <p className="mt-1 text-sm bo-muted">
                 Procurement notes for this supplier (delivery schedules, renegotiation history,
                 etc.).
               </p>
@@ -277,14 +277,14 @@ export default function SupplierDetailPage(): React.JSX.Element {
                 rows={5}
                 disabled={busy}
                 placeholder="No notes yet. Add context for the procurement team."
-                className="mt-4 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 placeholder:text-stone-500"
+                className="mt-4 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] placeholder:text-[color:var(--bo-placeholder)]"
               />
               <div className="mt-3 flex flex-wrap items-center gap-3">
                 <button
                   type="button"
                   disabled={busy}
                   onClick={() => void handleNotesSave()}
-                  className="rounded-full bg-amber-300 px-4 py-2 text-sm font-semibold text-stone-950 transition hover:bg-amber-200 disabled:opacity-50"
+                  className="bo-btn-primary px-4 py-2 text-sm normal-case tracking-normal"
                 >
                   {busy ? "Saving..." : "Save notes"}
                 </button>
@@ -292,7 +292,7 @@ export default function SupplierDetailPage(): React.JSX.Element {
                   <span className="text-sm text-emerald-300">Notes saved.</span>
                 ) : null}
               </div>
-              {notesError ? <p className="mt-2 text-sm text-rose-300">{notesError}</p> : null}
+              {notesError ? <p className="mt-2 text-sm text-[color:var(--bo-error-fg)]">{notesError}</p> : null}
             </section>
 
             <SupplierDeletePanel supplier={supplier} busy={busy} onDelete={handleDelete} />

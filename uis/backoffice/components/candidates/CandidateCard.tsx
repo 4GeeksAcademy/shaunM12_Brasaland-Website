@@ -8,24 +8,24 @@ interface CandidateCardProps {
 
 export default function CandidateCard({ candidate }: CandidateCardProps): React.JSX.Element {
   return (
-    <li className="rounded-xl border border-amber-200/20 bg-stone-900/85 p-4 shadow-2xl shadow-black/20">
+    <li className="bo-card-lg shadow-2xl shadow-[color:var(--bo-shadow)]">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h3 className="text-lg font-extrabold text-amber-300">{candidate.full_name}</h3>
-          <p className="text-sm text-stone-200">{candidate.position}</p>
+          <h3 className="text-lg font-extrabold text-[color:var(--bo-accent)]">{candidate.full_name}</h3>
+          <p className="text-sm bo-fg-secondary">{candidate.position}</p>
         </div>
-        <div className="rounded-full border border-amber-300 px-3 py-1 text-sm font-semibold text-amber-100">
+        <div className="rounded-full border border-amber-300 px-3 py-1 text-sm font-semibold text-[color:var(--bo-heading)]">
           {candidate.experience_years} years exp.
         </div>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
         <p>
-          <span className="font-semibold text-amber-200">Status:</span>{" "}
-          <span className="text-stone-100">{STATUS_LABELS[candidate.status]}</span>
+          <span className="font-semibold text-[color:var(--bo-accent-muted)]">Status:</span>{" "}
+          <span className="text-[color:var(--bo-fg)]">{STATUS_LABELS[candidate.status]}</span>
         </p>
         <p>
-          <span className="font-semibold text-amber-200">Stage:</span>{" "}
-          <span className="text-stone-100">{STAGE_LABELS[candidate.stage]}</span>
+          <span className="font-semibold text-[color:var(--bo-accent-muted)]">Stage:</span>{" "}
+          <span className="text-[color:var(--bo-fg)]">{STAGE_LABELS[candidate.stage]}</span>
         </p>
       </div>
       <div className="mt-4">

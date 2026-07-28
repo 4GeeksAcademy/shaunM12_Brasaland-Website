@@ -61,14 +61,14 @@ export default function NotesPanel({
   };
 
   return (
-    <section className="space-y-4 rounded-xl border border-amber-200/20 bg-stone-900/85 p-4 shadow-2xl shadow-black/20">
-      <h2 className="text-xl font-extrabold text-amber-300">Interview notes</h2>
+    <section className="space-y-4 bo-card-lg shadow-2xl shadow-[color:var(--bo-shadow)]">
+      <h2 className="bo-subtitle text-[color:var(--bo-accent)]">Interview notes</h2>
 
       <form onSubmit={handleAdd} className="space-y-2">
-        <label className="text-sm text-stone-100">
+        <label className="text-sm text-[color:var(--bo-fg)]">
           Add note
           <textarea
-            className="mt-1 min-h-24 w-full rounded-xl border border-stone-600 bg-stone-950/80 px-3 py-2 text-stone-100 outline-none transition focus:border-amber-300 focus:ring-4 focus:ring-amber-300/20"
+            className="mt-1 min-h-24 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-[color:var(--bo-input-bg)] px-3 py-2 text-[color:var(--bo-fg)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
             value={content}
             onChange={(event) => setContent(event.target.value)}
           />
@@ -99,7 +99,7 @@ export default function NotesPanel({
       )}
 
       {loading && (
-        <p className="rounded-md bg-stone-950/80 p-2 text-sm text-stone-100">Loading notes...</p>
+        <p className="rounded-md bg-[color:var(--bo-input-bg)] p-2 text-sm text-[color:var(--bo-fg)]">Loading notes...</p>
       )}
 
       {error && (
@@ -107,7 +107,7 @@ export default function NotesPanel({
       )}
 
       {!loading && !error && notes.length === 0 && (
-        <p className="rounded-md bg-stone-950/80 p-2 text-sm text-stone-100">
+        <p className="rounded-md bg-[color:var(--bo-input-bg)] p-2 text-sm text-[color:var(--bo-fg)]">
           No notes yet for this candidate.
         </p>
       )}
@@ -117,12 +117,12 @@ export default function NotesPanel({
           {notes.map((note) => (
             <li
               key={note.id}
-              className="flex items-start justify-between gap-3 rounded-md border border-amber-200/10 bg-stone-950/80 p-3"
+              className="flex items-start justify-between gap-3 rounded-md border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-input-bg)] p-3"
             >
               <div>
-                <p className="text-sm text-stone-100">{note.content}</p>
+                <p className="text-sm text-[color:var(--bo-fg)]">{note.content}</p>
                 {note.created_at && (
-                  <p className="mt-1 text-xs text-stone-400">
+                  <p className="mt-1 text-xs bo-muted">
                     {new Date(note.created_at).toLocaleString()}
                   </p>
                 )}
