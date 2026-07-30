@@ -1,6 +1,7 @@
 /** Reporting API client for weekly location performance dashboard. */
 
 import { formatApiError } from "@/lib/api-error";
+import { buildReportingWeekStartApiQuery } from "@/lib/query-params";
 import { authorizedFetch } from "@/lib/http";
 
 export interface WeeklyLocationPerformanceRow {
@@ -79,12 +80,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export async function fetchWeeklyLocationPerformance(
   weekStart?: string | null,
 ): Promise<WeeklyLocationPerformanceRow[]> {
-  const query =
-    weekStart && weekStart.trim()
-      ? `?week_start=${encodeURIComponent(weekStart.trim())}`
-      : "";
   return request<WeeklyLocationPerformanceRow[]>(
-    reportingPath(`/weekly-location-performance${query}`),
+    reportingPath(
+      `/weekly-location-performance${buildReportingWeekStartApiQuery(weekStart)}`,
+    ),
   );
 }
 

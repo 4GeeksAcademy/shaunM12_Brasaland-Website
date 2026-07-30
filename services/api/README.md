@@ -1,8 +1,8 @@
 # Brasaland API
 
-FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralized incidents, telemetry, and reporting.
+FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralized incidents, telemetry, reporting, knowledge (RAG), and async tasks.
 
-> Parent overview: [../../README.md](../../README.md)
+> Parent overview: [../../README.md](../../README.md) · Backoffice proxy map: [../../memory-bank/historical-reference/context-22-route-conventions.md](../../memory-bank/historical-reference/context-22-route-conventions.md)
 
 ## Package layout
 
@@ -14,6 +14,7 @@ FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralize
 | `incidents/`, `incident_analyzer/` | Centralized incidents + CSV analyzer |
 | `telemetry/` | Event capture, storage, on-demand report |
 | `reporting/` | Weekly KPI APIs + pipeline trigger (enqueues Celery; see DEV-55) |
+| `knowledge/` | RAG query + reindex (`POST /knowledge/query`, `POST /knowledge/reindex`) |
 | `celery_app.py` | Celery app (Redis broker + result backend) + async pipeline task |
 | `job_runner/` | Nightly job status (`reporting.job_runs`) — used by `scripts/nightly_export.py` |
 | `seeds/` | Demo/bootstrap loaders (suppliers, inventory, incidents, telemetry) |
@@ -46,8 +47,13 @@ cp ../../.env.example ../../.env
 | `EMAIL_PROVIDER` | `console` (default) / `resend` / `sendgrid` |
 | `EMAIL_FROM`, `RESEND_API_KEY`, `SENDGRID_API_KEY` | Mail sender config |
 | `PASSWORD_RESET_EXPIRES_MINUTES`, `RESET_REQUESTS_PER_HOUR` | Reset token / rate limits |
+| `QDRANT_URL`, `QDRANT_COLLECTION`, `EMBEDDING_*`, `GENERATION_*` | Knowledge RAG (context-21); see root `.env.example` |
 
 API keys come from the environment only — never commit them.
+
+### Backoffice proxy (local dev)
+
+When using `uis/backoffice`, the browser calls same-origin `/api/<domain>/*` (or `/auth/*`, `/users/*`). Next.js rewrites those to this service’s bare mounts (`/incidents`, `/suppliers`, …). See [context-22](../../memory-bank/historical-reference/context-22-route-conventions.md).
 
 ## Run
 
@@ -106,7 +112,7 @@ Nightly CSV export + pipeline trigger is **outside** this process and **outside*
 
 ## Authentication
 
-JWT bearer on supplier, incident, inventory, reporting, and most user routes. Open: `GET /api/health` and public auth routes.
+JWT bearer on supplier, incident, inventory, reporting, knowledge, and most user routes. Open: `GET /api/health` and public auth routes.
 
 | Method | Path | Notes |
 | ------ | ---- | ----- |
@@ -122,11 +128,12 @@ JWT bearer on supplier, incident, inventory, reporting, and most user routes. Op
 
 | Area | Base | Highlights |
 | ---- | ---- | ---------- |
-| Incidents | `/api/incidents` | CRUD/list/summary/status; `POST …/analyze`, `GET …/results/export` |
-| Suppliers | `/api/suppliers` | CRUD-ish register/list/detail; rate, status, notes patches |
+| Incidents | `/incidents` | CRUD/list/summary/status; `POST …/analyze`, `GET …/results/export` |
+| Suppliers | `/suppliers` | CRUD-ish register/list/detail; rate, status, notes patches |
 | Inventory | `/inventory` | Products and inbound/outbound orders |
 | Telemetry | `/telemetry` | Ingest + report |
 | Reporting | `/reporting` | Weekly location KPIs; `POST /reporting/pipeline-runs` (202 + `task_id` via Celery) |
+| Knowledge | `/knowledge` | `POST /knowledge/query`, `POST /knowledge/reindex` (Qdrant + LLM env required) |
 | Tasks | `/tasks` | `GET /tasks/{task_id}` — Celery status (`pending` / `started` / `success` / `failure`) |
 | Health | `/api/health` | Liveness |
 

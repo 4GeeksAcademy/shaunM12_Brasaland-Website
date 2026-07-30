@@ -64,7 +64,7 @@ export default async function DataProcessingPage({
             <div className="flex items-end gap-2">
               <button
                 type="submit"
-                className="w-full rounded-xl border border-amber-300 bg-amber-300/15 px-3 py-2 text-sm font-semibold text-[color:var(--bo-heading)] transition hover:bg-amber-300/25"
+                className="bo-btn-primary w-full rounded-xl px-3 py-2 text-sm normal-case tracking-normal"
               >
                 Refresh reports
               </button>
@@ -79,20 +79,20 @@ export default async function DataProcessingPage({
         </section>
 
         <section className="grid gap-4 md:grid-cols-4">
-          <article className="rounded-xl border border-cyan-500/30 bg-cyan-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-cyan-200">Total locations</p>
-            <p className="mt-1 text-3xl font-extrabold text-cyan-100">{dashboard.totalLocations}</p>
+          <article className="bo-stat-info">
+            <p className="bo-info-label text-xs uppercase tracking-[0.12em]">Total locations</p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-heading)]">{dashboard.totalLocations}</p>
           </article>
-          <article className="rounded-xl border border-sky-500/30 bg-sky-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-sky-200">Daily revenue (USD)</p>
-            <p className="mt-1 text-3xl font-extrabold text-sky-100">${dashboard.dailyRevenueUSD}</p>
-            <p className="text-xs text-sky-200/80">COP ${formatNumber(dashboard.dailyRevenueCOP)}</p>
+          <article className="bo-stat-accent">
+            <p className="text-xs uppercase tracking-[0.12em] text-[color:var(--bo-accent-muted)]">Daily revenue (USD)</p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-heading)]">${dashboard.dailyRevenueUSD}</p>
+            <p className="text-xs text-[color:var(--bo-muted)]">COP ${formatNumber(dashboard.dailyRevenueCOP)}</p>
           </article>
-          <article className="rounded-xl border border-lime-500/30 bg-lime-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-lime-200">Average ticket (USD)</p>
-            <p className="mt-1 text-3xl font-extrabold text-lime-100">${dashboard.averageTicketUSD}</p>
+          <article className="bo-stat-success">
+            <p className="text-xs uppercase tracking-[0.12em] text-[color:var(--bo-success-fg)]">Average ticket (USD)</p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-heading)]">${dashboard.averageTicketUSD}</p>
           </article>
-          <article className="rounded-xl border border-rose-500/30 bg-rose-900/20 p-4">
+          <article className="bo-danger-panel rounded-xl p-4">
             <p className="text-xs uppercase tracking-[0.12em] text-[color:var(--bo-error-fg)]">Miami margin %</p>
             <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-error-fg)]">{dashboard.miamiMarginPercent}%</p>
             <p className="text-xs text-[color:var(--bo-error-fg)]/80">Waste cost USD ${dashboard.wasteCostUSD}</p>

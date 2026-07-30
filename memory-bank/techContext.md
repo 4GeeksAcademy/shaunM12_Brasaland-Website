@@ -30,7 +30,14 @@
   - Active UI apps are `uis/website` (public) and `uis/backoffice` (internal).
   - Legacy duplicate app folders are retired when not part of active runtime paths.
 - **Shared FastAPI service:**
-  - Incidents and suppliers run on the same FastAPI app; backoffice proxies `/api/incidents/*` and `/api/suppliers/*` via `uis/backoffice/next.config.mjs` to `http://127.0.0.1:8000` by default.
+  - Domain routers use bare FastAPI mounts (`/incidents`, `/suppliers`, `/inventory`, `/reporting`, `/knowledge`, `/telemetry`, `/tasks`).
+  - The backoffice keeps browser-facing `/api/<domain>/*` URLs and translates them to bare FastAPI mounts through `uis/backoffice/next.config.mjs` (including `/api/telemetry/*` and `/api/tasks/*`).
+  - Auth and users use bare same-origin rewrites (`/auth/*`, `/users/*`) for HttpOnly refresh cookies.
+  - **Authoritative route decision log:** `memory-bank/historical-reference/context-22-route-conventions.md` (supersedes legacy `/api/incidents` FastAPI path notes in older milestone contexts).
+- **URL parameter conventions (backoffice):**
+  - Browser address bar / Next.js page query params use **camelCase** (e.g. `productId`, `locationId`, `referenceDate`).
+  - FastAPI query params and JSON bodies use **snake_case** (e.g. `location_id`, `week_start`, `ingredient_id`).
+  - Map between the two in `uis/backoffice/lib/query-params.ts` and domain API clients under `uis/backoffice/lib/` — not in page components.
 - **Domain module layout:**
   - Suppliers: `services/api/suppliers/` (constants, models, repository, routes)
   - Incidents: `services/api/incident_analyzer/` (constants, schemas, validators, analyzer, reporting)

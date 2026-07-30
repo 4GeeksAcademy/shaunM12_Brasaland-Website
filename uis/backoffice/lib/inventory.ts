@@ -1,4 +1,5 @@
 import { formatApiError } from "@/lib/api-error";
+import { buildInventoryProductsApiQuery } from "@/lib/query-params";
 import { withCorrelatedRequest } from "@/lib/request-id";
 import { authorizedFetch } from "@/lib/http";
 import {
@@ -60,16 +61,8 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export async function fetchProducts(
   options?: FetchProductsOptions,
 ): Promise<Product[]> {
-  const params = new URLSearchParams();
-  if (options?.locationId != null) {
-    params.set("location_id", String(options.locationId));
-  }
-  if (options?.includeInactive) {
-    params.set("include_inactive", "true");
-  }
-  const query = params.toString();
   return request<Product[]>(
-    inventoryPath(`/products${query ? `?${query}` : ""}`),
+    inventoryPath(`/products${buildInventoryProductsApiQuery(options)}`),
   );
 }
 

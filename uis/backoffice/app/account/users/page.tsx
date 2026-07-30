@@ -75,7 +75,7 @@ function UsersTable(): React.JSX.Element {
       {loading ? (
         <LoadingState label="Loading users..." />
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-[color:var(--bo-panel-border)] bg-stone-950/95">
+        <div className="bo-table-wrap">
           <table className="w-full text-left text-sm">
             <thead className="border-b border-[color:var(--bo-input-border)] text-xs uppercase tracking-[0.12em] bo-muted">
               <tr>
@@ -92,7 +92,7 @@ function UsersTable(): React.JSX.Element {
                 const isSelf = row.id === currentUser?.id;
                 const disabled = busyId === row.id;
                 return (
-                  <tr key={row.id} className="border-b border-stone-800/60">
+                  <tr key={row.id} className="bo-table-row">
                     <td className="px-4 py-3 text-[color:var(--bo-fg)]">{row.email}</td>
                     <td className="px-4 py-3 bo-muted">{row.name ?? "—"}</td>
                     <td className="px-4 py-3">
@@ -123,7 +123,7 @@ function UsersTable(): React.JSX.Element {
                         type="button"
                         disabled={disabled || isSelf}
                         onClick={() => remove(row)}
-                        className="rounded-full border border-rose-400/50 px-3 py-1 text-xs font-semibold text-[color:var(--bo-error-fg)] transition hover:bg-rose-400/10 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-full border border-[color:var(--bo-error-border)] px-3 py-1 text-xs font-semibold text-[color:var(--bo-error-fg)] transition hover:bg-[color:var(--bo-error-bg)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         Delete
                       </button>
@@ -141,7 +141,7 @@ function UsersTable(): React.JSX.Element {
 
 export default function UsersAdminPage(): React.JSX.Element {
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-10 text-[color:var(--bo-fg)]">
+    <main className="bo-page px-4 py-10">
       <div className="mx-auto max-w-4xl space-y-6">
         <header className="space-y-1">
           <h1 className="bo-title text-2xl md:text-3xl">User management</h1>

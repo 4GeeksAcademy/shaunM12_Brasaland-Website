@@ -17,37 +17,46 @@ export const ALLOWED_DISCOVERY_CHANNELS_DATA = [
 ];
 
 export const COUNTRY_TO_CITIES_DATA = {
-  Colombia: ["Medellín", "Bogotá", "Cali"],
-  "United States": ["Miami", "Orlando"],
+  Colombia: ["Barranquilla", "Bogotá", "Cali", "Envigado", "Medellín"],
+  "United States": [
+    "Fort Lauderdale",
+    "Jacksonville",
+    "Miami",
+    "Miami Beach",
+    "Orlando",
+    "Tampa",
+    "West Palm Beach",
+  ],
 };
 
 export const LOCATIONS_BY_COUNTRY_AND_CITY_DATA = {
   Colombia: {
-    "Medellín": [
-      "Brasaland El Poblado",
-      "Brasaland Laureles",
-      "Brasaland Envigado",
-      "Brasaland Sabaneta",
-    ],
-    "Bogotá": [
-      "Brasaland Usaquén",
-      "Brasaland Chapinero",
-      "Brasaland Zona Rosa",
-    ],
-    Cali: [
-      "Brasaland Granada",
-      "Brasaland Ciudad Jardín",
-      "Brasaland Unicentro",
-    ],
+    Barranquilla: ["Brasaland Barranquilla Norte"],
+    "Bogotá": ["Brasaland Bogotá Chapinero", "Brasaland Bogotá Usaquén"],
+    Cali: ["Brasaland Cali Granada"],
+    Envigado: ["Brasaland Medellín Envigado"],
+    "Medellín": ["Brasaland Medellín Centro", "Brasaland Medellín Laureles"],
+    "Fort Lauderdale": [],
+    Jacksonville: [],
     Miami: [],
+    "Miami Beach": [],
     Orlando: [],
+    Tampa: [],
+    "West Palm Beach": [],
   },
   "United States": {
-    "Medellín": [],
+    Barranquilla: [],
     "Bogotá": [],
     Cali: [],
-    Miami: ["Brasaland Brickell", "Brasaland Coral Gables"],
-    Orlando: ["Brasaland Downtown", "Brasaland International Drive"],
+    Envigado: [],
+    "Medellín": [],
+    "Fort Lauderdale": ["Brasaland Fort Lauderdale"],
+    Jacksonville: ["Brasaland Jacksonville"],
+    Miami: ["Brasaland Miami Brickell"],
+    "Miami Beach": ["Brasaland Miami Beach"],
+    Orlando: ["Brasaland Orlando I-Drive"],
+    Tampa: ["Brasaland Tampa Bay"],
+    "West Palm Beach": ["Brasaland West Palm Beach"],
   },
 };
 
@@ -58,22 +67,36 @@ export const UI_COUNTRIES = [
 
 export const UI_CITIES_BY_COUNTRY = {
   colombia: [
-    { value: "medellin", label: { en: "Medellin", es: "Medellín" } },
+    { value: "barranquilla", label: { en: "Barranquilla", es: "Barranquilla" } },
     { value: "bogota", label: { en: "Bogota", es: "Bogotá" } },
     { value: "cali", label: { en: "Cali", es: "Cali" } },
+    { value: "envigado", label: { en: "Envigado", es: "Envigado" } },
+    { value: "medellin", label: { en: "Medellin", es: "Medellín" } },
   ],
   "united-states": [
+    { value: "fort-lauderdale", label: { en: "Fort Lauderdale", es: "Fort Lauderdale" } },
+    { value: "jacksonville", label: { en: "Jacksonville", es: "Jacksonville" } },
     { value: "miami", label: { en: "Miami", es: "Miami" } },
+    { value: "miami-beach", label: { en: "Miami Beach", es: "Miami Beach" } },
     { value: "orlando", label: { en: "Orlando", es: "Orlando" } },
+    { value: "tampa", label: { en: "Tampa", es: "Tampa" } },
+    { value: "west-palm-beach", label: { en: "West Palm Beach", es: "West Palm Beach" } },
   ],
 };
 
 export const UI_LOCATIONS_BY_COUNTRY_CITY = {
-  "colombia|medellin": ["Brasaland El Poblado", "Brasaland Laureles", "Brasaland Envigado", "Brasaland Sabaneta"],
-  "colombia|bogota": ["Brasaland Usaquén", "Brasaland Chapinero", "Brasaland Zona Rosa"],
-  "colombia|cali": ["Brasaland Granada", "Brasaland Ciudad Jardín", "Brasaland Unicentro"],
-  "united-states|miami": ["Brasaland Brickell", "Brasaland Coral Gables"],
-  "united-states|orlando": ["Brasaland Downtown", "Brasaland International Drive"],
+  "colombia|barranquilla": ["Brasaland Barranquilla Norte"],
+  "colombia|bogota": ["Brasaland Bogotá Chapinero", "Brasaland Bogotá Usaquén"],
+  "colombia|cali": ["Brasaland Cali Granada"],
+  "colombia|envigado": ["Brasaland Medellín Envigado"],
+  "colombia|medellin": ["Brasaland Medellín Centro", "Brasaland Medellín Laureles"],
+  "united-states|fort-lauderdale": ["Brasaland Fort Lauderdale"],
+  "united-states|jacksonville": ["Brasaland Jacksonville"],
+  "united-states|miami": ["Brasaland Miami Brickell"],
+  "united-states|miami-beach": ["Brasaland Miami Beach"],
+  "united-states|orlando": ["Brasaland Orlando I-Drive"],
+  "united-states|tampa": ["Brasaland Tampa Bay"],
+  "united-states|west-palm-beach": ["Brasaland West Palm Beach"],
 };
 
 export function hasAtLeastTwoWords(fullName) {

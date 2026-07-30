@@ -347,7 +347,8 @@ uis/backoffice/lib/
 | `TELEMETRY_BATCH_BUCKET` | Batch export | — |
 | `TELEMETRY_SAMPLE_RATE` | Client sampling | `1.0` |
 | `TELEMETRY_ENDPOINT` | Ingestion path | `/telemetry/events` |
-| `NEXT_PUBLIC_TELEMETRY_ENDPOINT` | Backoffice target | environment-specific |
+| `NEXT_PUBLIC_TELEMETRY_ENDPOINT` | Backoffice browser target | `/api/telemetry/events` (proxied same-origin); or full URL for direct FastAPI |
+| `NEXT_PUBLIC_TELEMETRY_API_BASE_URL` | Optional direct API origin (no trailing slash) | — |
 | `TELEMETRY_PHASE_MODE` | `stub` \| `storage` | `storage` |
 | `TELEMETRY_RESTRICTED_ENDPOINT` | Reserved | — |
 

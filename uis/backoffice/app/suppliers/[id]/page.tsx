@@ -28,7 +28,7 @@ function StatusBadge({ status }: { status: Supplier["status"] }): React.JSX.Elem
       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
         isActive
           ? "bo-badge-healthy rounded-full px-2 py-0.5 text-xs font-semibold"
-          : "bg-rose-500/15 text-[color:var(--bo-error-fg)] ring-1 ring-rose-400/40"
+          : "bg-[color:var(--bo-error-bg)] text-[color:var(--bo-error-fg)] ring-1 ring-[color:var(--bo-error-border)]"
       }`}
     >
       {STATUS_LABELS[status]}
@@ -141,7 +141,7 @@ export default function SupplierDetailPage(): React.JSX.Element {
     setBusy(true);
     try {
       await deleteSupplier(supplier.id);
-      router.push("/suppliers");
+      router.replace("/suppliers");
     } finally {
       setBusy(false);
     }
@@ -191,7 +191,7 @@ export default function SupplierDetailPage(): React.JSX.Element {
                     {supplier.contact_email ? (
                       <a
                         href={`mailto:${supplier.contact_email}`}
-                        className="text-[color:var(--bo-accent-muted)] underline decoration-amber-300/40 underline-offset-2"
+                        className="text-[color:var(--bo-accent-muted)] underline decoration-[color:var(--bo-accent-border)] underline-offset-2"
                       >
                         {supplier.contact_email}
                       </a>
@@ -206,7 +206,7 @@ export default function SupplierDetailPage(): React.JSX.Element {
                     {supplier.categories.map((category) => (
                       <span
                         key={category}
-                        className="rounded-full bg-amber-300/15 px-3 py-1 text-xs font-semibold text-[color:var(--bo-accent-muted)] ring-1 ring-amber-300/30"
+                        className="rounded-full bg-[color:var(--bo-accent-soft)] px-3 py-1 text-xs font-semibold text-[color:var(--bo-accent-muted)] ring-1 ring-[color:var(--bo-accent-border)]"
                       >
                         {CATEGORY_LABELS[category]}
                       </span>
@@ -255,7 +255,7 @@ export default function SupplierDetailPage(): React.JSX.Element {
                   type="button"
                   disabled={busy}
                   onClick={() => void handleStatusToggle()}
-                  className="rounded-full border border-stone-500 px-4 py-2 text-sm font-semibold bo-fg-secondary transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
+                  className="bo-btn-secondary px-4 py-2 text-sm normal-case tracking-normal disabled:opacity-50"
                 >
                   {supplier.status === "active" ? "Suspend supplier" : "Activate supplier"}
                 </button>
@@ -289,7 +289,7 @@ export default function SupplierDetailPage(): React.JSX.Element {
                   {busy ? "Saving..." : "Save notes"}
                 </button>
                 {notesSaved ? (
-                  <span className="text-sm text-emerald-300">Notes saved.</span>
+                  <span className="text-sm text-[color:var(--bo-success-fg)]">Notes saved.</span>
                 ) : null}
               </div>
               {notesError ? <p className="mt-2 text-sm text-[color:var(--bo-error-fg)]">{notesError}</p> : null}

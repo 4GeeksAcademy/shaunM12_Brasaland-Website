@@ -19,6 +19,12 @@ function getBaseUrl(): string {
   return "";
 }
 
+/** Same-origin `/api/incidents/*` proxies to FastAPI `/incidents/*`. */
+function incidentPath(suffix = ""): string {
+  const prefix = getBaseUrl() ? "/incidents" : "/api/incidents";
+  return `${prefix}${suffix}`;
+}
+
 function toErrorMessage(statusText: string, bodyText: string): string {
   if (!bodyText) {
     return statusText || "Request failed.";
@@ -91,14 +97,16 @@ export async function listManagerIncidents(params?: {
   }
 
   const suffix = query.toString() ? `?${query.toString()}` : "";
-  const response = await authorizedFetch(`${getBaseUrl()}/api/incidents${suffix}`);
+  const response = await authorizedFetch(
+    `${getBaseUrl()}${incidentPath(suffix)}`,
+  );
   return parseResponse<IncidentManagerRecord[]>(response);
 }
 
 export async function createManagerIncident(
   payload: IncidentManagerCreateInput,
 ): Promise<IncidentManagerRecord> {
-  const response = await authorizedFetch(`${getBaseUrl()}/api/incidents`, {
+  const response = await authorizedFetch(`${getBaseUrl()}${incidentPath()}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -110,20 +118,27 @@ export async function updateManagerIncidentStatus(
   incidentId: number,
   status: IncidentManagerStatus,
 ): Promise<IncidentManagerRecord> {
-  const response = await authorizedFetch(`${getBaseUrl()}/api/incidents/${incidentId}/status`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ status }),
-  });
+  const response = await authorizedFetch(
+    `${getBaseUrl()}${incidentPath(`/${incidentId}/status`)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    },
+  );
   return parseResponse<IncidentManagerRecord>(response);
 }
 
 export async function getManagerIncidentSummary(): Promise<IncidentManagerSummary> {
-  const response = await authorizedFetch(`${getBaseUrl()}/api/incidents/summary`);
+  const response = await authorizedFetch(
+    `${getBaseUrl()}${incidentPath("/summary")}`,
+  );
   return parseResponse<IncidentManagerSummary>(response);
 }
 
 export async function getManagerIncidentById(incidentId: number): Promise<IncidentManagerRecord> {
-  const response = await authorizedFetch(`${getBaseUrl()}/api/incidents/${incidentId}`);
+  const response = await authorizedFetch(
+    `${getBaseUrl()}${incidentPath(`/${incidentId}`)}`,
+  );
   return parseResponse<IncidentManagerRecord>(response);
 }

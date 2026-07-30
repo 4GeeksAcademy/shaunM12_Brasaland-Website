@@ -1,7 +1,12 @@
-import type { TranslationDictionary } from "@/lib/home-content";
-import type { SupportedLanguage } from "@/lib/home-content";
-import { LanguageSwitcher } from "./LanguageSwitcher";
+"use client";
+
+import { useEffect, useId, useState } from "react";
+
+import type { SupportedLanguage, TranslationDictionary } from "@/lib/home-content";
+
 import { BrandLogo } from "./BrandLogo";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ThemeToggle } from "./ThemeToggle";
 
 interface HeaderProps {
   content: TranslationDictionary;
@@ -9,48 +14,126 @@ interface HeaderProps {
   onLanguageChange: (language: SupportedLanguage) => void;
 }
 
+interface NavItem {
+  href: string;
+  label: string;
+}
+
+function buildNavItems(content: TranslationDictionary): NavItem[] {
+  return [
+    { href: "#home", label: content.navHome },
+    { href: "#locations", label: content.navLocations },
+    { href: "#menu", label: content.navMenu },
+    { href: "#brasa-points", label: content.navBrasaPoints },
+    { href: "#contact", label: content.navContact },
+  ];
+}
+
 export function Header({ content, language, onLanguageChange }: HeaderProps): React.JSX.Element {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const mobileNavId = useId();
+  const navItems = buildNavItems(content);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuOpen]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1024px)");
+    const closeOnDesktop = (): void => {
+      if (mediaQuery.matches) {
+        setMenuOpen(false);
+      }
+    };
+
+    mediaQuery.addEventListener("change", closeOnDesktop);
+    return () => mediaQuery.removeEventListener("change", closeOnDesktop);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) {
+      return;
+    }
+
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", closeOnEscape);
+    return () => window.removeEventListener("keydown", closeOnEscape);
+  }, [menuOpen]);
+
+  function closeMenu(): void {
+    setMenuOpen(false);
+  }
+
   return (
-    <header className="sticky top-0 z-40 border-b border-amber-200/10 bg-stone-950/95 backdrop-blur" role="banner">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8">
+    <header className="site-header" role="banner">
+      <div className="site-container site-header-bar">
         <BrandLogo tagline={content.brandTagline} />
 
-        <nav className="order-3 lg:order-2" aria-label={content.navPrimary}>
-          <ul className="flex flex-wrap gap-3 text-sm font-semibold sm:gap-5 sm:text-base">
-            <li>
-              <a className="rounded px-2 py-1 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300" href="#home">
-                {content.navHome}
-              </a>
-            </li>
-            <li>
-              <a className="rounded px-2 py-1 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300" href="#locations">
-                {content.navLocations}
-              </a>
-            </li>
-            <li>
-              <a className="rounded px-2 py-1 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300" href="#menu">
-                {content.navMenu}
-              </a>
-            </li>
-            <li>
-              <a className="rounded px-2 py-1 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300" href="#brasa-points">
-                {content.navBrasaPoints}
-              </a>
-            </li>
-            <li>
-              <a className="rounded px-2 py-1 hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300" href="#contact">
-                {content.navContact}
-              </a>
-            </li>
+        <nav className="site-nav-desktop" aria-label={content.navPrimary}>
+          <ul className="site-nav-list">
+            {navItems.map((item) => (
+              <li key={item.href}>
+                <a className="site-nav-link" href={item.href}>
+                  {item.label}
+                </a>
+              </li>
+            ))}
           </ul>
         </nav>
 
-        <LanguageSwitcher
-          language={language}
-          onLanguageChange={onLanguageChange}
-          ariaLabel={content.languageSelector}
-        />
+        <div className="site-header-actions">
+          <LanguageSwitcher
+            language={language}
+            onLanguageChange={onLanguageChange}
+            ariaLabel={content.languageSelector}
+          />
+          <ThemeToggle
+            lightLabel={content.themeLight}
+            darkLabel={content.themeDark}
+            switchToLightLabel={content.themeSwitchToLight}
+            switchToDarkLabel={content.themeSwitchToDark}
+          />
+          <button
+            type="button"
+            className="site-nav-toggle"
+            aria-expanded={menuOpen}
+            aria-controls={mobileNavId}
+            aria-label={menuOpen ? content.navCloseMenu : content.navOpenMenu}
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            <span className="site-nav-toggle-bars" aria-hidden="true">
+              <span className={menuOpen ? "site-nav-toggle-bar site-nav-toggle-bar-top-open" : "site-nav-toggle-bar site-nav-toggle-bar-top"} />
+              <span className={menuOpen ? "site-nav-toggle-bar site-nav-toggle-bar-middle-open" : "site-nav-toggle-bar"} />
+              <span className={menuOpen ? "site-nav-toggle-bar site-nav-toggle-bar-bottom-open" : "site-nav-toggle-bar site-nav-toggle-bar-bottom"} />
+            </span>
+          </button>
+        </div>
       </div>
+
+      <nav
+        id={mobileNavId}
+        className={menuOpen ? "site-mobile-nav site-mobile-nav-open" : "site-mobile-nav"}
+        aria-label={content.navPrimary}
+        aria-hidden={!menuOpen}
+      >
+        <ul className="site-container site-mobile-nav-list">
+          {navItems.map((item) => (
+            <li key={item.href}>
+              <a className="site-mobile-nav-link" href={item.href} onClick={closeMenu}>
+                {item.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
     </header>
   );
 }

@@ -3,8 +3,26 @@
 import { getAccessToken } from "./auth-storage";
 import { getCorrelatedRequestId } from "./request-id";
 
-const TELEMETRY_ENDPOINT =
-  process.env.NEXT_PUBLIC_TELEMETRY_ENDPOINT?.trim() || "/telemetry/events";
+function getDirectBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_TELEMETRY_API_BASE_URL?.trim();
+  if (configured) {
+    return configured.replace(/\/$/, "");
+  }
+  return "";
+}
+
+/** Same-origin `/api/telemetry/*` proxies to FastAPI `/telemetry/*`. */
+export function resolveTelemetryEndpoint(): string {
+  const configured = process.env.NEXT_PUBLIC_TELEMETRY_ENDPOINT?.trim();
+  if (configured) {
+    return configured;
+  }
+  const baseUrl = getDirectBaseUrl();
+  if (baseUrl) {
+    return `${baseUrl}/telemetry/events`;
+  }
+  return "/api/telemetry/events";
+}
 const TELEMETRY_BATCH_SIZE = 20;
 const TELEMETRY_FLUSH_MS = 10_000;
 const TELEMETRY_MAX_RETRIES = 3;
@@ -178,7 +196,7 @@ function clearFlushTimer(): void {
 }
 
 async function postBatch(batch: TelemetryEnvelope[]): Promise<void> {
-  const response = await fetch(TELEMETRY_ENDPOINT, {
+  const response = await fetch(resolveTelemetryEndpoint(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ events: batch } satisfies TelemetryBatch),
@@ -232,7 +250,7 @@ function flushWithBeacon(): void {
 
   const body = JSON.stringify({ events: batch } satisfies TelemetryBatch);
   const ok = navigator.sendBeacon(
-    TELEMETRY_ENDPOINT,
+    resolveTelemetryEndpoint(),
     new Blob([body], { type: "application/json" }),
   );
   if (!ok) {

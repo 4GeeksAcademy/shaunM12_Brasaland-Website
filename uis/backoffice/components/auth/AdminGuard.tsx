@@ -17,14 +17,14 @@ export default function AdminGuard({
 
   if (!user?.is_admin) {
     return (
-      <div className="mx-auto max-w-md space-y-3 rounded-xl border border-rose-500/40 bg-rose-950/30 p-6 text-center text-[color:var(--bo-error-fg)]">
+      <div className="bo-danger-panel mx-auto max-w-md space-y-3 rounded-xl p-6 text-center">
         <h2 className="text-lg font-semibold">Admins only</h2>
         <p className="text-sm text-[color:var(--bo-error-fg)]/80">
           You do not have permission to view this page.
         </p>
         <Link
           href="/account/profile"
-          className="inline-block rounded-full border border-rose-300/60 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] transition hover:bg-rose-300/10"
+          className="bo-btn-secondary inline-block border-[color:var(--bo-error-border)] text-[color:var(--bo-error-fg)]"
         >
           Back to profile
         </Link>

@@ -76,24 +76,24 @@ export default function NotesPanel({
         <button
           type="submit"
           disabled={addState === "loading"}
-          className="rounded-full bg-amber-300 px-4 py-2 font-bold text-stone-950 transition hover:bg-amber-200 disabled:opacity-60"
+          className="bo-btn-primary px-4 py-2 normal-case tracking-normal disabled:opacity-60"
         >
           {addState === "loading" ? "Saving..." : "Add note"}
         </button>
       </form>
 
       {message && (
-        <p className="rounded-md bg-red-300/10 p-2 text-sm text-red-300">{message}</p>
+        <p className="bo-alert-error rounded-md p-2">{message}</p>
       )}
 
       {addState === "error" && !message && (
-        <p className="rounded-md bg-red-300/10 p-2 text-sm text-red-300">
+        <p className="bo-alert-error rounded-md p-2">
           {addError || "Unable to add note."}
         </p>
       )}
 
       {deleteState === "error" && (
-        <p className="rounded-md bg-red-300/10 p-2 text-sm text-red-300">
+        <p className="bo-alert-error rounded-md p-2">
           {deleteError || "Unable to delete note."}
         </p>
       )}
@@ -103,7 +103,7 @@ export default function NotesPanel({
       )}
 
       {error && (
-        <p className="rounded-md bg-red-300/10 p-2 text-sm text-red-300">{error}</p>
+        <p className="bo-alert-error rounded-md p-2">{error}</p>
       )}
 
       {!loading && !error && notes.length === 0 && (
@@ -130,7 +130,7 @@ export default function NotesPanel({
               <button
                 type="button"
                 disabled={deleteState === "loading" && deleteTargetId === note.id}
-                className="rounded-full bg-red-300 px-3 py-1 text-xs font-bold text-stone-950 transition hover:bg-red-200"
+                className="bo-btn-danger rounded-full px-3 py-1 text-xs"
                 onClick={() => void handleDelete(note.id)}
               >
                 {deleteState === "loading" && deleteTargetId === note.id

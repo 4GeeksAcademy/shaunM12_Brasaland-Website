@@ -14,6 +14,12 @@ function getBaseUrl(): string {
   return "";
 }
 
+/** Same-origin `/api/suppliers/*` proxies to FastAPI `/suppliers/*`. */
+function supplierPath(suffix = ""): string {
+  const prefix = getBaseUrl() ? "/suppliers" : "/api/suppliers";
+  return `${prefix}${suffix}`;
+}
+
 async function request<T>(
   path: string,
   init?: RequestInit,
@@ -55,11 +61,11 @@ export async function fetchSuppliers(filters?: {
     params.set("category", filters.category);
   }
   const query = params.toString();
-  return request<Supplier[]>(`/api/suppliers${query ? `?${query}` : ""}`);
+  return request<Supplier[]>(supplierPath(query ? `?${query}` : ""));
 }
 
 export async function fetchSupplierById(supplierId: number): Promise<Supplier> {
-  return request<Supplier>(`/api/suppliers/${supplierId}`);
+  return request<Supplier>(supplierPath(`/${supplierId}`));
 }
 
 export async function createSupplier(payload: SupplierCreateInput): Promise<Supplier> {
@@ -69,7 +75,7 @@ export async function createSupplier(payload: SupplierCreateInput): Promise<Supp
     notes: payload.notes?.trim() || null,
   };
 
-  return request<Supplier>("/api/suppliers", {
+  return request<Supplier>(supplierPath(), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -80,7 +86,7 @@ export async function updateSupplierRate(
   supplierId: number,
   rate_per_unit: number,
 ): Promise<Supplier> {
-  return request<Supplier>(`/api/suppliers/${supplierId}/rate`, {
+  return request<Supplier>(supplierPath(`/${supplierId}/rate`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ rate_per_unit }),
@@ -91,7 +97,7 @@ export async function updateSupplierStatus(
   supplierId: number,
   status: SupplierStatus,
 ): Promise<Supplier> {
-  return request<Supplier>(`/api/suppliers/${supplierId}/status`, {
+  return request<Supplier>(supplierPath(`/${supplierId}/status`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ status }),
@@ -102,7 +108,7 @@ export async function updateSupplierNotes(
   supplierId: number,
   notes: string | null,
 ): Promise<Supplier> {
-  return request<Supplier>(`/api/suppliers/${supplierId}/notes`, {
+  return request<Supplier>(supplierPath(`/${supplierId}/notes`), {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ notes }),
@@ -110,7 +116,7 @@ export async function updateSupplierNotes(
 }
 
 export async function deleteSupplier(supplierId: number): Promise<void> {
-  await request<void>(`/api/suppliers/${supplierId}`, {
+  await request<void>(supplierPath(`/${supplierId}`), {
     method: "DELETE",
   });
 }

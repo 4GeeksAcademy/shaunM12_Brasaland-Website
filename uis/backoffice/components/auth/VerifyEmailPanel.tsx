@@ -34,7 +34,7 @@ export default function VerifyEmailPanel(): React.JSX.Element {
   }, [token]);
 
   return (
-    <div className="w-full max-w-md space-y-5 rounded-2xl border border-[color:var(--bo-panel-border)] bg-stone-950/95 p-8 text-center shadow-2xl shadow-black/30">
+    <div className="bo-auth-card space-y-5 text-center">
       <h1 className="bo-title text-2xl md:text-3xl">Email verification</h1>
 
       {status === "verifying" ? (
@@ -50,14 +50,14 @@ export default function VerifyEmailPanel(): React.JSX.Element {
       ) : null}
 
       {status === "success" ? (
-        <p className="text-sm text-emerald-200">
+        <p className="text-sm text-[color:var(--bo-success-fg)]">
           Your email has been verified. Thank you!
         </p>
       ) : null}
 
       <Link
         href="/"
-        className="inline-block rounded-full border border-amber-300/70 px-4 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--bo-accent-muted)] transition hover:bg-[color:var(--bo-accent-soft)]"
+        className="bo-btn-secondary inline-block"
       >
         Go to dashboard
       </Link>

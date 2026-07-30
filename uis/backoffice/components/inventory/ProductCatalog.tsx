@@ -20,6 +20,7 @@ import {
   STOCK_LEVEL_CLASSES,
   STOCK_LEVEL_LABELS,
 } from "@/lib/inventory-stock";
+import { inventoryOrderPrefillHref } from "@/lib/query-params";
 import { Product, ProductCountry } from "@/types/inventory";
 
 interface ProductCatalogProps {
@@ -138,14 +139,14 @@ export default function ProductCatalog({
                 type="checkbox"
                 checked={includeInactive}
                 onChange={(event) => onIncludeInactiveChange(event.target.checked)}
-                className="rounded border-[color:var(--bo-input-border)] bg-[color:var(--bo-card)] text-[color:var(--bo-heading)]0 focus:ring-amber-400"
+                className="rounded border-[color:var(--bo-input-border)] bg-[color:var(--bo-card)] text-[color:var(--bo-heading)] focus:ring-[color:var(--bo-focus-border)]"
               />
               Show discontinued
             </label>
             <button
               type="button"
               onClick={() => setAddModalOpen(true)}
-              className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-500"
+              className="bo-btn-primary px-4 py-2 text-sm normal-case tracking-normal"
             >
               Add product
             </button>
@@ -162,7 +163,7 @@ export default function ProductCatalog({
           </div>
 
           {toggleError ? (
-            <p className="border-b border-rose-400/20 bg-rose-500/10 px-4 py-2 text-sm text-[color:var(--bo-error-fg)]">
+            <p className="border-b border-[color:var(--bo-error-border)] bg-[color:var(--bo-error-bg)] px-4 py-2 text-sm text-[color:var(--bo-error-fg)]">
               {toggleError}
             </p>
           ) : null}
@@ -228,8 +229,8 @@ export default function ProductCatalog({
                                 onClick={() => void handleToggleActive(product)}
                                 className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide transition disabled:opacity-50 ${
                                   product.is_active
-                                    ? "bg-emerald-500/15 text-emerald-300 ring-1 ring-emerald-400/40 hover:bg-emerald-500/25"
-                                    : "bg-stone-500/15 bo-muted ring-1 ring-stone-500/40 hover:bg-stone-500/25"
+                                    ? "bo-badge-healthy hover:opacity-90"
+                                    : "bg-[color:var(--bo-row-bg)] bo-muted ring-1 ring-[color:var(--bo-row-border)] hover:opacity-90"
                                 }`}
                               >
                                 {product.is_active ? "Active" : "Discontinued"}
@@ -238,13 +239,21 @@ export default function ProductCatalog({
                             <td className="px-4 py-3">
                               <div className="flex flex-wrap gap-2">
                                 <Link
-                                  href={`/inventory/orders/inbound?productId=${product.id}&locationId=${locationId}`}
+                                  href={inventoryOrderPrefillHref(
+                                    "inbound",
+                                    product.id,
+                                    locationId,
+                                  )}
                                   className="bo-btn-secondary border-[color:var(--bo-badge-healthy-ring)] text-[color:var(--bo-badge-healthy-fg)] normal-case tracking-normal"
                                 >
                                   Log inbound
                                 </Link>
                                 <Link
-                                  href={`/inventory/orders/outbound?productId=${product.id}&locationId=${locationId}`}
+                                  href={inventoryOrderPrefillHref(
+                                    "outbound",
+                                    product.id,
+                                    locationId,
+                                  )}
                                   className="bo-btn-secondary normal-case tracking-normal"
                                 >
                                   Log outbound

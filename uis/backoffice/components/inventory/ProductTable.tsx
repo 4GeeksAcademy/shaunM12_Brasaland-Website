@@ -11,6 +11,7 @@ import {
   STOCK_LEVEL_CLASSES,
   STOCK_LEVEL_LABELS,
 } from "@/lib/inventory-stock";
+import { inventoryOrderPrefillHref } from "@/lib/query-params";
 import { Product } from "@/types/inventory";
 
 interface ProductTableProps {
@@ -18,6 +19,7 @@ interface ProductTableProps {
   loading: boolean;
   error: string | null;
   onRetry?: () => void;
+  locationId?: number;
 }
 
 function formatStock(value: number, unit: string): string {
@@ -30,6 +32,7 @@ export default function ProductTable({
   loading,
   error,
   onRetry,
+  locationId,
 }: ProductTableProps): React.JSX.Element {
   if (error) {
     return <ErrorState message={error} onRetry={onRetry} showHomeLink={false} />;
@@ -90,13 +93,21 @@ export default function ProductTable({
                     <td className="px-4 py-3">
                       <div className="flex flex-wrap gap-2">
                         <Link
-                          href={`/inventory/orders/inbound?productId=${product.id}`}
+                          href={inventoryOrderPrefillHref(
+                            "inbound",
+                            product.id,
+                            locationId,
+                          )}
                           className="bo-btn-secondary border-[color:var(--bo-badge-healthy-ring)] text-[color:var(--bo-badge-healthy-fg)] normal-case tracking-normal"
                         >
                           Log inbound
                         </Link>
                         <Link
-                          href={`/inventory/orders/outbound?productId=${product.id}`}
+                          href={inventoryOrderPrefillHref(
+                            "outbound",
+                            product.id,
+                            locationId,
+                          )}
                           className="bo-btn-secondary normal-case tracking-normal"
                         >
                           Log outbound

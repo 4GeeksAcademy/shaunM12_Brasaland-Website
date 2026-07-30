@@ -198,7 +198,7 @@ export default function IncidentManagerForm({
       <button
         type="submit"
         disabled={submitting}
-        className="rounded-full border border-[color:var(--bo-accent)] bg-[color:var(--bo-tab-active-bg)] px-5 py-2 text-xs font-semibold uppercase tracking-[0.12em] text-[color:var(--bo-heading)] transition hover:bg-amber-300/30 disabled:cursor-not-allowed disabled:opacity-50"
+        className="bo-btn-primary px-5 py-2 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {submitting ? "Saving…" : "Create incident"}
       </button>
