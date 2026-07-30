@@ -1,6 +1,6 @@
 # Brasaland Backoffice
 
-Internal Next.js + TypeScript ops app (incidents, suppliers, inventory, reporting, knowledge, …).
+Internal Next.js + TypeScript ops app (incidents, suppliers, inventory, reporting, knowledge, support agent, …).
 
 > Parent overview: [../../README.md](../../README.md) · API: [../../services/api/README.md](../../services/api/README.md) · Route conventions: [../../memory-bank/historical-reference/context-22-route-conventions.md](../../memory-bank/historical-reference/context-22-route-conventions.md)
 
@@ -25,6 +25,7 @@ Internal Next.js + TypeScript ops app (incidents, suppliers, inventory, reportin
 | `/inventory/orders` | Combined order history (read-only) |
 | `/reporting` | Weekly location KPI dashboard |
 | `/knowledge` | RAG knowledge query + reindex (needs Qdrant) |
+| `/support` | LangGraph support agent query (needs Qdrant; no reindex) |
 | `/account/profile` | User profile |
 | `/account/users` | User admin (admin only) |
 
@@ -38,7 +39,7 @@ Internal Next.js + TypeScript ops app (incidents, suppliers, inventory, reportin
 | `/reset-password` | Complete password reset (`?token=`) |
 | `/verify-email` | Email verification (`?token=`) |
 
-Pages that call the API need FastAPI on **`http://127.0.0.1:8000`**. For **Run pipeline** on `/reporting`, also start Redis and the Celery worker ([services/api/README.md](../../services/api/README.md#celery-worker-dev-55)). For `/knowledge`, also run Qdrant (see root `.env.example`).
+Pages that call the API need FastAPI on **`http://127.0.0.1:8000`**. For **Run pipeline** on `/reporting`, also start Redis and the Celery worker ([services/api/README.md](../../services/api/README.md#celery-worker-dev-55)). For `/knowledge` and `/support`, also run Qdrant (see root `.env.example`).
 
 ## Development
 
@@ -78,13 +79,14 @@ Same-origin browser calls use `uis/backoffice/next.config.mjs`:
 | `/api/inventory/*` | `/inventory/*` |
 | `/api/reporting/*` | `/reporting/*` |
 | `/api/knowledge/*` | `/knowledge/*` |
+| `/api/agent/*` | `/agent/*` |
 | `/api/telemetry/*` | `/telemetry/*` |
 | `/api/tasks/*` | `/tasks/*` |
 | `/auth/*`, `/users/*` | same path on API (first-party cookies) |
 
 Set `BACKOFFICE_API_PROXY_TARGET=http://127.0.0.1:8000` (legacy alias: `INCIDENTS_API_PROXY_TARGET`).
 
-Optional **direct FastAPI** overrides (bypass Next proxy): `NEXT_PUBLIC_INCIDENTS_API_BASE_URL`, `NEXT_PUBLIC_SUPPLIERS_API_BASE_URL`, `NEXT_PUBLIC_INVENTORY_API_BASE_URL`, `NEXT_PUBLIC_REPORTING_API_BASE_URL`, `NEXT_PUBLIC_KNOWLEDGE_API_BASE_URL`, `NEXT_PUBLIC_TASKS_API_BASE_URL`, `NEXT_PUBLIC_TELEMETRY_API_BASE_URL`, plus `NEXT_PUBLIC_TELEMETRY_ENDPOINT` for the browser telemetry POST path.
+Optional **direct FastAPI** overrides (bypass Next proxy): `NEXT_PUBLIC_INCIDENTS_API_BASE_URL`, `NEXT_PUBLIC_SUPPLIERS_API_BASE_URL`, `NEXT_PUBLIC_INVENTORY_API_BASE_URL`, `NEXT_PUBLIC_REPORTING_API_BASE_URL`, `NEXT_PUBLIC_KNOWLEDGE_API_BASE_URL`, `NEXT_PUBLIC_AGENT_API_BASE_URL`, `NEXT_PUBLIC_TASKS_API_BASE_URL`, `NEXT_PUBLIC_TELEMETRY_API_BASE_URL`, plus `NEXT_PUBLIC_TELEMETRY_ENDPOINT` for the browser telemetry POST path.
 
 External tracker: `NEXT_PUBLIC_TRACKER_API_BASE_URL`.
 

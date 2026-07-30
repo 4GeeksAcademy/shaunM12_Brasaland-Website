@@ -28,6 +28,7 @@ from task_dead_letters.models import ensure_task_dead_letters_schema
 from users.routes import router as users_router
 from tasks.routes import router as tasks_router
 from knowledge.routes import router as knowledge_router
+from agent.routes import router as agent_router
 from sqlmodel import SQLModel
 from sqlmodel import Session
 
@@ -86,6 +87,7 @@ app.include_router(telemetry_router, prefix="/telemetry")
 app.include_router(reporting_router, prefix="/reporting", dependencies=_protected)
 app.include_router(tasks_router, prefix="/tasks", dependencies=_protected)
 app.include_router(knowledge_router, prefix="/knowledge", dependencies=_protected)
+app.include_router(agent_router, prefix="/agent", dependencies=_protected)
 
 
 @app.get("/api/health")

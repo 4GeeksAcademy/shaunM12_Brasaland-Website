@@ -4,6 +4,7 @@ import { listManagedIncidents } from "@/lib/incidents-api";
 import { listManagerIncidents } from "@/lib/incidents-manager-api";
 import { fetchTaskStatus, taskPath } from "@/lib/tasks-api";
 import { fetchSuppliers } from "@/lib/suppliers-api";
+import { resolveAgentQueryPath } from "@/lib/agent";
 import { resolveTelemetryEndpoint } from "@/lib/telemetry";
 
 const { authorizedFetchMock } = vi.hoisted(() => ({
@@ -27,6 +28,7 @@ beforeEach(() => {
   delete process.env.NEXT_PUBLIC_TASKS_API_BASE_URL;
   delete process.env.NEXT_PUBLIC_TELEMETRY_ENDPOINT;
   delete process.env.NEXT_PUBLIC_TELEMETRY_API_BASE_URL;
+  delete process.env.NEXT_PUBLIC_AGENT_API_BASE_URL;
   authorizedFetchMock.mockReset();
   authorizedFetchMock.mockImplementation(async () => emptyListResponse());
 });
@@ -107,5 +109,14 @@ describe("domain API route paths", () => {
     expect(resolveTelemetryEndpoint()).toBe(
       "https://api.example.test/telemetry/events",
     );
+  });
+
+  it("uses browser-facing /api paths for the support agent", () => {
+    expect(resolveAgentQueryPath()).toBe("/api/agent/query");
+  });
+
+  it("uses bare FastAPI mounts for direct support agent requests", () => {
+    vi.stubEnv("NEXT_PUBLIC_AGENT_API_BASE_URL", "https://api.example.test/");
+    expect(resolveAgentQueryPath()).toBe("/agent/query");
   });
 });

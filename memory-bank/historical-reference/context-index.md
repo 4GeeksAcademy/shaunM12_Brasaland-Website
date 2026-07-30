@@ -36,6 +36,8 @@ Ordered index of historical reference context documents.
 - `context-20-evaluating-regression-model.md` — Evaluate context-19 RF (learning curve, walk-forward CV, structural PSI, EVALUATION-report, V9–V10); read-only on context-19 code
 - `context-21-rag-knowledge-base.md` — Milestone 7 RAG & knowledge base (Qdrant, setup/embed/retrieve/query, `/knowledge` API + backoffice UI, locked L1–L13)
 - `context-22-route-conventions.md` — **Current** FastAPI mounts, backoffice `/api/*` proxy, auth rewrites, query-param casing (supersedes legacy path notes)
+- `context-23-support-agent-langgraph-p1.md` — Support agent LangGraph Part 1 (implemented): RAG split, LangGraph + SQLite checkpoint, `POST /agent/query`, `/support` backoffice UI
+- `context-23-support-agent-langgraph-p2.md` — Support agent LangGraph Part 2: incident/inventory tools + routing (planned — next branch; depends on P1)
 
 ## Numbering Notes
 
@@ -49,4 +51,5 @@ Ordered index of historical reference context documents.
 - `context-20` is reserved for evaluating the context-19 regression model (diagnostics + technical report; does not retrain or change holdout metrics).
 - `context-21` is reserved for Milestone 7 RAG & knowledge base (Qdrant + FastAPI `/knowledge` + backoffice UI; decisions L1–L13 locked 2026-07-28).
 - `context-22` is reserved for route/proxy conventions superseding legacy path wording in contexts 7, 8, 13, and 21 (locked 2026-07-28).
+- `context-23` is reserved for the support agent LangGraph workstream: Part 1 (graph migration + `/agent` + `/support` UI) and Part 2 (live service tools + auto-routing) as companion files `-p1` / `-p2`.
 - `context-9` currently has three related companion files by design.
