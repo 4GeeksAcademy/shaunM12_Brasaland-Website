@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from auth.dependencies import get_current_user
 from knowledge.bootstrap import ensure_repo_root_on_path
@@ -24,6 +24,7 @@ router = APIRouter(tags=["agent"])
 @router.post("/query", response_model=AgentQueryResponse)
 def agent_query(
     body: AgentQueryRequest,
+    request: Request,
     _: UserResponse = Depends(get_current_user),
 ) -> AgentQueryResponse:
     """Run the compiled LangGraph and return the final answer string only."""
@@ -36,7 +37,8 @@ def agent_query(
 
     try:
         ensure_repo_root_on_path()
-        state = invoke_support_agent(question)
+        auth_header = request.headers.get("Authorization")
+        state = invoke_support_agent(question, auth_header=auth_header)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

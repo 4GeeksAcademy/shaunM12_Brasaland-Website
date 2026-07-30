@@ -11,16 +11,24 @@ from pathlib import Path
 from typing import Any, Literal
 
 from langgraph.checkpoint.sqlite import SqliteSaver
+from langgraph.config import get_config
 from langgraph.graph import END, START, StateGraph
 
 from knowledge.bootstrap import ensure_repo_root_on_path
 
+from .classify import classify_question
+from .fallbacks import resolve_fallback_message
 from .state import AgentState, initial_state
+from .tools.incidents import lookup_incidents
+from .tools.inventory import lookup_inventory_stock
 
 logger = logging.getLogger(__name__)
 
-RouteAfterIntake = Literal["error", "retrieve"]
-RouteAfterRetrieve = Literal["refuse", "generate"]
+RouteAfterIntake = Literal["error", "classify"]
+RouteAfterClassify = Literal["retrieve", "lookup_incident", "lookup_inventory_stock"]
+RouteAfterLookupIncident = Literal["retrieve", "generate", "fallback"]
+RouteAfterLookupInventory = Literal["generate", "fallback"]
+RouteAfterRetrieve = Literal["refuse", "generate", "fallback"]
 
 _EMPTY_QUESTION_ANSWER = (
     "Please enter a question so the Support Agent can look it up in Brasaland's "
@@ -49,6 +57,18 @@ def _trace(node: str, **fields: Any) -> list[dict[str, Any]]:
     return [{"node": node, **fields}]
 
 
+def _latest_tool(state: AgentState) -> dict[str, Any] | None:
+    results = state.get("tool_results") or []
+    return results[-1] if results else None
+
+
+def _tool_has_rows(tool: dict[str, Any] | None) -> bool:
+    if tool is None or not tool.get("ok"):
+        return False
+    rows = tool.get("rows")
+    return isinstance(rows, list) and len(rows) > 0
+
+
 def intake_node(state: AgentState) -> dict[str, Any]:
     question = (state.get("question") or "").strip()
     if not question:
@@ -60,9 +80,82 @@ def intake_node(state: AgentState) -> dict[str, Any]:
         }
     return {
         "question": question,
-        "route": "retrieve",
         "trace_events": _trace("intake", valid=True),
     }
+
+
+def classify_node(state: AgentState) -> dict[str, Any]:
+    result = classify_question(state["question"])
+    trace: dict[str, Any] = {
+        "node": "classify",
+        "intent": result.intent,
+        "matched": result.matched,
+    }
+    if result.incident_id is not None:
+        trace["incident_id"] = result.incident_id
+    if result.incident_filters:
+        trace["filters"] = result.incident_filters
+    return {
+        "intent": result.intent,
+        "incident_id": result.incident_id,
+        "incident_filters": result.incident_filters,
+        "trace_events": [trace],
+    }
+
+
+def lookup_incident_node(state: AgentState) -> dict[str, Any]:
+    config = get_config() or {}
+    configurable = config.get("configurable") or {}
+    auth_header = configurable.get("auth_header")
+
+    envelope = lookup_incidents(
+        incident_id=state.get("incident_id"),
+        filters=state.get("incident_filters") or {},
+        auth_header=auth_header,
+    )
+    trace_fields: dict[str, Any] = {
+        "ok": envelope.get("ok"),
+        "row_count": len(envelope.get("rows") or []),
+        "http_status": envelope.get("http_status"),
+    }
+    if envelope.get("reason"):
+        trace_fields["reason"] = envelope.get("reason")
+
+    updates: dict[str, Any] = {
+        "tool_results": [envelope],
+        "trace_events": _trace("lookup_incident", **trace_fields),
+    }
+    if envelope.get("ok") and envelope.get("rows"):
+        updates["sources_used"] = ["incidents_api"]
+    return updates
+
+
+def lookup_inventory_stock_node(state: AgentState) -> dict[str, Any]:
+    config = get_config() or {}
+    configurable = config.get("configurable") or {}
+    auth_header = configurable.get("auth_header")
+
+    envelope = lookup_inventory_stock(
+        question=state["question"],
+        auth_header=auth_header,
+    )
+    trace_fields: dict[str, Any] = {
+        "ok": envelope.get("ok"),
+        "row_count": len(envelope.get("rows") or []),
+        "http_status": envelope.get("http_status"),
+    }
+    if envelope.get("reason"):
+        trace_fields["reason"] = envelope.get("reason")
+    if envelope.get("filters"):
+        trace_fields["filters"] = envelope.get("filters")
+
+    updates: dict[str, Any] = {
+        "tool_results": [envelope],
+        "trace_events": _trace("lookup_inventory_stock", **trace_fields),
+    }
+    if envelope.get("ok") and envelope.get("rows"):
+        updates["sources_used"] = ["inventory_api"]
+    return updates
 
 
 def retrieve_node(state: AgentState) -> dict[str, Any]:
@@ -87,11 +180,31 @@ def generate_node(state: AgentState) -> dict[str, Any]:
     ensure_repo_root_on_path()
     from data.pipelines.rag import generate_answer
 
-    answer = generate_answer(state["question"], state["context_text"])
+    from .generation import generate_support_answer
+
+    intent = state.get("intent", "rag")
+    rag_context = state.get("context_text") or ""
+    tool = _latest_tool(state)
+
+    if intent == "rag":
+        answer = generate_answer(state["question"], rag_context)
+    else:
+        caveat: str | None = None
+        if intent == "both" and tool is not None and not tool.get("ok"):
+            caveat = (
+                "Note: live incident lookup failed; answering from the knowledge base only."
+            )
+        answer = generate_support_answer(
+            state["question"],
+            rag_context=rag_context,
+            tool_results=state.get("tool_results"),
+            caveat=caveat,
+        )
+
     return {
         "answer": answer,
         "route": "generate",
-        "trace_events": _trace("generate", grounded=True),
+        "trace_events": _trace("generate", grounded=True, intent=intent),
     }
 
 
@@ -103,6 +216,15 @@ def refuse_node(state: AgentState) -> dict[str, Any]:
         "answer": refusal_message(),
         "route": "refuse",
         "trace_events": _trace("refuse", reason="empty_retrieval"),
+    }
+
+
+def fallback_node(state: AgentState) -> dict[str, Any]:
+    message, reason = resolve_fallback_message(state)
+    return {
+        "answer": message,
+        "route": "fallback",
+        "trace_events": _trace("fallback", reason=reason),
     }
 
 
@@ -118,37 +240,99 @@ def error_node(state: AgentState) -> dict[str, Any]:
 def route_after_intake(state: AgentState) -> RouteAfterIntake:
     if state.get("route") == "error":
         return "error"
-    return "retrieve"
+    return "classify"
+
+
+def route_after_classify(state: AgentState) -> RouteAfterClassify:
+    intent = state.get("intent", "rag")
+    if intent == "rag":
+        return "retrieve"
+    if intent == "inventory":
+        return "lookup_inventory_stock"
+    return "lookup_incident"
+
+
+def route_after_lookup_incident(state: AgentState) -> RouteAfterLookupIncident:
+    intent = state.get("intent", "rag")
+    if intent == "both":
+        return "retrieve"
+    if _tool_has_rows(_latest_tool(state)):
+        return "generate"
+    return "fallback"
+
+
+def route_after_lookup_inventory(state: AgentState) -> RouteAfterLookupInventory:
+    if _tool_has_rows(_latest_tool(state)):
+        return "generate"
+    return "fallback"
 
 
 def route_after_retrieve(state: AgentState) -> RouteAfterRetrieve:
-    if not state.get("chunks"):
-        return "refuse"
-    return "generate"
+    intent = state.get("intent", "rag")
+    chunks = state.get("chunks") or []
+    tool = _latest_tool(state)
+
+    if intent == "rag":
+        return "generate" if chunks else "refuse"
+
+    if intent == "both":
+        if tool is not None and not tool.get("ok") and not chunks:
+            return "fallback"
+        return "generate"
+
+    return "generate" if chunks else "refuse"
 
 
 def build_graph() -> StateGraph:
     """Construct the uncompiled Support Agent graph."""
     builder: StateGraph = StateGraph(AgentState)
     builder.add_node("intake", intake_node)
+    builder.add_node("classify", classify_node)
+    builder.add_node("lookup_incident", lookup_incident_node)
+    builder.add_node("lookup_inventory_stock", lookup_inventory_stock_node)
     builder.add_node("retrieve", retrieve_node)
     builder.add_node("generate", generate_node)
     builder.add_node("refuse", refuse_node)
+    builder.add_node("fallback", fallback_node)
     builder.add_node("error", error_node)
 
     builder.add_edge(START, "intake")
     builder.add_conditional_edges(
         "intake",
         route_after_intake,
-        {"error": "error", "retrieve": "retrieve"},
+        {"error": "error", "classify": "classify"},
+    )
+    builder.add_conditional_edges(
+        "classify",
+        route_after_classify,
+        {
+            "retrieve": "retrieve",
+            "lookup_incident": "lookup_incident",
+            "lookup_inventory_stock": "lookup_inventory_stock",
+        },
+    )
+    builder.add_conditional_edges(
+        "lookup_incident",
+        route_after_lookup_incident,
+        {
+            "retrieve": "retrieve",
+            "generate": "generate",
+            "fallback": "fallback",
+        },
+    )
+    builder.add_conditional_edges(
+        "lookup_inventory_stock",
+        route_after_lookup_inventory,
+        {"generate": "generate", "fallback": "fallback"},
     )
     builder.add_conditional_edges(
         "retrieve",
         route_after_retrieve,
-        {"refuse": "refuse", "generate": "generate"},
+        {"refuse": "refuse", "generate": "generate", "fallback": "fallback"},
     )
     builder.add_edge("error", END)
     builder.add_edge("refuse", END)
+    builder.add_edge("fallback", END)
     builder.add_edge("generate", END)
     return builder
 
@@ -172,8 +356,15 @@ def invoke_support_agent(
     question: str,
     *,
     thread_id: str | None = None,
+    auth_header: str | None = None,
 ) -> AgentState:
     """Run the Support Agent graph synchronously and return final state."""
     graph = get_compiled_graph()
-    config = {"configurable": {"thread_id": thread_id or str(uuid.uuid4())}}
+    config: dict[str, Any] = {
+        "configurable": {
+            "thread_id": thread_id or str(uuid.uuid4()),
+        }
+    }
+    if auth_header:
+        config["configurable"]["auth_header"] = auth_header
     return graph.invoke(initial_state(question), config)

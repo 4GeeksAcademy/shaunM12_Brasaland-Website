@@ -81,7 +81,7 @@ def test_agent_query_returns_answer_only(agent_client, monkeypatch):
         lambda: None,
     )
 
-    def _fake_invoke(question: str, *, thread_id=None):
+    def _fake_invoke(question: str, *, thread_id=None, auth_header=None):
         assert "Gold" in question
         return {
             "question": question,
@@ -116,7 +116,7 @@ def test_agent_query_returns_502_on_graph_failure(agent_client, monkeypatch):
         lambda: None,
     )
 
-    def _boom(_question: str, *, thread_id=None):
+    def _boom(_question: str, *, thread_id=None, auth_header=None):
         raise RuntimeError("graph exploded")
 
     monkeypatch.setattr("agent.routes.invoke_support_agent", _boom)
@@ -129,3 +129,38 @@ def test_agent_query_returns_502_on_graph_failure(agent_client, monkeypatch):
     assert response.json()["detail"] == (
         "Support Agent failed to answer. Try again shortly."
     )
+
+
+def test_agent_query_forwards_authorization_header(agent_client, monkeypatch):
+    monkeypatch.setattr(
+        "agent.routes.ensure_repo_root_on_path",
+        lambda: None,
+    )
+    captured: dict = {}
+
+    def _fake_invoke(question: str, *, thread_id=None, auth_header=None):
+        captured["auth_header"] = auth_header
+        return {
+            "question": question,
+            "chunks": [],
+            "context_text": "",
+            "answer": "ok",
+            "route": "generate",
+            "error": None,
+            "trace_events": [],
+            "intent": "rag",
+            "incident_id": None,
+            "incident_filters": {},
+            "sources_used": [],
+            "tool_results": [],
+        }
+
+    monkeypatch.setattr("agent.routes.invoke_support_agent", _fake_invoke)
+
+    response = agent_client.post(
+        "/agent/query",
+        json={"question": "loyalty points"},
+        headers={"Authorization": "Bearer route-test-token"},
+    )
+    assert response.status_code == 200
+    assert captured["auth_header"] == "Bearer route-test-token"

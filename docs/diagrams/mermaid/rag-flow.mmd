@@ -1,0 +1,18 @@
+flowchart TD
+    subgraph index ["Indexing — setup / reindex"]
+        A["docs/company-knowledge-base/*.md"] --> B["chunk_document"]
+        B --> C["embed — embeddings model"]
+        C --> D["Qdrant upsert brasaland_knowledge"]
+    end
+
+    subgraph query ["Query — runtime"]
+        Q[User question] --> E["embed — same model"]
+        E --> F["retrieve — Qdrant top-k + min_score"]
+        F --> G{Any chunks?}
+        G -->|No| H[Honest refusal]
+        G -->|Yes| I["Assemble context + salesperson prompt"]
+        I --> J[Generation LLM]
+        J --> K["{ answer }"]
+    end
+
+    D -.-> F
