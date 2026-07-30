@@ -12,7 +12,7 @@ export function LanguageSwitcher({
   ariaLabel,
 }: LanguageSwitcherProps): React.JSX.Element {
   return (
-    <div className="order-2 flex items-center gap-2 lg:order-3" role="group" aria-label={ariaLabel}>
+    <div className="control-pill" role="group" aria-label={ariaLabel}>
       {(["es", "en"] as const).map((nextLanguage) => {
         const isActive = nextLanguage === language;
 
@@ -22,11 +22,7 @@ export function LanguageSwitcher({
             type="button"
             onClick={() => onLanguageChange(nextLanguage)}
             aria-pressed={isActive}
-            className={`rounded-full border px-3 py-1 text-sm font-semibold transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300 ${
-              isActive
-                ? "border-amber-300 text-amber-300"
-                : "border-stone-500 text-stone-100 hover:border-amber-300 hover:text-amber-300"
-            }`}
+            className={`language-button ${isActive ? "language-button-active" : ""}`}
           >
             {nextLanguage.toUpperCase()}
           </button>

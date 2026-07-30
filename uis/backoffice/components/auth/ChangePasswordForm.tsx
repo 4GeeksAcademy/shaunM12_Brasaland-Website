@@ -127,7 +127,7 @@ export default function ChangePasswordForm(): React.JSX.Element {
       <button
         type="submit"
         disabled={status === "saving"}
-        className="rounded-xl border border-amber-300 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-[color:var(--bo-heading)] transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-50"
+        className="bo-btn-primary rounded-xl px-4 py-2 text-sm normal-case tracking-normal disabled:cursor-not-allowed disabled:opacity-50"
       >
         {status === "saving" ? "Updating..." : "Update password"}
       </button>

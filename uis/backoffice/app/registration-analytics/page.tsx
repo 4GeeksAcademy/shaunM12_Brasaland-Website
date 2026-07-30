@@ -60,7 +60,7 @@ export default async function RegistrationAnalyticsPage({
             <div className="flex items-end gap-2">
               <button
                 type="submit"
-                className="w-full rounded-xl border border-amber-300 bg-amber-300/15 px-3 py-2 text-sm font-semibold text-[color:var(--bo-heading)] transition hover:bg-amber-300/25"
+                className="bo-btn-primary w-full rounded-xl px-3 py-2 text-sm normal-case tracking-normal"
               >
                 Refresh reports
               </button>
@@ -76,7 +76,7 @@ export default async function RegistrationAnalyticsPage({
 
         <section className="grid gap-4 md:grid-cols-3">
           <article className="bo-stat-success">
-            <p className="text-xs uppercase tracking-[0.12em] text-emerald-200">Total registrations</p>
+            <p className="text-xs uppercase tracking-[0.12em] text-[color:var(--bo-success-fg)]">Total registrations</p>
             <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-success)]">{dashboard.totalRegistrations}</p>
           </article>
 
@@ -86,10 +86,10 @@ export default async function RegistrationAnalyticsPage({
             <p className="text-xs text-[color:var(--bo-accent-muted)]/80">{dashboard.emailOptInCount} registrations opted in</p>
           </article>
 
-          <article className="rounded-xl border border-fuchsia-500/30 bg-fuchsia-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.12em] text-fuchsia-200">Average age</p>
-            <p className="mt-1 text-3xl font-extrabold text-fuchsia-100">{dashboard.ageAverage}</p>
-            <p className="text-xs text-fuchsia-200/80">
+          <article className="bo-stat-info">
+            <p className="bo-info-label text-xs uppercase tracking-[0.12em]">Average age</p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-heading)]">{dashboard.ageAverage}</p>
+            <p className="text-xs text-[color:var(--bo-muted)]">
               Min {dashboard.ageMinimum} / Max {dashboard.ageMaximum}
             </p>
           </article>

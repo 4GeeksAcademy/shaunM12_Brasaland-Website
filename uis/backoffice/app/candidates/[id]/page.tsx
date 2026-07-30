@@ -297,10 +297,10 @@ export default function CandidateDetailPage(): React.JSX.Element {
                 <p className="rounded-md bg-[color:var(--bo-input-bg)] p-2 text-sm text-[color:var(--bo-fg)]">Saving update...</p>
               )}
               {patchState === "error" && (
-                <p className="rounded-md bg-red-300/10 p-2 text-sm text-red-300">{patchError}</p>
+                <p className="bo-alert-error rounded-md p-2">{patchError}</p>
               )}
               {patchState === "success" && (
-                <p className="rounded-md bg-green-300/10 p-2 text-sm text-green-300">Update saved successfully.</p>
+                <p className="bo-alert-success rounded-md p-2">Update saved successfully.</p>
               )}
             </section>
 
@@ -319,11 +319,11 @@ export default function CandidateDetailPage(): React.JSX.Element {
               onDelete={handleDeleteNote}
             />
 
-            <section className="space-y-3 rounded-xl border border-red-300/30 bg-red-300/10 p-4">
-              <h2 className="text-xl font-extrabold text-red-300">Danger zone</h2>
+            <section className="bo-danger-panel space-y-3 rounded-xl p-4">
+              <h2 className="text-xl font-extrabold text-[color:var(--bo-error-fg)]">Danger zone</h2>
               <button
                 type="button"
-                className="rounded-md bg-red-700 px-4 py-2 text-white disabled:opacity-60"
+                className="bo-btn-danger disabled:opacity-60"
                 onClick={() => setShowDeleteConfirm(true)}
                 disabled={deleteState === "loading"}
               >
@@ -331,18 +331,18 @@ export default function CandidateDetailPage(): React.JSX.Element {
               </button>
 
               {deleteError && (
-                <p className="rounded-md bg-red-300/10 p-2 text-sm text-red-300">{deleteError}</p>
+                <p className="bo-alert-error rounded-md p-2">{deleteError}</p>
               )}
 
               {showDeleteConfirm && (
-                <div className="rounded-md border border-red-400/40 bg-red-300/10 p-3">
-                  <p className="mb-2 text-sm text-red-200">
+                <div className="rounded-md border border-[color:var(--bo-error-border)] bg-[color:var(--bo-error-bg)] p-3">
+                  <p className="mb-2 text-sm text-[color:var(--bo-error-fg)]">
                     Are you sure you want to delete this candidate? This action cannot be undone.
                   </p>
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      className="rounded bg-red-700 px-3 py-1 text-white"
+                      className="bo-btn-danger px-3 py-1"
                       onClick={() => void handleDeleteCandidate()}
                       disabled={deleteState === "loading"}
                     >
@@ -350,7 +350,7 @@ export default function CandidateDetailPage(): React.JSX.Element {
                     </button>
                     <button
                       type="button"
-                      className="rounded bg-stone-200 px-3 py-1 text-stone-900"
+                      className="bo-btn-secondary rounded px-3 py-1 normal-case tracking-normal"
                       onClick={() => setShowDeleteConfirm(false)}
                       disabled={deleteState === "loading"}
                     >

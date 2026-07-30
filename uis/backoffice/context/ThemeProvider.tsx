@@ -11,7 +11,7 @@ import {
 
 export type ThemeMode = "light" | "dark";
 
-const STORAGE_KEY = "brasaland_backoffice_theme";
+const STORAGE_KEY = "brasaland_theme";
 
 interface ThemeContextValue {
   theme: ThemeMode;
@@ -23,10 +23,15 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function readStoredTheme(): ThemeMode {
   if (typeof window === "undefined") {
-    return "dark";
+    return "light";
   }
   const stored = window.localStorage.getItem(STORAGE_KEY);
-  return stored === "light" ? "light" : "dark";
+  if (stored === "light" || stored === "dark") {
+    return stored;
+  }
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
 }
 
 function applyTheme(theme: ThemeMode): void {
@@ -34,6 +39,7 @@ function applyTheme(theme: ThemeMode): void {
     return;
   }
   document.documentElement.dataset.theme = theme;
+  document.documentElement.style.colorScheme = theme;
 }
 
 export function ThemeProvider({
@@ -41,7 +47,7 @@ export function ThemeProvider({
 }: {
   children: React.ReactNode;
 }): React.JSX.Element {
-  const [theme, setThemeState] = useState<ThemeMode>("dark");
+  const [theme, setThemeState] = useState<ThemeMode>("light");
 
   useEffect(() => {
     const initial = readStoredTheme();

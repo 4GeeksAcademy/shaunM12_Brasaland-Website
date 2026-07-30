@@ -2,32 +2,35 @@
 
 :root,
 html[data-theme="dark"] {
-  --bo-bg: #020617;
-  --bo-page-gradient: linear-gradient(
-    to bottom,
-    #0c0a09 0%,
-    #1c1917 45%,
-    #451a03 100%
-  );
-  --bo-panel: rgba(12, 10, 9, 0.95);
-  --bo-panel-border: rgba(253, 230, 138, 0.15);
-  --bo-card: rgba(28, 25, 23, 0.85);
-  --bo-card-border: rgba(253, 230, 138, 0.2);
-  --bo-row-bg: rgba(28, 25, 23, 0.8);
-  --bo-row-border: rgba(68, 64, 60, 0.55);
-  --bo-fg: #f5f5f4;
-  --bo-fg-secondary: #e7e5e4;
-  --bo-heading: #fef3c7;
-  --bo-muted: #a8a29e;
-  --bo-placeholder: #78716c;
-  --bo-accent: #fcd34d;
-  --bo-accent-muted: rgba(252, 211, 77, 0.8);
-  --bo-accent-fg: #1c1917;
-  --bo-accent-border: rgba(252, 211, 77, 0.7);
-  --bo-accent-soft: rgba(252, 211, 77, 0.1);
-  --bo-input-bg: rgba(12, 10, 9, 0.8);
-  --bo-input-border: rgba(168, 162, 158, 0.35);
-  --bo-answer-bg: rgba(28, 25, 23, 0.8);
+  --bo-bg: #10141b;
+  --bo-page-gradient:
+    radial-gradient(circle at 8% 4%, rgba(245, 202, 63, 0.1), transparent 24rem),
+    radial-gradient(circle at 94% 32%, rgba(116, 166, 239, 0.08), transparent 28rem),
+    #10141b;
+  --bo-panel: rgba(21, 26, 35, 0.96);
+  --bo-panel-border: #303846;
+  --bo-card: rgba(25, 31, 41, 0.96);
+  --bo-card-border: #303846;
+  --bo-row-bg: rgba(34, 41, 52, 0.9);
+  --bo-row-border: #303846;
+  --bo-fg: #f4f2eb;
+  --bo-fg-secondary: #d5d9e1;
+  --bo-heading: #f4f2eb;
+  --bo-muted: #aeb6c5;
+  --bo-placeholder: #798394;
+  --bo-accent: #f5ca3f;
+  --bo-accent-muted: rgba(245, 202, 63, 0.82);
+  --bo-accent-fg: #17130a;
+  --bo-accent-border: rgba(245, 202, 63, 0.65);
+  --bo-accent-soft: rgba(245, 202, 63, 0.11);
+  --bo-blue: #74a6ef;
+  --bo-blue-soft: rgba(116, 166, 239, 0.12);
+  --bo-blue-border: rgba(116, 166, 239, 0.35);
+  --bo-red: #ef716d;
+  --bo-red-soft: rgba(239, 113, 109, 0.11);
+  --bo-input-bg: rgba(16, 20, 27, 0.82);
+  --bo-input-border: #465064;
+  --bo-answer-bg: rgba(34, 41, 52, 0.82);
   --bo-success: #86efac;
   --bo-success-bg: rgba(6, 78, 59, 0.25);
   --bo-success-fg: #a7f3d0;
@@ -35,18 +38,18 @@ html[data-theme="dark"] {
   --bo-error-bg: rgba(76, 5, 25, 0.3);
   --bo-error-fg: #fecdd3;
   --bo-error-muted: rgba(254, 205, 211, 0.85);
-  --bo-shell-bg: #0c0a09;
-  --bo-shell-fg: #d6d3d1;
-  --bo-tab-active-bg: rgba(252, 211, 77, 0.2);
-  --bo-tab-idle-border: rgba(252, 211, 77, 0.4);
-  --bo-focus-border: #fcd34d;
-  --bo-focus-ring: rgba(252, 211, 77, 0.2);
-  --bo-shadow: rgba(0, 0, 0, 0.25);
-  --bo-spinner-track: #57534e;
-  --bo-spinner-fg: #fcd34d;
+  --bo-shell-bg: #080b10;
+  --bo-shell-fg: #d5d9e1;
+  --bo-tab-active-bg: rgba(245, 202, 63, 0.16);
+  --bo-tab-idle-border: rgba(245, 202, 63, 0.34);
+  --bo-focus-border: #f5ca3f;
+  --bo-focus-ring: rgba(245, 202, 63, 0.2);
+  --bo-shadow: rgba(0, 0, 0, 0.28);
+  --bo-spinner-track: #465064;
+  --bo-spinner-fg: #f5ca3f;
   --bo-overlay: rgba(0, 0, 0, 0.6);
-  --bo-link: #fcd34d;
-  --bo-link-hover: #fef08a;
+  --bo-link: #74a6ef;
+  --bo-link-hover: #a8c9f7;
   --bo-badge-healthy-bg: rgba(16, 185, 129, 0.15);
   --bo-badge-healthy-fg: #6ee7b7;
   --bo-badge-healthy-ring: rgba(52, 211, 153, 0.4);
@@ -59,32 +62,35 @@ html[data-theme="dark"] {
 }
 
 html[data-theme="light"] {
-  --bo-bg: #fafaf9;
-  --bo-page-gradient: linear-gradient(
-    to bottom,
-    #fffbeb 0%,
-    #fafaf9 50%,
-    #ffedd5 100%
-  );
-  --bo-panel: rgba(255, 255, 255, 0.92);
-  --bo-panel-border: rgba(120, 53, 15, 0.18);
-  --bo-card: rgba(255, 255, 255, 0.88);
-  --bo-card-border: rgba(120, 53, 15, 0.2);
-  --bo-row-bg: rgba(255, 247, 237, 0.95);
-  --bo-row-border: rgba(120, 53, 15, 0.15);
-  --bo-fg: #1c1917;
-  --bo-fg-secondary: #44403c;
-  --bo-heading: #78350f;
-  --bo-muted: #57534e;
-  --bo-placeholder: #a8a29e;
-  --bo-accent: #b45309;
-  --bo-accent-muted: rgba(180, 83, 9, 0.85);
-  --bo-accent-fg: #fffbeb;
-  --bo-accent-border: rgba(180, 83, 9, 0.55);
-  --bo-accent-soft: rgba(180, 83, 9, 0.1);
-  --bo-input-bg: #fff7ed;
-  --bo-input-border: rgba(120, 53, 15, 0.25);
-  --bo-answer-bg: #fff7ed;
+  --bo-bg: #faf8f2;
+  --bo-page-gradient:
+    radial-gradient(circle at 8% 4%, rgba(247, 201, 40, 0.1), transparent 24rem),
+    radial-gradient(circle at 94% 32%, rgba(23, 78, 166, 0.08), transparent 28rem),
+    #faf8f2;
+  --bo-panel: rgba(255, 255, 255, 0.96);
+  --bo-panel-border: #dedbd2;
+  --bo-card: rgba(255, 255, 255, 0.96);
+  --bo-card-border: #dedbd2;
+  --bo-row-bg: rgba(243, 240, 232, 0.82);
+  --bo-row-border: #dedbd2;
+  --bo-fg: #172033;
+  --bo-fg-secondary: #394256;
+  --bo-heading: #172033;
+  --bo-muted: #60687a;
+  --bo-placeholder: #9197a3;
+  --bo-accent: #dcae00;
+  --bo-accent-muted: rgba(152, 116, 0, 0.9);
+  --bo-accent-fg: #17130a;
+  --bo-accent-border: rgba(220, 174, 0, 0.65);
+  --bo-accent-soft: rgba(247, 201, 40, 0.16);
+  --bo-blue: #174ea6;
+  --bo-blue-soft: #eaf1fc;
+  --bo-blue-border: rgba(23, 78, 166, 0.28);
+  --bo-red: #c93632;
+  --bo-red-soft: #fbeceb;
+  --bo-input-bg: #ffffff;
+  --bo-input-border: #c6c1b5;
+  --bo-answer-bg: #f3f0e8;
   --bo-success: #166534;
   --bo-success-bg: rgba(220, 252, 231, 0.95);
   --bo-success-fg: #166534;
@@ -92,18 +98,18 @@ html[data-theme="light"] {
   --bo-error-bg: rgba(255, 228, 230, 0.95);
   --bo-error-fg: #9f1239;
   --bo-error-muted: rgba(159, 18, 57, 0.85);
-  --bo-shell-bg: #fffbeb;
-  --bo-shell-fg: #44403c;
-  --bo-tab-active-bg: rgba(180, 83, 9, 0.12);
-  --bo-tab-idle-border: rgba(180, 83, 9, 0.35);
-  --bo-focus-border: #b45309;
-  --bo-focus-ring: rgba(180, 83, 9, 0.18);
-  --bo-shadow: rgba(120, 53, 15, 0.12);
-  --bo-spinner-track: #d6d3d1;
-  --bo-spinner-fg: #b45309;
+  --bo-shell-bg: #ffffff;
+  --bo-shell-fg: #394256;
+  --bo-tab-active-bg: rgba(247, 201, 40, 0.2);
+  --bo-tab-idle-border: rgba(220, 174, 0, 0.38);
+  --bo-focus-border: #174ea6;
+  --bo-focus-ring: rgba(23, 78, 166, 0.16);
+  --bo-shadow: rgba(31, 38, 54, 0.09);
+  --bo-spinner-track: #c6c1b5;
+  --bo-spinner-fg: #174ea6;
   --bo-overlay: rgba(28, 25, 23, 0.45);
-  --bo-link: #b45309;
-  --bo-link-hover: #92400e;
+  --bo-link: #174ea6;
+  --bo-link-hover: #103b80;
   --bo-badge-healthy-bg: rgba(16, 185, 129, 0.12);
   --bo-badge-healthy-fg: #047857;
   --bo-badge-healthy-ring: rgba(16, 185, 129, 0.35);
@@ -123,6 +129,12 @@ body {
 body {
   background: var(--bo-page-gradient);
   color: var(--bo-fg);
+  transition: background-color 0.18s ease, color 0.18s ease;
+}
+
+::selection {
+  background: var(--bo-accent);
+  color: var(--bo-accent-fg);
 }
 
 @layer components {
@@ -168,6 +180,26 @@ body {
     background: var(--bo-panel);
     padding: 1.5rem;
     box-shadow: 0 25px 50px -12px var(--bo-shadow);
+  }
+
+  .bo-nav-shell {
+    position: relative;
+  }
+
+  .bo-nav-shell::before {
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      var(--bo-accent) 0 55%,
+      var(--bo-blue) 55% 78%,
+      var(--bo-red) 78% 100%
+    );
+    content: "";
+    opacity: 0.78;
   }
 
   .bo-card {
@@ -344,6 +376,52 @@ body {
     opacity: 0.5;
   }
 
+  .bo-theme-toggle {
+    display: inline-flex;
+    min-height: 2.25rem;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid var(--bo-input-border);
+    border-radius: 9999px;
+    background: var(--bo-card);
+    padding: 0.25rem 0.55rem 0.25rem 0.3rem;
+    color: var(--bo-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+
+  .bo-theme-toggle:hover {
+    border-color: var(--bo-accent-border);
+    color: var(--bo-fg);
+  }
+
+  .bo-theme-toggle-track {
+    display: inline-flex;
+    width: 2.25rem;
+    border-radius: 9999px;
+    background: var(--bo-row-bg);
+    padding: 0.15rem;
+  }
+
+  .bo-theme-toggle-thumb {
+    display: grid;
+    height: 1.15rem;
+    width: 1.15rem;
+    place-items: center;
+    border-radius: 9999px;
+    background: var(--bo-accent);
+    color: var(--bo-accent-fg);
+    transform: translateX(0);
+    transition: transform 0.18s ease;
+  }
+
+  html[data-theme="dark"] .bo-theme-toggle-thumb {
+    transform: translateX(0.8rem);
+  }
+
   .bo-subnav-link {
     border-radius: 9999px;
     border: 1px solid var(--bo-tab-idle-border);
@@ -498,6 +576,36 @@ body {
     border: 1px solid color-mix(in srgb, var(--bo-accent) 35%, transparent);
     background: var(--bo-accent-soft);
     padding: 1rem;
+  }
+
+  .bo-stat-info {
+    border-radius: 0.75rem;
+    border: 1px solid var(--bo-blue-border);
+    background: var(--bo-blue-soft);
+    padding: 1rem;
+  }
+
+  .bo-info-label {
+    color: var(--bo-blue);
+  }
+
+  .bo-danger-panel {
+    border: 1px solid var(--bo-error-border);
+    background: var(--bo-red-soft);
+    color: var(--bo-error-fg);
+  }
+
+  .bo-btn-danger {
+    border-radius: 0.5rem;
+    background: var(--bo-red);
+    padding: 0.5rem 1rem;
+    font-weight: 700;
+    color: #fff;
+    transition: opacity 0.15s ease;
+  }
+
+  .bo-btn-danger:hover:not(:disabled) {
+    opacity: 0.88;
   }
 
   .bo-info-panel {

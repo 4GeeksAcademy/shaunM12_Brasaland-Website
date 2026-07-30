@@ -241,7 +241,7 @@ export default function Page(): React.JSX.Element {
         <div className="flex justify-end">
           <button
             onClick={clearFilters}
-            className="mt-2 rounded-full border border-amber-300 px-4 py-1 text-sm font-semibold text-[color:var(--bo-accent)] transition hover:bg-[color:var(--bo-accent-soft)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--bo-accent)]"
+            className="bo-btn-secondary mt-2 text-sm normal-case tracking-normal"
           >
             Show All / Clear Filters
           </button>
@@ -253,9 +253,9 @@ export default function Page(): React.JSX.Element {
             <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-success)]">{insights.totalRegistrations}</p>
           </article>
 
-          <article className="rounded-xl border border-cyan-500/30 bg-cyan-900/20 p-4">
-            <p className="text-xs uppercase tracking-[0.14em] text-cyan-200">Tracked locations</p>
-            <p className="mt-1 text-3xl font-extrabold text-cyan-100">{insights.totalLocations}</p>
+          <article className="bo-stat-info">
+            <p className="bo-info-label text-xs uppercase tracking-[0.14em]">Tracked locations</p>
+            <p className="mt-1 text-3xl font-extrabold text-[color:var(--bo-heading)]">{insights.totalLocations}</p>
           </article>
 
           <article className="bo-stat-accent">

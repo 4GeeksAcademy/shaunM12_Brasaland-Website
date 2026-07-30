@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
   ManagedIncident,
@@ -148,6 +149,7 @@ export default function IncidentManagerList({
             <th className="px-4 py-3">Category</th>
             <th className="px-4 py-3">Origin</th>
             <th className="px-4 py-3">Status</th>
+            <th className="px-4 py-3">Detail</th>
           </tr>
         </thead>
         <tbody>
@@ -161,7 +163,14 @@ export default function IncidentManagerList({
             return (
               <tr key={incident.id} className="border-b border-[color:var(--bo-panel-border)]">
                 <td className="px-4 py-3 bo-muted">{incident.id}</td>
-                <td className="px-4 py-3 text-[color:var(--bo-fg)]">{incident.title}</td>
+                <td className="px-4 py-3 text-[color:var(--bo-fg)]">
+                  <Link
+                    href={`/incidents/${incident.id}`}
+                    className="font-medium text-[color:var(--bo-accent)] transition hover:text-[color:var(--bo-accent-muted)]"
+                  >
+                    {incident.title}
+                  </Link>
+                </td>
                 <td className="px-4 py-3 bo-muted">{incident.branch}</td>
                 <td className="px-4 py-3 bo-muted">{incident.category}</td>
                 <td className="px-4 py-3 bo-muted">{incident.origin}</td>
@@ -183,6 +192,14 @@ export default function IncidentManagerList({
                       </option>
                     ))}
                   </select>
+                </td>
+                <td className="px-4 py-3">
+                  <Link
+                    href={`/incidents/${incident.id}`}
+                    className="text-xs font-semibold uppercase tracking-[0.1em] text-[color:var(--bo-accent)] transition hover:text-[color:var(--bo-accent-muted)]"
+                  >
+                    View
+                  </Link>
                 </td>
               </tr>
             );

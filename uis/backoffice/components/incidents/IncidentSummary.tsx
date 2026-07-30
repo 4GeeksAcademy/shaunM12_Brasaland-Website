@@ -136,7 +136,7 @@ export default function IncidentSummary({
             {invalidRows.map(([reason, count]) => (
               <li
                 key={reason}
-                className="flex items-center justify-between rounded-lg border border-rose-800/50 bg-[color:var(--bo-panel)] px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-lg border border-[color:var(--bo-error-border)] bg-[color:var(--bo-panel)] px-3 py-2 text-sm"
               >
                 <span className="text-[color:var(--bo-error-fg)]">{reason}</span>
                 <span className="font-semibold text-[color:var(--bo-error-fg)]">{formatNumber(count)}</span>

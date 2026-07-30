@@ -34,17 +34,17 @@ export function HomePage(): React.JSX.Element {
   const content = useMemo(() => translations[language], [language]);
 
   return (
-    <>
+    <div className="site-shell">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-amber-300 focus:px-4 focus:py-2 focus:text-stone-950"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-[var(--brand-yellow)] focus:px-4 focus:py-2 focus:font-bold focus:text-[#17130a]"
       >
         {content.skipLink}
       </a>
 
       <Header content={content} language={language} onLanguageChange={setLanguage} />
 
-      <main id="main-content" className="mx-auto w-full max-w-6xl px-4 pb-16 pt-8 sm:px-6 lg:px-8" role="main">
+      <main id="main-content" className="site-container pb-16 pt-4 sm:pb-20 sm:pt-8" role="main">
         <HeroSection content={content} />
         <StorySection content={content} />
         <UniqueSection content={content} />
@@ -55,6 +55,6 @@ export function HomePage(): React.JSX.Element {
       </main>
 
       <Footer content={content} />
-    </>
+    </div>
   );
 }

@@ -75,13 +75,13 @@ app.add_middleware(
 
 _protected = [Depends(get_current_user)]
 
-# Auth/users mount at bare prefixes (per the AUTH-01 spec); suppliers stays under
-# /api to match the existing Next.js proxy. Each route is mounted exactly once.
+# Domain routers use bare FastAPI prefixes. The backoffice exposes browser-facing
+# `/api/*` paths through Next.js rewrites so UI and API routes never collide.
 app.include_router(auth_router, prefix="/auth")
 app.include_router(users_router, prefix="/users")
-app.include_router(suppliers_router, prefix="/api/suppliers", dependencies=_protected)
+app.include_router(suppliers_router, prefix="/suppliers", dependencies=_protected)
 app.include_router(inventory_router, prefix="/inventory")
-app.include_router(incidents_router, prefix="/api/incidents", dependencies=_protected)
+app.include_router(incidents_router, prefix="/incidents", dependencies=_protected)
 app.include_router(telemetry_router, prefix="/telemetry")
 app.include_router(reporting_router, prefix="/reporting", dependencies=_protected)
 app.include_router(tasks_router, prefix="/tasks", dependencies=_protected)
@@ -93,7 +93,7 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/api/incidents/analyze", dependencies=_protected)
+@app.post("/incidents/analyze", dependencies=_protected)
 async def analyze_incidents(file: UploadFile = File(...)) -> dict:
     if not file.filename or not file.filename.lower().endswith(".csv"):
         raise HTTPException(
@@ -125,7 +125,7 @@ async def analyze_incidents(file: UploadFile = File(...)) -> dict:
     return result
 
 
-@app.get("/api/incidents/results/export", dependencies=_protected)
+@app.get("/incidents/results/export", dependencies=_protected)
 def export_results() -> StreamingResponse:
     result = get_result()
     if result is None:

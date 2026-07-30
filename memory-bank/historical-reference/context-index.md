@@ -35,6 +35,7 @@ Ordered index of historical reference context documents.
 - `context-19-sales-forecasting-regression.md` — Sales forecasting with Random Forest, Brasaland course CONTEXT, 8yr/2yr split, holdout metrics (MSE, MAPE, PSI, Gini, K2), V1–V8 visuals
 - `context-20-evaluating-regression-model.md` — Evaluate context-19 RF (learning curve, walk-forward CV, structural PSI, EVALUATION-report, V9–V10); read-only on context-19 code
 - `context-21-rag-knowledge-base.md` — Milestone 7 RAG & knowledge base (Qdrant, setup/embed/retrieve/query, `/knowledge` API + backoffice UI, locked L1–L13)
+- `context-22-route-conventions.md` — **Current** FastAPI mounts, backoffice `/api/*` proxy, auth rewrites, query-param casing (supersedes legacy path notes)
 
 ## Numbering Notes
 
@@ -47,4 +48,5 @@ Ordered index of historical reference context documents.
 - `context-19` is reserved for sales forecasting / regression model (Finance prediction ticket; Brasaland course CONTEXT + repo implementation locks).
 - `context-20` is reserved for evaluating the context-19 regression model (diagnostics + technical report; does not retrain or change holdout metrics).
 - `context-21` is reserved for Milestone 7 RAG & knowledge base (Qdrant + FastAPI `/knowledge` + backoffice UI; decisions L1–L13 locked 2026-07-28).
+- `context-22` is reserved for route/proxy conventions superseding legacy path wording in contexts 7, 8, 13, and 21 (locked 2026-07-28).
 - `context-9` currently has three related companion files by design.

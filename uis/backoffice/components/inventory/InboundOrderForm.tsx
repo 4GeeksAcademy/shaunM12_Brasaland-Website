@@ -16,6 +16,7 @@ import {
   pickDefaultSupplier,
 } from "@/lib/inventory-supplier-utils";
 import { createInboundOrder } from "@/lib/inventory";
+import { readInventoryPrefill } from "@/lib/query-params";
 import { fetchSuppliers } from "@/lib/suppliers-api";
 import { Product } from "@/types/inventory";
 import { Supplier } from "@/types/suppliers";
@@ -63,8 +64,8 @@ export default function InboundOrderForm({
   productsLoading,
 }: InboundOrderFormProps): React.JSX.Element {
   const searchParams = useSearchParams();
-  const preselectedId = searchParams.get("productId");
-  const preselectedLocationId = searchParams.get("locationId");
+  const { productId: preselectedId, locationId: preselectedLocationId } =
+    readInventoryPrefill(searchParams);
 
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [suppliersLoading, setSuppliersLoading] = useState(true);

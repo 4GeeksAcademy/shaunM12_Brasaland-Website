@@ -8,7 +8,7 @@ import { LOGIN_PATH } from "@/lib/auth-config";
 
 function FullScreenMessage({ text }: { text: string }): React.JSX.Element {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-stone-950 text-sm bo-muted">
+    <div className="flex min-h-screen items-center justify-center bg-[color:var(--bo-bg)] text-sm bo-muted">
       {text}
     </div>
   );

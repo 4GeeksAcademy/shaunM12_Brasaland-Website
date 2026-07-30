@@ -14,7 +14,7 @@ def test_incident_upload_malformed_csv_returns_generic_message(client: TestClien
     # Invalid (non-UTF8) bytes make pandas raise; the raw parser error must be
     # logged server-side and replaced with a curated message in the response.
     resp = client.post(
-        "/api/incidents/analyze",
+        "/incidents/analyze",
         files={"file": ("bad.csv", b"\xff\xfe\x00\x01\x02\x03garbage", "text/csv")},
     )
 
@@ -28,11 +28,33 @@ def test_incident_upload_malformed_csv_returns_generic_message(client: TestClien
 
 def test_incident_upload_empty_csv_returns_generic_message(client: TestClient):
     resp = client.post(
-        "/api/incidents/analyze",
+        "/incidents/analyze",
         files={"file": ("empty.csv", b"   ", "text/csv")},
     )
     assert resp.status_code == 400
     assert resp.json()["detail"] == "Empty file: the CSV has no content."
+
+
+def test_incident_upload_and_export_routes_succeed(client: TestClient):
+    csv_payload = (
+        b"incident_id,date,location_id,category,description,status,reporter_id\n"
+        b"BRS-000001,2026-07-28,COL-01,EQUIPMENT,Grill requires service,OPEN,MGR-01\n"
+    )
+
+    analyze = client.post(
+        "/incidents/analyze",
+        files={"file": ("incidents.csv", csv_payload, "text/csv")},
+    )
+
+    assert analyze.status_code == 200
+    assert analyze.json()["totalProcessed"] == 1
+    assert analyze.json()["validCount"] == 1
+
+    export = client.get("/incidents/results/export")
+
+    assert export.status_code == 200
+    assert export.headers["content-type"].startswith("text/csv")
+    assert "results.csv" in export.headers["content-disposition"]
 
 
 def test_resend_verification_provider_failure_is_clean(

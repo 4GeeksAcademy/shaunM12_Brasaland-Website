@@ -6,14 +6,25 @@ interface FooterProps {
 
 export function Footer({ content }: FooterProps): React.JSX.Element {
   return (
-    <footer className="border-t border-amber-200/10 bg-stone-950/95">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-stone-300 sm:px-6 sm:text-base lg:flex-row lg:items-center lg:justify-between lg:px-8">
-        <p>{content.footerCopyright}</p>
+    <footer className="site-footer">
+      <div className="site-container flex flex-col gap-8 py-10 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <a className="brand-display text-4xl tracking-wide text-white" href="#home">
+            Brasaland
+          </a>
+          <p className="mt-2 max-w-xs text-sm leading-relaxed">
+            {content.brandTagline} · {content.footerTagline}
+          </p>
+          <p className="mt-5 text-xs">{content.footerCopyright}</p>
+        </div>
         <nav aria-label={content.socialNav}>
-          <ul className="flex gap-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.16em] text-white/40">
+            {content.socialNav}
+          </p>
+          <ul className="flex gap-5 font-bold text-white/80">
             <li>
               <a
-                className="hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+                className="footer-link"
                 href="https://instagram.com/brasaland"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -23,7 +34,7 @@ export function Footer({ content }: FooterProps): React.JSX.Element {
             </li>
             <li>
               <a
-                className="hover:text-amber-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
+                className="footer-link"
                 href="https://facebook.com/brasaland"
                 target="_blank"
                 rel="noopener noreferrer"

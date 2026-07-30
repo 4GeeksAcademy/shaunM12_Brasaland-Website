@@ -42,7 +42,7 @@ function TypeBadge({ kind }: { kind: OrderHistoryRow["kind"] }): React.JSX.Eleme
       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
         isInbound
           ? "bo-badge-healthy rounded-full px-2 py-0.5 text-xs font-semibold"
-          : "bg-orange-500/15 text-orange-300 ring-1 ring-orange-400/40"
+          : "bo-badge-warn"
       }`}
     >
       {isInbound ? "Inbound" : "Outbound"}

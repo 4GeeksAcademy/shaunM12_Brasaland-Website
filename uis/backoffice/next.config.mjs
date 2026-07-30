@@ -20,11 +20,11 @@ const nextConfig = {
     return [
       {
         source: "/api/incidents/:path*",
-        destination: `${apiOrigin}/api/incidents/:path*`,
+        destination: `${apiOrigin}/incidents/:path*`,
       },
       {
         source: "/api/suppliers/:path*",
-        destination: `${apiOrigin}/api/suppliers/:path*`,
+        destination: `${apiOrigin}/suppliers/:path*`,
       },
       // Same-origin proxy for auth so the HttpOnly refresh cookie is first-party.
       {
@@ -50,6 +50,14 @@ const nextConfig = {
       {
         source: "/api/knowledge/:path*",
         destination: `${apiOrigin}/knowledge/:path*`,
+      },
+      {
+        source: "/api/telemetry/:path*",
+        destination: `${apiOrigin}/telemetry/:path*`,
+      },
+      {
+        source: "/api/tasks/:path*",
+        destination: `${apiOrigin}/tasks/:path*`,
       },
     ];
   },

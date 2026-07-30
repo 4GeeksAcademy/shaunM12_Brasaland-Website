@@ -132,8 +132,8 @@ export default function IncidentsPage(): React.JSX.Element {
               onClick={() => setSection("manager")}
               className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
                 section === "manager"
-                  ? "border-amber-300 bg-amber-300/25 text-[color:var(--bo-heading)]"
-                  : "border-amber-200/20 bo-muted hover:border-amber-200/40"
+                  ? "border-[color:var(--bo-accent)] bg-[color:var(--bo-tab-active-bg)] text-[color:var(--bo-heading)]"
+                  : "border-[color:var(--bo-tab-idle-border)] bo-muted hover:border-[color:var(--bo-accent-border)]"
               }`}
             >
               Manager
@@ -143,8 +143,8 @@ export default function IncidentsPage(): React.JSX.Element {
               onClick={() => setSection("analyzer")}
               className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.12em] ${
                 section === "analyzer"
-                  ? "border-amber-300 bg-amber-300/25 text-[color:var(--bo-heading)]"
-                  : "border-amber-200/20 bo-muted hover:border-amber-200/40"
+                  ? "border-[color:var(--bo-accent)] bg-[color:var(--bo-tab-active-bg)] text-[color:var(--bo-heading)]"
+                  : "border-[color:var(--bo-tab-idle-border)] bo-muted hover:border-[color:var(--bo-accent-border)]"
               }`}
             >
               File analyzer
@@ -204,7 +204,7 @@ export default function IncidentsPage(): React.JSX.Element {
                       void handleDownload();
                     }}
                     disabled={downloading}
-                    className="rounded-xl border border-amber-300 bg-amber-300/15 px-4 py-2 text-sm font-semibold text-[color:var(--bo-heading)] transition hover:bg-amber-300/25 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="bo-btn-primary rounded-xl px-4 py-2 text-sm normal-case tracking-normal disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {downloading ? "Preparing download..." : "Download results CSV"}
                   </button>

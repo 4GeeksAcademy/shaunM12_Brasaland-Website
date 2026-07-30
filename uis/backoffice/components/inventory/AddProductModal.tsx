@@ -167,7 +167,7 @@ export default function AddProductModal({
           </div>
 
           {error ? (
-            <p className="rounded-lg border border-rose-400/30 bg-rose-500/10 px-3 py-2 text-sm text-[color:var(--bo-error-fg)]">
+            <p className="bo-alert-error rounded-lg px-3 py-2">
               {error}
             </p>
           ) : null}

@@ -24,6 +24,8 @@ const EMPTY_VALUE: CandidateInput = {
   experience_years: 0,
 };
 
+const FIELD_CLASS_NAME = "bo-input mt-1";
+
 export default function CandidateForm({
   mode,
   initialValue,
@@ -119,7 +121,7 @@ export default function CandidateForm({
         <label className="text-sm text-[color:var(--bo-heading)]">
           Full name
           <input
-            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
+            className={FIELD_CLASS_NAME}
             value={form.full_name}
             onChange={(event) => onInputChange("full_name", event.target.value)}
             placeholder="Full name"
@@ -129,7 +131,7 @@ export default function CandidateForm({
         <label className="text-sm text-[color:var(--bo-heading)]">
           Email
           <input
-            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
+            className={FIELD_CLASS_NAME}
             type="email"
             value={form.email}
             onChange={(event) => onInputChange("email", event.target.value)}
@@ -140,7 +142,7 @@ export default function CandidateForm({
         <label className="text-sm text-[color:var(--bo-heading)]">
           Phone
           <input
-            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
+            className={FIELD_CLASS_NAME}
             value={form.phone}
             onChange={(event) => onInputChange("phone", event.target.value)}
             placeholder="Phone"
@@ -150,7 +152,7 @@ export default function CandidateForm({
         <label className="text-sm text-[color:var(--bo-heading)]">
           Position
           <input
-            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
+            className={FIELD_CLASS_NAME}
             value={form.position}
             onChange={(event) => onInputChange("position", event.target.value)}
             placeholder="Position"
@@ -160,7 +162,7 @@ export default function CandidateForm({
         <label className="text-sm text-[color:var(--bo-heading)]">
           LinkedIn URL
           <input
-            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
+            className={FIELD_CLASS_NAME}
             value={form.linkedin_url}
             onChange={(event) => onInputChange("linkedin_url", event.target.value)}
             placeholder="LinkedIn URL"
@@ -170,7 +172,7 @@ export default function CandidateForm({
         <label className="text-sm text-[color:var(--bo-heading)]">
           CV URL
           <input
-            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
+            className={FIELD_CLASS_NAME}
             value={form.cv_url}
             onChange={(event) => onInputChange("cv_url", event.target.value)}
             placeholder="CV URL"
@@ -180,7 +182,7 @@ export default function CandidateForm({
         <label className="text-sm text-[color:var(--bo-heading)]">
           Status
           <select
-            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
+            className={FIELD_CLASS_NAME}
             value={form.status}
             onChange={(event) => onInputChange("status", event.target.value as CandidateInput["status"])}
           >
@@ -195,7 +197,7 @@ export default function CandidateForm({
         <label className="text-sm text-[color:var(--bo-heading)]">
           Stage
           <select
-            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
+            className={FIELD_CLASS_NAME}
             value={form.stage}
             onChange={(event) => onInputChange("stage", event.target.value as CandidateInput["stage"])}
           >
@@ -210,7 +212,7 @@ export default function CandidateForm({
         <label className="text-sm text-[color:var(--bo-heading)] md:col-span-2">
           Years of experience
           <input
-            className="mt-1 w-full rounded-xl border border-[color:var(--bo-input-border)] bg-stone-950/90 px-3 py-2 text-[color:var(--bo-heading)] placeholder-stone-400 outline-none transition focus:border-[color:var(--bo-focus-border)] focus:ring-4 focus:ring-[color:var(--bo-focus-ring)]"
+            className={FIELD_CLASS_NAME}
             type="number"
             min={0}
             value={form.experience_years}
@@ -223,19 +225,19 @@ export default function CandidateForm({
       <button
         type="submit"
         disabled={state === "loading"}
-        className="rounded-md bg-amber-700 px-4 py-2 text-white transition disabled:opacity-60"
+        className="bo-btn-primary rounded-md px-4 py-2 normal-case tracking-normal disabled:opacity-60"
       >
         {state === "loading" ? "Saving..." : submitLabel}
       </button>
 
       {(message && state !== "success") && (
-        <p className="rounded-md bg-red-50 p-2 text-sm text-red-700">{message}</p>
+        <p className="bo-alert-error rounded-md p-2">{message}</p>
       )}
       {state === "error" && !message && (
-        <p className="rounded-md bg-red-50 p-2 text-sm text-red-700">{error}</p>
+        <p className="bo-alert-error rounded-md p-2">{error}</p>
       )}
       {state === "success" && (
-        <p className="rounded-md bg-green-50 p-2 text-sm text-green-700">{message}</p>
+        <p className="bo-alert-success rounded-md p-2">{message}</p>
       )}
     </form>
   );

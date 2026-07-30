@@ -8,25 +8,31 @@ export function BrasaPointsSection({ content }: BrasaPointsSectionProps): React.
   return (
     <section
       id="brasa-points"
-      className="mt-12 rounded-3xl border border-amber-200/20 bg-gradient-to-r from-orange-900/70 to-amber-800/60 p-6 sm:p-8"
+      className="section"
       aria-labelledby="points-heading"
     >
-      <h2 id="points-heading" className="brand-display text-4xl uppercase tracking-wide text-amber-100">
-        {content.pointsTitle}
-      </h2>
-      <p className="mt-2 text-lg font-semibold text-amber-100">{content.pointsSubtitle}</p>
-      <ul className="mt-4 space-y-2 text-amber-50">
-        <li>{content.pointsItem1}</li>
-        <li>{content.pointsItem2}</li>
-        <li>{content.pointsItem3}</li>
-        <li>{content.pointsItem4}</li>
-      </ul>
-      <a
-        href="/application.html"
-        className="mt-6 inline-flex items-center rounded-full bg-amber-200 px-6 py-3 font-bold text-stone-950 transition hover:-translate-y-0.5 hover:bg-amber-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-200"
-      >
-        {content.pointsCta}
-      </a>
+      <div className="points-panel grid gap-10 px-6 py-10 sm:px-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16 lg:px-14 lg:py-14">
+        <div className="flex flex-col items-start justify-center">
+          <p className="section-label">{content.pointsEyebrow}</p>
+          <h2 id="points-heading" className="section-title brand-display uppercase">
+            {content.pointsTitle}
+          </h2>
+          <p className="mt-4 text-xl font-bold text-[var(--text)]">
+            {content.pointsSubtitle}
+          </p>
+          <a href="/application.html" className="button-primary mt-7">
+            {content.pointsCta}
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+
+        <ol className="grid content-center gap-5 sm:grid-cols-2">
+          <li className="points-item">{content.pointsItem1}</li>
+          <li className="points-item">{content.pointsItem2}</li>
+          <li className="points-item">{content.pointsItem3}</li>
+          <li className="points-item">{content.pointsItem4}</li>
+        </ol>
+      </div>
     </section>
   );
 }

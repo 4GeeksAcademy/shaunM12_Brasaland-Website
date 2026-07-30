@@ -26,14 +26,14 @@ function SessionBar(): React.JSX.Element {
         </Link>
         <Link
           href="/account/profile"
-          className="transition hover:text-[color:var(--bo-accent)]"
+          className="transition hover:text-[color:var(--bo-blue)]"
         >
           Profile
         </Link>
         {user?.is_admin ? (
           <Link
             href="/account/users"
-            className="transition hover:text-[color:var(--bo-accent)]"
+            className="transition hover:text-[color:var(--bo-blue)]"
           >
             Users
           </Link>
@@ -74,7 +74,7 @@ export default function ProtectedShell({
   return (
     <AuthGuard>
       <SessionBar />
-      <div className="border-b border-[color:var(--bo-panel-border)] bg-[color:var(--bo-shell-bg)] px-4 py-2">
+      <div className="bo-nav-shell border-b border-[color:var(--bo-panel-border)] bg-[color:var(--bo-shell-bg)] px-4 py-3">
         <BackofficeTabs />
       </div>
       {children}

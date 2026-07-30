@@ -48,4 +48,4 @@ python scripts/analyze.py data/incidents-brasaland.csv
 Validates context-5 rules, prints a summary, optionally writes `results.csv`.  
 Dataset: `data/incidents-brasaland.csv` (regenerate via `build_incidents_csv.py`).
 
-API equivalent lives in `services/api/incident_analyzer/` — see [services/api/README.md](../services/api/README.md) (`POST /api/incidents/analyze`).
+API equivalent lives in `services/api/incident_analyzer/` — see [services/api/README.md](../services/api/README.md) (`POST /incidents/analyze`).

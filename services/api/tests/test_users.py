@@ -78,4 +78,4 @@ def test_non_admin_cannot_list_users(anon_client: TestClient):
 
 def test_protected_supplier_route_requires_auth(anon_client: TestClient):
     """A representative protected resource is gated by the auth dependency."""
-    assert anon_client.get("/api/suppliers").status_code == 401
+    assert anon_client.get("/suppliers").status_code == 401

@@ -15,7 +15,7 @@ export default function RegistrationAnalyticsError({
   }, [error]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-stone-950 via-stone-900 to-amber-950 px-4 py-16 text-[color:var(--bo-fg)]">
+    <main className="bo-page px-4 py-16">
       <div className="mx-auto max-w-2xl">
         <ErrorState
           message="We couldn't load the registration analytics right now. Please try again."

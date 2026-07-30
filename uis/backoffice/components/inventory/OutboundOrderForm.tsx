@@ -13,6 +13,7 @@ import {
   isValidQuantity,
 } from "@/lib/inventory-constants";
 import { createOutboundOrder } from "@/lib/inventory";
+import { readInventoryPrefill } from "@/lib/query-params";
 import { ExitReason, Product } from "@/types/inventory";
 
 interface OutboundOrderFormProps {
@@ -42,8 +43,8 @@ export default function OutboundOrderForm({
   onLocationChange,
 }: OutboundOrderFormProps): React.JSX.Element {
   const searchParams = useSearchParams();
-  const preselectedId = searchParams.get("productId");
-  const preselectedLocationId = searchParams.get("locationId");
+  const { productId: preselectedId, locationId: preselectedLocationId } =
+    readInventoryPrefill(searchParams);
 
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);

@@ -4,10 +4,10 @@ interface BrandLogoProps {
 
 export function BrandLogo({ tagline }: BrandLogoProps): React.JSX.Element {
   return (
-    <div className="flex items-center gap-3" aria-label="Brasaland logo">
+    <a className="flex items-center gap-3" href="#home" aria-label="Brasaland home">
       <svg
         viewBox="0 0 88 88"
-        className="h-12 w-12 shrink-0"
+        className="h-11 w-11 shrink-0 sm:h-12 sm:w-12"
         role="img"
         aria-hidden="true"
       >
@@ -19,7 +19,16 @@ export function BrandLogo({ tagline }: BrandLogoProps): React.JSX.Element {
           </linearGradient>
         </defs>
 
-        <rect x="4" y="4" width="80" height="80" rx="20" fill="#17120e" stroke="#fcd34d" strokeOpacity="0.38" strokeWidth="2" />
+        <rect
+          x="4"
+          y="4"
+          width="80"
+          height="80"
+          rx="20"
+          className="brand-mark-shell"
+          strokeOpacity="0.5"
+          strokeWidth="2"
+        />
 
         <circle cx="44" cy="44" r="22" fill="none" stroke="#fcd34d" strokeOpacity="0.8" strokeWidth="2" />
 
@@ -39,11 +48,13 @@ export function BrandLogo({ tagline }: BrandLogoProps): React.JSX.Element {
       </svg>
 
       <div>
-        <p className="brand-display text-3xl leading-none tracking-wide text-amber-300 sm:text-4xl">
+        <p className="brand-name brand-display text-3xl leading-none tracking-wide sm:text-4xl">
           Brasaland
         </p>
-        <p className="text-xs uppercase tracking-[0.2em] text-stone-300">{tagline}</p>
+        <p className="brand-tagline text-[0.65rem] font-bold uppercase tracking-[0.2em]">
+          {tagline}
+        </p>
       </div>
-    </div>
+    </a>
   );
 }

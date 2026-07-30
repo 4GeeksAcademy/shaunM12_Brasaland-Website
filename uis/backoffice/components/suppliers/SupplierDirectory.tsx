@@ -36,7 +36,7 @@ function StatusBadge({ status }: { status: SupplierStatus }): React.JSX.Element 
       className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wide ${
         isActive
           ? "bo-badge-healthy rounded-full px-2 py-0.5 text-xs font-semibold"
-          : "bg-rose-500/15 text-[color:var(--bo-error-fg)] ring-1 ring-rose-400/40"
+          : "bg-[color:var(--bo-error-bg)] text-[color:var(--bo-error-fg)] ring-1 ring-[color:var(--bo-error-border)]"
       }`}
     >
       {isActive ? "Active" : "Suspended"}
@@ -259,7 +259,7 @@ export default function SupplierDirectory({
                     onClick={() => toggleCategory(category)}
                     className={`rounded-full px-3 py-1 text-xs font-semibold transition ${
                       selected
-                        ? "bg-amber-300 text-stone-950"
+                        ? "bg-[color:var(--bo-accent)] text-[color:var(--bo-accent-fg)]"
                         : "border border-[color:var(--bo-input-border)] bo-muted hover:border-[color:var(--bo-accent-border)]"
                     }`}
                   >
@@ -325,7 +325,7 @@ export default function SupplierDirectory({
                     <td className="px-4 py-3 font-medium text-[color:var(--bo-fg)]">
                       <Link
                         href={`/suppliers/${supplier.id}`}
-                        className="text-[color:var(--bo-accent-muted)] underline decoration-amber-300/40 underline-offset-2 transition hover:text-[color:var(--bo-heading)] hover:decoration-amber-200"
+                        className="text-[color:var(--bo-accent-muted)] underline decoration-[color:var(--bo-accent-border)] underline-offset-2 transition hover:text-[color:var(--bo-heading)]"
                       >
                         {supplier.name}
                       </Link>
@@ -371,7 +371,7 @@ export default function SupplierDirectory({
                           type="button"
                           disabled={busy}
                           onClick={() => void handleStatusToggle(supplier)}
-                          className="rounded-full border border-stone-500 px-3 py-1 text-xs font-semibold bo-fg-secondary transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
+                          className="bo-btn-secondary px-3 py-1 text-xs normal-case tracking-normal disabled:opacity-50"
                         >
                           {supplier.status === "active" ? "Suspend" : "Activate"}
                         </button>

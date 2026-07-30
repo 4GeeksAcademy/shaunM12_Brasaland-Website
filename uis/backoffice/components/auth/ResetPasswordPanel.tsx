@@ -23,7 +23,7 @@ export default function ResetPasswordPanel(): React.JSX.Element {
 
   if (!token) {
     return (
-      <div className="w-full max-w-md space-y-5 rounded-2xl border border-[color:var(--bo-panel-border)] bg-stone-950/95 p-8 text-center shadow-2xl shadow-black/30">
+      <div className="bo-auth-card space-y-5 text-center">
         <h1 className="bo-title text-2xl md:text-3xl">Reset password</h1>
         <p className="text-sm text-[color:var(--bo-error-fg)]">
           This reset link is missing its token.

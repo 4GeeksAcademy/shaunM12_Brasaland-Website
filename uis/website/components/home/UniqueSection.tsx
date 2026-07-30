@@ -26,17 +26,26 @@ export function UniqueSection({ content }: UniqueSectionProps): React.JSX.Elemen
   ];
 
   return (
-    <section className="mt-12" aria-labelledby="unique-heading">
-      <h2 id="unique-heading" className="brand-display text-4xl uppercase tracking-wide text-amber-300">
-        {content.uniqueTitle}
-      </h2>
-      <div className="mt-5 grid gap-4 md:grid-cols-3">
-        {cards.map((card) => (
-          <article key={card.title} className="rounded-2xl border border-amber-200/20 bg-stone-900/70 p-5">
-            <h3 className="text-xl font-bold text-amber-200">{card.title}</h3>
-            <ul className="mt-3 space-y-2 text-stone-200">
-              <li>{card.points[0]}</li>
-              <li>{card.points[1]}</li>
+    <section className="section-compact" aria-labelledby="unique-heading">
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="section-label">{content.uniqueEyebrow}</p>
+          <h2 id="unique-heading" className="section-title brand-display uppercase">
+            {content.uniqueTitle}
+          </h2>
+        </div>
+        <p className="max-w-sm text-sm leading-relaxed text-[var(--text-muted)]">
+          {content.uniqueSummary}
+        </p>
+      </div>
+      <div className="mt-9 grid gap-4 md:grid-cols-3">
+        {cards.map((card, index) => (
+          <article key={card.title} className="feature-card">
+            <span className="feature-number">0{index + 1}</span>
+            <h3 className="feature-title">{card.title}</h3>
+            <ul className="mt-4 space-y-3">
+              <li className="feature-point">{card.points[0]}</li>
+              <li className="feature-point">{card.points[1]}</li>
             </ul>
           </article>
         ))}

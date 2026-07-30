@@ -17,6 +17,12 @@ function getBaseUrl(): string {
   return "";
 }
 
+/** Same-origin `/api/incidents/*` proxies to FastAPI `/incidents/*`. */
+function incidentPath(suffix = ""): string {
+  const prefix = getBaseUrl() ? "/incidents" : "/api/incidents";
+  return `${prefix}${suffix}`;
+}
+
 function toFriendlyIncidentMessage(message: string): string {
   const normalized = message.toLowerCase();
   if (normalized.includes("unexpected end of json input")) {
@@ -39,7 +45,7 @@ export async function analyzeIncidentFile(file: File): Promise<IncidentAnalysisR
 
   let response: Response;
   try {
-    response = await authorizedFetch(`${getBaseUrl()}/api/incidents/analyze`, {
+    response = await authorizedFetch(`${getBaseUrl()}${incidentPath("/analyze")}`, {
       method: "POST",
       body: formData,
     });
@@ -67,7 +73,9 @@ export async function analyzeIncidentFile(file: File): Promise<IncidentAnalysisR
 export async function downloadIncidentResults(): Promise<Blob> {
   let response: Response;
   try {
-    response = await authorizedFetch(`${getBaseUrl()}/api/incidents/results/export`);
+    response = await authorizedFetch(
+      `${getBaseUrl()}${incidentPath("/results/export")}`,
+    );
   } catch (caught) {
     if (caught instanceof Error && caught.message.toLowerCase().includes("session")) {
       throw caught;
@@ -85,7 +93,7 @@ export async function downloadIncidentResults(): Promise<Blob> {
 }
 
 export async function listManagedIncidents(): Promise<ManagedIncident[]> {
-  const response = await authorizedFetch(`${getBaseUrl()}/api/incidents`);
+  const response = await authorizedFetch(`${getBaseUrl()}${incidentPath()}`);
   if (!response.ok) {
     throw new Error(await readError(response));
   }
@@ -95,7 +103,7 @@ export async function listManagedIncidents(): Promise<ManagedIncident[]> {
 export async function createManagedIncident(
   payload: ManagedIncidentCreate,
 ): Promise<ManagedIncident> {
-  const response = await authorizedFetch(`${getBaseUrl()}/api/incidents`, {
+  const response = await authorizedFetch(`${getBaseUrl()}${incidentPath()}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(payload),
@@ -111,7 +119,7 @@ export async function updateManagedIncidentStatus(
   status: ManagedIncidentStatus,
 ): Promise<ManagedIncident> {
   const response = await authorizedFetch(
-    `${getBaseUrl()}/api/incidents/${id}/status`,
+    `${getBaseUrl()}${incidentPath(`/${id}/status`)}`,
     {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -125,7 +133,9 @@ export async function updateManagedIncidentStatus(
 }
 
 export async function fetchIncidentManagerSummary(): Promise<IncidentManagerSummary> {
-  const response = await authorizedFetch(`${getBaseUrl()}/api/incidents/summary`);
+  const response = await authorizedFetch(
+    `${getBaseUrl()}${incidentPath("/summary")}`,
+  );
   if (!response.ok) {
     throw new Error(await readError(response));
   }

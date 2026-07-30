@@ -35,9 +35,9 @@ export default function SupplierDeletePanel({
   };
 
   return (
-    <section className="space-y-3 rounded-xl border border-red-300/30 bg-red-300/10 p-4">
-      <h2 className="text-xl font-extrabold text-red-300">Danger zone</h2>
-      <p className="text-sm text-red-100/90">
+    <section className="bo-danger-panel space-y-3 rounded-xl p-4">
+      <h2 className="text-xl font-extrabold text-[color:var(--bo-error-fg)]">Danger zone</h2>
+      <p className="text-sm text-[color:var(--bo-error-muted)]">
         For normal operations, prefer <strong>Suspend</strong>. Removal is for erroneous records
         only.
       </p>
@@ -45,7 +45,7 @@ export default function SupplierDeletePanel({
       {deleteStep === null ? (
         <button
           type="button"
-          className="bo-btn-secondary border-[color:var(--bo-error-border)] text-[color:var(--bo-error-fg)] px-4 py-2 text-sm font-semibold text-[color:var(--bo-error-fg)] transition hover:bg-rose-500/10 disabled:opacity-50"
+          className="bo-btn-secondary border-[color:var(--bo-error-border)] px-4 py-2 text-sm text-[color:var(--bo-error-fg)] normal-case tracking-normal disabled:opacity-50"
           onClick={() => setDeleteStep(1)}
           disabled={busy}
         >
@@ -95,7 +95,7 @@ export default function SupplierDeletePanel({
                   type="button"
                   onClick={cancelDeleteFlow}
                   disabled={busy}
-                  className="rounded-full border border-stone-500 px-4 py-2 text-sm font-semibold bo-fg-secondary transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
+                  className="bo-btn-secondary px-4 py-2 text-sm normal-case tracking-normal disabled:opacity-50"
                 >
                   Cancel
                 </button>
@@ -114,7 +114,7 @@ export default function SupplierDeletePanel({
                   type="button"
                   onClick={() => setDeleteStep(1)}
                   disabled={busy}
-                  className="rounded-full border border-stone-500 px-4 py-2 text-sm font-semibold bo-fg-secondary transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
+                  className="bo-btn-secondary px-4 py-2 text-sm normal-case tracking-normal disabled:opacity-50"
                 >
                   Go back
                 </button>
@@ -122,7 +122,7 @@ export default function SupplierDeletePanel({
                   type="button"
                   onClick={cancelDeleteFlow}
                   disabled={busy}
-                  className="rounded-full border border-stone-500 px-4 py-2 text-sm font-semibold bo-fg-secondary transition hover:bg-[color:var(--bo-accent-soft)] disabled:opacity-50"
+                  className="bo-btn-secondary px-4 py-2 text-sm normal-case tracking-normal disabled:opacity-50"
                 >
                   Cancel
                 </button>

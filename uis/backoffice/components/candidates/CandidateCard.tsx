@@ -14,7 +14,7 @@ export default function CandidateCard({ candidate }: CandidateCardProps): React.
           <h3 className="text-lg font-extrabold text-[color:var(--bo-accent)]">{candidate.full_name}</h3>
           <p className="text-sm bo-fg-secondary">{candidate.position}</p>
         </div>
-        <div className="rounded-full border border-amber-300 px-3 py-1 text-sm font-semibold text-[color:var(--bo-heading)]">
+        <div className="rounded-full border border-[color:var(--bo-accent-border)] bg-[color:var(--bo-accent-soft)] px-3 py-1 text-sm font-semibold text-[color:var(--bo-heading)]">
           {candidate.experience_years} years exp.
         </div>
       </div>
@@ -31,7 +31,7 @@ export default function CandidateCard({ candidate }: CandidateCardProps): React.
       <div className="mt-4">
         <Link
           href={`/candidates/${candidate.id}`}
-          className="inline-flex rounded-md bg-amber-300 px-3 py-1.5 text-sm font-semibold text-stone-950 transition hover:bg-amber-200"
+          className="bo-btn-primary inline-flex rounded-md px-3 py-1.5 text-sm normal-case tracking-normal"
         >
           View details
         </Link>
