@@ -30,12 +30,14 @@
     "api:telemetry-seed": "sh -c 'cd services/api && uv run python -m seeds.telemetry'",
     "api:nightly-export": "sh -c 'cd services/api && uv run python ../../scripts/nightly_export.py'",
     "api:test": "sh -c 'cd services/api && uv run pytest -q'",
+    "diagrams:render": "node scripts/render-mermaid-diagrams.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:jest": "jest",
     "test:jest:coverage": "jest --coverage"
   },
   "devDependencies": {
+    "@mermaid-js/mermaid-cli": "^11.12.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.15.2",
     "jest": "^30.4.2",

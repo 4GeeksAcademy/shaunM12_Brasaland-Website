@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from unittest.mock import MagicMock
-
 import pytest
 
 from agent import graph as graph_mod
@@ -69,9 +67,11 @@ def test_invoke_gold_tier_retrieve_before_generate(monkeypatch: pytest.MonkeyPat
     state = graph_mod.invoke_support_agent("How many points for Gold tier?")
 
     assert state["route"] == "generate"
+    assert state["intent"] == "rag"
     assert "50" in state["answer"]
     nodes = _trace_nodes(state)
-    assert nodes.index("retrieve") < nodes.index("generate")
+    assert nodes.index("classify") < nodes.index("retrieve") < nodes.index("generate")
+    assert "lookup_incident" not in nodes
     assert "refuse" not in nodes
     assert state["chunks"] == chunks
 
@@ -93,8 +93,10 @@ def test_invoke_whitespace_skips_retrieve(monkeypatch: pytest.MonkeyPatch):
 
     assert retrieve_called is False
     assert state["route"] == "error"
-    assert "retrieve" not in _trace_nodes(state)
-    assert "intake" in _trace_nodes(state)
+    nodes = _trace_nodes(state)
+    assert "retrieve" not in nodes
+    assert "classify" not in nodes
+    assert "intake" in nodes
 
 
 def test_invoke_empty_retrieval_refuses_without_generate(
@@ -118,7 +120,7 @@ def test_invoke_empty_retrieval_refuses_without_generate(
     assert generate_called is False
     assert state["route"] == "refuse"
     nodes = _trace_nodes(state)
-    assert "retrieve" in nodes
+    assert nodes.index("classify") < nodes.index("retrieve")
     assert "refuse" in nodes
     assert "generate" not in nodes
     assert "don't have enough information" in state["answer"].lower()
@@ -130,6 +132,120 @@ def test_initial_state_seeds_required_keys():
     assert state["question"] == "loyalty points"
     assert state["chunks"] == []
     assert state["trace_events"] == []
+    assert state["intent"] == "rag"
+    assert state["incident_id"] is None
+    assert state["incident_filters"] == {}
+    assert state["tool_results"] == []
+
+
+def test_invoke_incident_path_skips_retrieve(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        "agent.tools.incidents.fetch_json",
+        lambda *a, **k: (200, [], None),
+    )
+
+    state = graph_mod.invoke_support_agent("List open incidents at Miami Doral")
+
+    nodes = _trace_nodes(state)
+    assert state["intent"] == "incident"
+    assert "classify" in nodes
+    assert "lookup_incident" in nodes
+    assert "retrieve" not in nodes
+    assert state["route"] == "fallback"
+
+
+def test_invoke_incident_with_rows_generates(monkeypatch: pytest.MonkeyPatch):
+    incident = {
+        "id": 1,
+        "title": "Oven fault",
+        "description": "Main oven not heating",
+        "status": "open",
+        "origin": "branch",
+        "branch": "miami_doral",
+        "category": "equipment_failure",
+    }
+    monkeypatch.setattr(
+        "agent.tools.incidents.fetch_json",
+        lambda *a, **k: (200, [incident], None),
+    )
+    ensure_repo_root_on_path()
+    import agent.generation as generation_mod
+
+    monkeypatch.setattr(
+        generation_mod,
+        "generate_support_answer",
+        lambda _q, **kwargs: (
+            "Oven fault"
+            if kwargs.get("tool_results")
+            and kwargs["tool_results"][0]["rows"][0]["title"] == "Oven fault"
+            else "missing"
+        ),
+    )
+
+    state = graph_mod.invoke_support_agent(
+        "List open incidents at Miami Doral",
+        auth_header="Bearer test-token",
+    )
+
+    nodes = _trace_nodes(state)
+    assert state["route"] == "generate"
+    assert "lookup_incident" in nodes
+    assert "retrieve" not in nodes
+    assert state["sources_used"] == ["incidents_api"]
+    assert "Oven fault" in state["answer"]
+
+
+def test_invoke_both_path_uses_generate_support_answer(monkeypatch: pytest.MonkeyPatch):
+    incident = {
+        "id": 9,
+        "title": "Delivery delay",
+        "description": "Late shipment",
+        "status": "open",
+        "origin": "branch",
+        "branch": "miami_doral",
+        "category": "delivery_issue",
+    }
+    chunks = [
+        {
+            "source_document": "waste-policy.md",
+            "section": "Disposal",
+            "text": "Food waste must be logged daily.",
+            "score": 0.55,
+        }
+    ]
+    support_called = False
+
+    def _support(_q, **kwargs):
+        nonlocal support_called
+        support_called = True
+        assert kwargs.get("tool_results")
+        assert kwargs.get("rag_context")
+        return "Combined incidents and waste policy answer."
+
+    monkeypatch.setattr(
+        "agent.tools.incidents.fetch_json",
+        lambda *a, **k: (200, [incident], None),
+    )
+    ensure_repo_root_on_path()
+    from data.pipelines import rag as rag_mod
+
+    monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
+    import agent.generation as generation_mod
+
+    monkeypatch.setattr(generation_mod, "generate_support_answer", _support)
+
+    state = graph_mod.invoke_support_agent(
+        "Open incidents at Miami Doral and our waste disposal policy",
+    )
+
+    nodes = _trace_nodes(state)
+    assert state["intent"] == "both"
+    assert support_called is True
+    assert "lookup_incident" in nodes
+    assert "retrieve" in nodes
+    assert "generate" in nodes
+    assert state["route"] == "generate"
+    assert "Combined" in state["answer"]
 
 
 def test_graph_nodes_never_call_monolithic_query(monkeypatch: pytest.MonkeyPatch):
@@ -164,4 +280,5 @@ def test_graph_nodes_never_call_monolithic_query(monkeypatch: pytest.MonkeyPatch
 
     assert query_called is False
     assert state["route"] == "generate"
-    assert len(state["trace_events"]) >= 3
+    assert "classify" in _trace_nodes(state)
+    assert len(state["trace_events"]) >= 4

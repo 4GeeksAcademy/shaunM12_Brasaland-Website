@@ -37,7 +37,7 @@ Ordered index of historical reference context documents.
 - `context-21-rag-knowledge-base.md` — Milestone 7 RAG & knowledge base (Qdrant, setup/embed/retrieve/query, `/knowledge` API + backoffice UI, locked L1–L13)
 - `context-22-route-conventions.md` — **Current** FastAPI mounts, backoffice `/api/*` proxy, auth rewrites, query-param casing (supersedes legacy path notes)
 - `context-23-support-agent-langgraph-p1.md` — Support agent LangGraph Part 1 (implemented): RAG split, LangGraph + SQLite checkpoint, `POST /agent/query`, `/support` backoffice UI
-- `context-23-support-agent-langgraph-p2.md` — Support agent LangGraph Part 2: incident/inventory tools + routing (planned — next branch; depends on P1)
+- `context-23-support-agent-langgraph-p2.md` — Support agent LangGraph Part 2 (implemented): rule-based classifier, incident/inventory HTTP tools, auth forwarding, fallbacks, routing evals
 
 ## Numbering Notes
 

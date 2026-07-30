@@ -35,6 +35,11 @@ Reindex (`POST /knowledge/reindex` or CLI) repeats steps 1–4 only; it does not
 
 ### Flow diagram
 
+![RAG indexing and query flow](../diagrams/mermaid/rag-flow.png)
+
+<details>
+<summary>Mermaid source</summary>
+
 ```mermaid
 flowchart TD
     subgraph index ["Indexing (setup / reindex)"]
@@ -55,6 +60,8 @@ flowchart TD
 
     D -.-> F
 ```
+
+</details>
 
 ### Module map
 

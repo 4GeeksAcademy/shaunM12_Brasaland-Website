@@ -94,6 +94,11 @@ Deliver Mariana Restrepo (CEO) and Felipe Guerrero (Operations) a **weekly, per-
 
 ## 6. Data flow (ETL)
 
+![ETL pipeline data flow](../diagrams/mermaid/pipeline-etl.png)
+
+<details>
+<summary>Mermaid source</summary>
+
 ```mermaid
 flowchart LR
   subgraph Extract
@@ -116,6 +121,8 @@ flowchart LR
   T1 & T2 & T3 & T4 & T5 --> load_weekly_location_performance --> W
   load_weekly_location_performance --> record_pipeline_run --> R
 ```
+
+</details>
 
 Stages:
 

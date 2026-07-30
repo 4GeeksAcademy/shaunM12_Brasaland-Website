@@ -3,9 +3,9 @@
 **Ticket:** Support agent — migrate RAG to an explicit LangGraph (graph, trace, checkpointing)  
 **Type:** LangGraph orchestration + FastAPI `/agent` + backoffice Support UI + tests  
 **Branch:** `support-agent-with-langgraph`  
-**Status:** 🟡 Planning — decisions locked; implementation in progress  
+**Status:** ✅ Implemented on branch `support-agent-with-langgraph`  
 **Depends on:** context-21 (RAG pipeline + `/knowledge`), context-22 (routing alignment)  
-**Companion (next branch):** `context-23-support-agent-langgraph-p2.md` — live incident/inventory tools ( **not Part 1 scope** )  
+**Companion (Part 2 — next branch):** [context-23-support-agent-langgraph-p2.md](./context-23-support-agent-langgraph-p2.md) — live incident/inventory tools + routing (**not Part 1 scope**)  
 **Stakeholders:** Nicolás Park (tech lead); Brasaland Digital / operations support users
 
 ---
@@ -182,6 +182,11 @@ error / refuse / generate → END
 
 ### Flow diagram
 
+![Support Agent Part 1 flow](../../docs/diagrams/mermaid/support-agent-p1.png)
+
+<details>
+<summary>Mermaid source</summary>
+
 ```mermaid
 flowchart TD
     START --> intake[intake]
@@ -193,6 +198,8 @@ flowchart TD
     refuse --> END
     generate --> END
 ```
+
+</details>
 
 ### Compilation
 
@@ -417,7 +424,7 @@ curl -X POST http://127.0.0.1:8000/agent/query \
 
 ## Part 2 pointer (next branch — do not implement here)
 
-Companion file **`context-23-support-agent-langgraph-p2.md`** will cover:
+Companion file **[context-23-support-agent-langgraph-p2.md](./context-23-support-agent-langgraph-p2.md)** covers:
 
 - Rule-based `classify` node before `retrieve`
 - `lookup_incident` HTTP tool (`GET /incidents`, forwarded auth)

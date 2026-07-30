@@ -1,0 +1,19 @@
+flowchart TD
+    START --> intake["intake / validate"]
+    intake -->|empty| error[error]
+    intake -->|valid| classify["classify intent"]
+    classify -->|policy / docs| retrieve["retrieve RAG"]
+    classify -->|ticket| ticket_tool["incident tool — lookup_incident"]
+    classify -->|stock| inv_tool["inventory tool — stretch"]
+    classify -->|both| ticket_tool
+    ticket_tool -->|needs policy context| retrieve
+    retrieve -->|empty| refuse[refusal]
+    retrieve -->|chunks| generate["generate_answer — pure RAG"]
+    ticket_tool -->|ok| synthesize["synthesize answer — generate_support_answer"]
+    ticket_tool -->|fail / 404| fallback[fallback message]
+    inv_tool --> synthesize
+    error --> END
+    refuse --> END
+    fallback --> END
+    generate --> END
+    synthesize --> END
