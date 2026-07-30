@@ -1,8 +1,11 @@
-"""Brasaland RAG retrieval + generation — Phase 2 (context-21).
+"""Brasaland RAG retrieval + generation — Phase 2 (context-21); Phase 0 split (context-23).
 
 Public functions:
   - ``retrieve(query, *, k, min_score)`` — embed query, search Qdrant, threshold filter
-  - ``query(question)`` — retrieve → salesperson prompt → generation LLM → answer str
+  - ``assemble_context(chunks)`` — format chunk payloads for the generation prompt
+  - ``refusal_message()`` — honest refusal when retrieval is empty
+  - ``generate_answer(question, context)`` — generation LLM only (no retrieve)
+  - ``query(question)`` — thin wrapper: retrieve → generate_answer (Knowledge API)
 
 Does not return raw Qdrant objects to callers of ``query()``.
 """
@@ -69,8 +72,8 @@ def _generation_settings() -> tuple[str, str, str]:
     if not base_url or not model_id:
         raise RuntimeError(
             "GENERATION_BASE_URL (or EMBEDDING_BASE_URL) and GENERATION_MODEL_ID "
-            "must be set for query(). Use a chat/completion model — not the "
-            "embeddings model."
+            "must be set for generate_answer() / query(). Use a chat/completion "
+            "model — not the embeddings model."
         )
 
     embedding_id = os.getenv("EMBEDDING_MODEL_ID", "").strip()
@@ -152,7 +155,8 @@ def retrieve(
     return results
 
 
-def _assemble_context(chunks: list[dict[str, Any]]) -> str:
+def assemble_context(chunks: list[dict[str, Any]]) -> str:
+    """Format retrieved chunk payloads for ``generate_answer()`` / graph generate node."""
     blocks: list[str] = []
     for i, ch in enumerate(chunks, start=1):
         source = ch.get("source_document") or "unknown"
@@ -162,7 +166,8 @@ def _assemble_context(chunks: list[dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
-def _refusal_message() -> str:
+def refusal_message() -> str:
+    """Honest refusal when no chunk clears ``min_score`` (context-21 S5)."""
     return (
         "I don't have enough information in Brasaland's official knowledge base "
         "to answer that reliably. Please rephrase, or check the loyalty, allergen, "
@@ -170,29 +175,22 @@ def _refusal_message() -> str:
     )
 
 
-def query(question: str) -> str:
-    """Orchestrate retrieve → prompt assembly → generation LLM → answer string.
+def generate_answer(question: str, context: str) -> str:
+    """Generate an answer from pre-retrieved context — does not call ``retrieve()``.
 
-    External consumers (API/UI) should call only this function for answers.
+    Used by the LangGraph generate node (context-23). ``query()`` delegates here
+    after retrieval for backward-compatible Knowledge API behavior.
     """
     if not question or not question.strip():
-        raise ValueError("query() requires a non-empty question")
+        raise ValueError("generate_answer() requires a non-empty question")
+    if not context or not context.strip():
+        raise ValueError("generate_answer() requires non-empty context")
 
     _load_env()
-    chunks = retrieve(
-        question.strip(),
-        k=_default_top_k(),
-        min_score=_default_min_score(),
-    )
-
-    if not chunks:
-        logger.info("query() empty retrieval — returning honest refusal")
-        return _refusal_message()
-
-    context = _assemble_context(chunks)
+    cleaned_question = question.strip()
     user_prompt = (
-        f"Retrieved context:\n{context}\n\n"
-        f"Customer / manager question:\n{question.strip()}\n\n"
+        f"Retrieved context:\n{context.strip()}\n\n"
+        f"Customer / manager question:\n{cleaned_question}\n\n"
         "Write the answer using only the retrieved context."
     )
 
@@ -210,3 +208,22 @@ def query(question: str) -> str:
     if not answer:
         raise RuntimeError("Generation model returned an empty answer")
     return answer
+
+
+def query(question: str) -> str:
+    """Retrieve → ``generate_answer()`` — backward-compatible Knowledge API entry point."""
+    if not question or not question.strip():
+        raise ValueError("query() requires a non-empty question")
+
+    _load_env()
+    chunks = retrieve(
+        question.strip(),
+        k=_default_top_k(),
+        min_score=_default_min_score(),
+    )
+
+    if not chunks:
+        logger.info("query() empty retrieval — returning honest refusal")
+        return refusal_message()
+
+    return generate_answer(question, assemble_context(chunks))

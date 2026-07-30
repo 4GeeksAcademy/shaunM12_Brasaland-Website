@@ -1,6 +1,6 @@
 # Brasaland API
 
-FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralized incidents, telemetry, reporting, knowledge (RAG), and async tasks.
+FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralized incidents, telemetry, reporting, knowledge (RAG), support agent (LangGraph), and async tasks.
 
 > Parent overview: [../../README.md](../../README.md) · Backoffice proxy map: [../../memory-bank/historical-reference/context-22-route-conventions.md](../../memory-bank/historical-reference/context-22-route-conventions.md)
 
@@ -15,6 +15,7 @@ FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralize
 | `telemetry/` | Event capture, storage, on-demand report |
 | `reporting/` | Weekly KPI APIs + pipeline trigger (enqueues Celery; see DEV-55) |
 | `knowledge/` | RAG query + reindex (`POST /knowledge/query`, `POST /knowledge/reindex`) |
+| `agent/` | LangGraph support agent (`POST /agent/query`; SQLite checkpoint — context-23 P1) |
 | `celery_app.py` | Celery app (Redis broker + result backend) + async pipeline task |
 | `job_runner/` | Nightly job status (`reporting.job_runs`) — used by `scripts/nightly_export.py` |
 | `seeds/` | Demo/bootstrap loaders (suppliers, inventory, incidents, telemetry) |
@@ -48,6 +49,7 @@ cp ../../.env.example ../../.env
 | `EMAIL_FROM`, `RESEND_API_KEY`, `SENDGRID_API_KEY` | Mail sender config |
 | `PASSWORD_RESET_EXPIRES_MINUTES`, `RESET_REQUESTS_PER_HOUR` | Reset token / rate limits |
 | `QDRANT_URL`, `QDRANT_COLLECTION`, `EMBEDDING_*`, `GENERATION_*` | Knowledge RAG (context-21); see root `.env.example` |
+| `AGENT_CHECKPOINT_DB_PATH` | Support Agent LangGraph SQLite checkpointer (default `data/agent/checkpoints.db`) |
 
 API keys come from the environment only — never commit them.
 
@@ -112,7 +114,7 @@ Nightly CSV export + pipeline trigger is **outside** this process and **outside*
 
 ## Authentication
 
-JWT bearer on supplier, incident, inventory, reporting, knowledge, and most user routes. Open: `GET /api/health` and public auth routes.
+JWT bearer on supplier, incident, inventory, reporting, knowledge, agent, and most user routes. Open: `GET /api/health` and public auth routes.
 
 | Method | Path | Notes |
 | ------ | ---- | ----- |
@@ -134,6 +136,7 @@ JWT bearer on supplier, incident, inventory, reporting, knowledge, and most user
 | Telemetry | `/telemetry` | Ingest + report |
 | Reporting | `/reporting` | Weekly location KPIs; `POST /reporting/pipeline-runs` (202 + `task_id` via Celery) |
 | Knowledge | `/knowledge` | `POST /knowledge/query`, `POST /knowledge/reindex` (Qdrant + LLM env required) |
+| Support Agent | `/agent` | `POST /agent/query` — LangGraph retrieve/generate/refuse (same RAG env as Knowledge) |
 | Tasks | `/tasks` | `GET /tasks/{task_id}` — Celery status (`pending` / `started` / `success` / `failure`) |
 | Health | `/api/health` | Liveness |
 

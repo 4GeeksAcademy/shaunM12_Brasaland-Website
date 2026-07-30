@@ -33,6 +33,8 @@ dependencies = [
   "ipykernel>=7.3.0",
   "qdrant-client>=1.18.0",
   "openai>=2.49.0",
+  "langgraph>=1.2.10",
+  "langgraph-checkpoint-sqlite>=3.1.0",
 ]
 
 [project.scripts]
@@ -43,7 +45,7 @@ pythonpath = ["../..", "."]
 testpaths = ["tests"]
 
 [tool.hatch.build.targets.wheel]
-packages = ["suppliers", "incident_analyzer", "auth", "users", "mailer", "inventory", "incidents", "telemetry", "reporting", "seeds", "job_runner", "task_dead_letters", "tasks", "knowledge"]
+packages = ["suppliers", "incident_analyzer", "auth", "users", "mailer", "inventory", "incidents", "telemetry", "reporting", "seeds", "job_runner", "task_dead_letters", "tasks", "knowledge", "agent"]
 
 [tool.hatch.build.targets.wheel.force-include]
 "database.py" = "database.py"

@@ -210,3 +210,68 @@ def test_query_passes_default_k_and_min_score_to_retrieve(
     assert captured["question"] == "waste protocol steps"
     assert captured["k"] == 5
     assert captured["min_score"] == pytest.approx(0.30)
+
+
+def test_assemble_context_formats_chunks():
+    chunks = [
+        {
+            "source_document": "brasaland-loyalty-program.en.md",
+            "section": "Gold tier",
+            "text": "Gold requires 50+ points.",
+        }
+    ]
+
+    context = rag_mod.assemble_context(chunks)
+
+    assert "[1] source=brasaland-loyalty-program.en.md | section=Gold tier" in context
+    assert "Gold requires 50+ points." in context
+
+
+def test_refusal_message_is_stable():
+    msg = rag_mod.refusal_message()
+    assert "don't have enough information" in msg.lower()
+    assert "knowledge base" in msg.lower()
+
+
+def test_generate_answer_rejects_empty_inputs():
+    with pytest.raises(ValueError, match="non-empty question"):
+        rag_mod.generate_answer("  ", "some context")
+    with pytest.raises(ValueError, match="non-empty context"):
+        rag_mod.generate_answer("What is Gold?", "  ")
+
+
+def test_generate_answer_calls_llm_without_retrieve(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    retrieve_called = False
+
+    def _retrieve_should_not_run(*_a, **_k):
+        nonlocal retrieve_called
+        retrieve_called = True
+        return []
+
+    monkeypatch.setattr(rag_mod, "retrieve", _retrieve_should_not_run)
+
+    mock_client = MagicMock()
+    completion = MagicMock()
+    completion.choices = [MagicMock(message=MagicMock(content="Gold needs 50+ points."))]
+    mock_client.chat.completions.create.return_value = completion
+    monkeypatch.setattr(rag_mod, "generation_client", lambda: mock_client)
+
+    context = rag_mod.assemble_context(
+        [
+            {
+                "source_document": "brasaland-loyalty-program.en.md",
+                "section": "Gold tier",
+                "text": "Gold requires 50+ points.",
+            }
+        ]
+    )
+    answer = rag_mod.generate_answer("How many points for Gold?", context)
+
+    assert answer == "Gold needs 50+ points."
+    assert retrieve_called is False
+    mock_client.chat.completions.create.assert_called_once()
+    messages = mock_client.chat.completions.create.call_args.kwargs["messages"]
+    assert "Gold requires 50+ points." in messages[1]["content"]
+    assert "How many points for Gold?" in messages[1]["content"]
