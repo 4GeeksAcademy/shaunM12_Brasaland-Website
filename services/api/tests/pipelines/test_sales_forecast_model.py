@@ -4,7 +4,13 @@ from __future__ import annotations
 
 import numpy as np
 
-from data.forecasting.evaluate import evaluate_forecast, k2_score, normalized_gini, psi_score
+from data.forecasting.evaluate import (
+    K2_RESIDUAL_ALERT_THRESHOLD,
+    evaluate_forecast,
+    k2_score,
+    normalized_gini,
+    psi_score,
+)
 from data.forecasting.features import FEATURE_COLUMNS, build_feature_frame, feature_matrix
 from data.forecasting.load import load_sales
 from data.forecasting.split import temporal_train_test_split
@@ -37,7 +43,11 @@ def test_train_and_evaluate_on_holdout():
     assert matrices.x_test.shape[0] == 24
 
     y_pred = artifacts.model.predict(matrices.x_test)
-    metrics = evaluate_forecast(matrices.y_test, y_pred)
+    metrics = evaluate_forecast(
+        matrices.y_test,
+        y_pred,
+        y_train=matrices.y_train,
+    )
 
     assert metrics.mse >= 0.0
     assert np.isfinite(metrics.psi)
@@ -55,14 +65,31 @@ def test_predict_with_uncertainty_band_ordering():
     assert np.all(mean <= high)
 
 
-def test_metrics_perfect_prediction_near_zero_error():
-    y = np.array([500_000.0, 600_000.0, 700_000.0, 800_000.0])
-    metrics = evaluate_forecast(y, y)
+def test_psi_zero_when_reference_and_comparison_match():
+    y = np.linspace(400_000.0, 900_000.0, 20)
+    assert abs(psi_score(y, y)) < 1e-6
+
+
+def test_k2_zero_when_zero_residuals():
+    y = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+    assert k2_score(y, y) == 0.0
+
+
+def test_metrics_perfect_holdout_prediction():
+    y_train = np.array([500_000.0, 600_000.0, 700_000.0, 800_000.0])
+    y_test = np.array([550_000.0, 650_000.0, 750_000.0, 850_000.0, 900_000.0, 950_000.0, 1_000_000.0, 1_050_000.0])
+    y_pred = y_test.copy()
+    metrics = evaluate_forecast(y_test, y_pred, y_train=y_train)
+
     assert metrics.mse == 0.0
     assert metrics.mape_pct == 0.0
-    assert abs(metrics.psi) < 1e-6
-    assert abs(normalized_gini(y, y) - 1.0) < 1e-6
-    assert k2_score(y, y) < 1e-5
+    assert abs(normalized_gini(y_test, y_pred) - 1.0) < 1e-6
+    assert metrics.k2 == 0.0
+    assert np.isfinite(metrics.psi)
+
+
+def test_k2_alert_threshold_is_documented():
+    assert K2_RESIDUAL_ALERT_THRESHOLD > 0.0
 
 
 def test_featured_split_preserves_temporal_boundaries():

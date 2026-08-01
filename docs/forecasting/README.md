@@ -61,9 +61,10 @@ Exported table: `docs/forecasting/outputs/v4_metrics_summary.md`
 | ------ | ---------------- | ---------------- | ------------- |
 | **MSE** | Average squared forecast error (USD²) | Lower | V3 (monthly errors) |
 | **MAPE** | Average % error vs actual revenue on holdout | Lower | V4 (metrics table) |
-| **PSI** | Distribution drift: predicted vs actual revenue mix | Lower | V5 (binned distribution) |
+| **PSI** | Target drift: train vs holdout `revenue_usd` distribution | Lower | V2 (split context) |
 | **Gini** | How well the model ranks high vs low months | Higher (max 1.0) | V1, V7 |
-| **K2** | Range-level bias across revenue buckets | Closer to 0 | V5, V8 |
+| **K2** | D'Agostino-Pearson K² on holdout residuals (error shape) | Lower | V8 (residual plot) |
+| **V5 chart** | Supplementary forecast-mix calibration (actual vs predicted bins) | Visual | V5 |
 
 ---
 
@@ -98,23 +99,25 @@ Exported table: `docs/forecasting/outputs/v4_metrics_summary.md`
 
 ---
 
-### PSI — Population Stability Index
+### PSI — Population Stability Index (train vs holdout target)
 
-**What it measures:** Whether the **shape** of predicted revenue matches the **shape** of actual revenue on the holdout. Revenue is split into bins (by actual revenue levels); PSI compares the **proportion** of months in each bin for actuals vs predictions.
+**What it measures:** Whether **revenue levels shifted** between the training era (2016–2023) and the holdout era (2024–2025). Revenue is binned using **training** quantiles; PSI compares the proportion of months in each bin for train vs test **actual** `revenue_usd`.
 
-**Finance reading:** PSI answers: *“Does the model forecast the same mix of strong, average, and weak months as we actually had?”* A model could hit average error (MSE) while systematically putting too many months in the “low revenue” bucket and too few in “high revenue” — PSI catches that.
+**Finance reading:** PSI answers: *“Did the business regime change between when we trained and when we evaluate?”* High PSI means the holdout period lives in a different part of the revenue distribution than training — the model may need retraining or regime-aware features even if point forecasts look acceptable on MSE.
 
 **How to read:**
 
 | PSI (rule of thumb) | Interpretation |
 | ------------------- | -------------- |
-| **&lt; 0.10** | Very stable — predicted distribution closely matches actual |
+| **&lt; 0.10** | Very stable — holdout target mix matches training |
 | **0.10 – 0.25** | Moderate shift — worth investigating |
-| **&gt; 0.25** | Significant shift — predictions may not match business reality |
+| **&gt; 0.25** | Significant shift — training distribution may not represent holdout |
 
-Holdout samples are small (24 months), so PSI can be sensitive; use it together with V5 (binned chart), not in isolation.
+Holdout samples are small (24 months), so PSI can be sensitive; interpret alongside V2 (train/holdout timeline), not in isolation.
 
-**Code:** `psi_score()` in `evaluate.py` — 10 equal-frequency bins from test actuals, standard PSI formula.
+**Code:** `psi_score(y_train, y_test)` in `evaluate.py` — bin edges from training targets, standard PSI formula.
+
+**Not the same as:** comparing test actual vs test predicted (forecast-mix calibration). That supplementary check is visualized in **V5** via `forecast_mix_chi2_score()`.
 
 ---
 
@@ -137,22 +140,22 @@ Holdout samples are small (24 months), so PSI can be sensitive; use it together 
 
 ---
 
-### K2 — Chi-square score on binned distributions
+### K2 — D'Agostino-Pearson K² on residuals
 
-**What it measures:** After bucketing holdout months into revenue ranges, K2 compares **counts** of actual vs predicted months in each bucket using a chi-square-style statistic. **K2 → 0** means proportions align well; **large K2** means structural bias in specific revenue ranges (e.g. under-predicting peak months).
+**What it measures:** Whether holdout **forecast errors** (`actual − predicted`) look like random noise or have a **systematic shape** (skew, heavy tails). Uses SciPy `normaltest` (D'Agostino-Pearson K² statistic).
 
-**Finance reading:** K2 answers: *“In which revenue bands is the model systematically wrong?”* It complements MSE: you can have moderate average error while still missing every peak month (high K2, visible in V5/V8).
+**Finance reading:** K2 answers: *“Are mistakes randomly scattered, or is there a pattern in how we miss?”* Complements MSE: average error can look fine while the model consistently under-predicts peaks (visible in V8).
 
 **How to read:**
 
-| K2 | Interpretation |
-| -- | -------------- |
-| **Near 0** | Good fit across revenue buckets |
-| **Large** | Systematic over- or under-prediction in one or more ranges — see V5 and V8 |
+| K2 (D'Agostino) | Interpretation |
+| --------------- | -------------- |
+| **Low (near 0)** | Residuals closer to normal / random |
+| **Elevated (e.g. &gt; ~6)** | Non-normal error shape — investigate V8 |
 
-**Code:** `k2_score()` in `evaluate.py` — same 10-bin edges as PSI, chi-square on actual counts vs expected from predicted proportions.
+**Code:** `k2_score(y_test, y_pred)` in `evaluate.py` — D'Agostino-Pearson on holdout residuals.
 
-**Course definition:** Bucket predictions and actuals, compare proportions. Catches systematic bias that a single MSE number can hide.
+**Supplementary:** V5 binned actual vs predicted chart and `forecast_mix_chi2_score()` show **forecast calibration** across revenue buckets — a different question from residual normality.
 
 ---
 
@@ -160,13 +163,13 @@ Holdout samples are small (24 months), so PSI can be sensitive; use it together 
 
 A forecasting model can show **acceptable MSE** and still be **unsafe for Finance** because:
 
-1. **Scale vs shape** — MSE averages errors; it does not show if forecasts are consistently too high or too low in certain seasons (PSI, K2).
-2. **Range-level bias** — Under-predicting every strong month and over-predicting weak months can partially cancel in MSE but break planning (K2, V5, V8).
-3. **Ranking failures** — Dollar error may be moderate while the model ranks months wrong for staffing or inventory (Gini).
-4. **Memorization** — Training error can look good while holdout error does not; we only report **test** metrics for an honest read.
-5. **Seasonal blind spots** — Missing recurring peaks (e.g. year-end) may not dominate MSE but shows up in binned metrics and residual charts (V7, V8).
+1. **Scale vs shape** — MSE averages errors; it does not show train→holdout target drift (PSI) or structured errors (K2).
+2. **Regime shift** — Holdout years may sit in a higher-revenue band than training; MSE alone does not flag that the model was trained on a different world (PSI).
+3. **Error shape** — Skewed or patterned residuals break planning confidence even when average error is moderate (K2, V8).
+4. **Ranking failures** — Dollar error may be moderate while the model ranks months wrong for staffing or inventory (Gini).
+5. **Memorization** — Training error can look good while holdout error does not; we only report **test** metrics for an honest read.
 
-**Practical rule for Brasaland:** Read **MSE/RMSE** for overall magnitude, **Gini** for “does it know which months are big?”, **PSI + K2 + V5** for “does the forecast mix match reality?”, and **V1’s uncertainty band** for planning ranges rather than a single point.
+**Practical rule for Brasaland:** Read **MSE/RMSE/MAPE** for overall magnitude, **Gini** for “does it know which months are big?”, **PSI** for “did revenue distribution shift train→holdout?”, **K2** for “are errors random?”, **V5** for forecast-mix calibration, and **V1’s uncertainty band** for planning ranges rather than a single point.
 
 ---
 
