@@ -107,13 +107,13 @@ Split by **`month`** — temporal only; **no random shuffle**.
 | ------ | ------- |
 | **MSE** | Average squared error on holdout (USD²) |
 | **MAPE** | Average absolute percentage error on holdout — stakeholder-readable (R5) |
-| **PSI** | Distribution drift: test **actual vs predicted** revenue mix (D20 / R4) |
+| **PSI** | Target drift: training vs holdout `revenue_usd` (D20 / R4) |
 | **Gini** | Normalized Gini — ranking quality of predictions vs actuals |
-| **K2 Score** | Chi-square on binned actual vs predicted; **→ 0 = good fit**; large K2 = range-level bias |
+| **K2 Score** | D'Agostino-Pearson K² on holdout residuals; lower = more random error shape |
 
 Plain-language definitions and holdout snapshot: [`docs/forecasting/README.md`](./README.md) and [`docs/forecasting/outputs/v4_metrics_summary.md`](./outputs/v4_metrics_summary.md).
 
-**High PSI/K2:** Call out in Finance summary — forecast mix or range-level fit may not match reality; may warrant retraining (course §3 narrative).
+**High PSI/K2:** Call out in Finance summary — train→holdout target drift (PSI) or non-normal residual shape (K2) may warrant retraining; see V2, V8, and V5 (forecast-mix supplementary).
 
 ---
 

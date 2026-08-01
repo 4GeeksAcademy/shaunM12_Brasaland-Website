@@ -52,10 +52,10 @@ The model's target variable is `revenue_usd` from the `consolidated` row.
 ### 3. KPIs and what a good model means here
 
 - A **low normalized Gini** means the model doesn't distinguish well between "good" and "bad" months — for Mariana this matters as much as absolute error, since she needs to identify underperforming months in advance. (**Higher Gini = better ranking** in our implementation.)
-- A **high PSI** on the holdout (actual vs predicted revenue mix) signals that forecast behavior may not match reality — call out explicitly if detected; Finance may need retraining or feature work.
+- A **high PSI** (train vs holdout target distribution) signals that the holdout era may sit in a different revenue regime than training — call out explicitly if detected; Finance may need retraining or feature work.
 - Report **MSE** in USD² and **MAPE** (average percentage error) on the holdout in V4 and the notebook Finance summary — how Felipe and Mariana understand forecast error.
 
-**Implementation note (no leakage impact):** PSI in `evaluate.py` compares **test actual vs test predicted** distributions (D20). Course wording about train/test structural shift is a **business narrative** when PSI/K2 are high — it does not change the metric formula unless Decision R4 below is revised.
+**Implementation note (no leakage impact):** PSI in `evaluate.py` compares **training vs holdout target** distributions (`psi_score(y_train, y_test)`). K2 is D'Agostino-Pearson on holdout residuals. V5 + `forecast_mix_chi2_score()` remain supplementary forecast-calibration visuals.
 
 ### 4. About the provided dataset
 
@@ -98,7 +98,7 @@ All items reviewed against course Brasaland CONTEXT vs repo implementation. **Lo
 | **R1** | Algorithm | **Random Forest** | Course allows RF or XGBoost; RF chosen for small N, explainability, tree band (D3, D14) |
 | **R2** | `market` column | **Consolidated-only CSV** | 120 rows, `market = consolidated`; `load.py` validates; column dropped as constant (D5) |
 | **R3** | Per-market features | **Not implemented** | Optional in course CONTEXT; no col/fl rows in provided file — defer unless new CSV + D5 revision |
-| **R4** | PSI | **Keep D20 formula** | Test actual vs test predicted in `evaluate.py`; high PSI/K2 → Finance retraining narrative (not train/test PSI in code) |
+| **R4** | PSI | **Train vs holdout target** | `psi_score(y_train, y_test)` — bin edges from training; Finance population-stability narrative |
 | **R5** | MSE reporting | **MSE + MAPE on holdout** | MSE in USD²; **avg. % error (MAPE)** in `evaluate.py`, V4, README, notebook Finance summary — test set only, no leakage |
 | **R6** | Deliverable paths | **Keep repo layout** | `data/forecasting/`, `services/api/tests/pipelines/` — course `scripts/` mapped in §6 |
 | **R7** | Scope | **Keep extended deliverables** | V1–V8, 3 test modules (11 tests), notebook, README — superset of course minimum |
@@ -113,7 +113,7 @@ All items reviewed against course Brasaland CONTEXT vs repo implementation. **Lo
 | `market` rows | col / fl / consolidated possible | **consolidated-only** in provided CSV (R2 ✅) |
 | Per-market features | optional | **not used** (R3 ✅) |
 | Training code path | `scripts/` | `data/forecasting/` + notebook (R6 ✅) |
-| PSI | structural shift narrative | test actual vs predicted in code (R4 ✅) |
+| PSI | train vs holdout target drift | **train vs holdout target** in code (R4 ✅) |
 | MSE reporting | USD² + average % error | MSE + **MAPE** on holdout (R5 ✅) |
 | Deliverables | minimum set | superset: V1–V8, extended tests (R7 ✅) |
 
@@ -131,7 +131,7 @@ Decisions were validated against the actual CSV (120 rows, 2016–2025, no nulls
 | 4 | **`StandardScaler`**, fit train only | Numeric features on different scales; scaler must not see test rows during fit |
 | 5 | **Drop** nulls / NaN lag rows | Provided CSV has no nulls; first 12 months drop after `lag_12` |
 | 6 | **10th–90th percentile** tree band | Ticket requires variability range, not a single optimistic point |
-| 7 | **MSE, MAPE, PSI, Gini, K2** on test only | Course rubric; MAPE for stakeholder readability (R5); K2 is chi-square on bins (not R²) |
+| 7 | **MSE, MAPE, PSI, Gini, K2** on test only | Course rubric; MAPE for stakeholder readability (R5); PSI = train vs holdout target; K2 = D'Agostino on residuals |
 | 8 | **`random_state = 42`** | Matches dataset generation seed; reproducible notebook and tests |
 | 9 | Layout under `data/forecasting/`, `notebooks/`, `services/api/tests/pipelines/` | Matches context-16/17/18 module patterns; deps via `uv` in `services/api` |
 
@@ -161,16 +161,16 @@ Decisions were validated against the actual CSV (120 rows, 2016–2025, no nulls
 | D11 | Variability band | **10th–90th percentile** across RF tree predictions per month |
 | D12 | Reproducibility | **`random_state = 42`** in module and notebook |
 | D13 | Python env | `services/api/pyproject.toml` + `uv add` — no `pip install` / `pipenv`; no competing root `pyproject.toml` |
-| D14 | Dependencies | `scikit-learn`, `pandas`, `matplotlib`, `jupyter`, `ipykernel` (no `xgboost` — RF only) |
+| D14 | Dependencies | `scikit-learn`, `scipy`, `pandas`, `matplotlib`, `jupyter`, `ipykernel` (no `xgboost` — RF only) |
 | D15 | Notebook | `notebooks/sales_forecasting.ipynb` |
 | D16 | Reusable code | `data/forecasting/` (load, split, features, train, evaluate, visualize) |
 | D17 | Tests | `test_sales_forecast_split.py`, `test_sales_forecast_model.py`, `test_sales_forecast_visualize.py` |
 | D18 | Metrics scope | MSE, MAPE, PSI, Gini, K2 on **test set only** |
 | D19 | MSE | `sklearn.metrics.mean_squared_error` on test |
 | D19b | MAPE (avg. % error) | `mean_absolute_percentage_error()` on test — holdout reporting for Mariana/Felipe (R5); does not feed `fit()` |
-| D20 | PSI | Bin **test actual** vs **test predicted** `revenue_usd`; standard PSI formula |
+| D20 | PSI | Bin **training** vs **holdout** `revenue_usd` (actual targets); bin edges from train; standard PSI formula |
 | D21 | Gini | **Normalized Gini** on test (ranking quality of predictions vs actuals) |
-| D22 | K2 Score | Chi-square on binned actual vs predicted proportions; **K2 → 0 = good fit**; large K2 = structural bias across revenue ranges |
+| D22 | K2 Score | **D'Agostino-Pearson K²** on holdout residuals (`y_test − y_pred`); lower = closer to random error shape; see V8 |
 | — | Raw data folder | Drop CSV in `data/raw/`; see `data/raw/README.md` |
 
 ---
@@ -301,11 +301,11 @@ Document in `docs/forecasting/README.md` in Finance-friendly language. Explain w
 | ------ | ---------- | -------------- |
 | **MSE** | `mean_squared_error(y_test, y_pred)` | Average squared error; lower is better; penalizes large misses |
 | **MAPE** | `mean_absolute_percentage_error(y_test, y_pred)` | Average % error vs actual revenue; stakeholder-readable (R5) |
-| **PSI** | Population Stability Index on binned test actual vs test predicted | Distribution drift; lower is more stable (typical: &lt;0.1 stable) |
+| **PSI** | Population Stability Index on binned **train vs holdout** actual `revenue_usd` | Target drift; lower is more stable (typical: &lt;0.1 stable) |
 | **Gini** | Normalized Gini on test (ranking quality) | How well predictions rank months vs actuals |
-| **K2 Score** | Chi-square on binned actual vs predicted proportions | **K2 → 0 = good distributional fit**; large K2 = structural bias in certain revenue ranges |
+| **K2 Score** | D'Agostino-Pearson K² on holdout residuals | Lower = errors closer to random; elevated = systematic error shape (V8) |
 
-**K2 (course definition):** After training, bucket predictions and actuals into bins and compare proportions. Catches systematic under/over-prediction that MSE may miss.
+**K2 (Finance definition):** Test whether holdout forecast errors look normally distributed. Catches patterned misses that MSE may hide. **V5** + `forecast_mix_chi2_score()` remain supplementary forecast-calibration views.
 
 ### Holdout results snapshot (2024–2025, `random_state=42`)
 
@@ -315,11 +315,11 @@ Reproducible via `train_sales_model()` + `evaluate_forecast()`. Exported in `doc
 | ------ | ----- | ------------------------------------------- |
 | **MSE** | 3,386,101,902.59 | RMSE ≈ **$58,000**/month scale — moderate dollar error |
 | **MAPE** | 6.00% | Average holdout error as % of actual revenue (Mariana/Felipe) |
-| **PSI** | 4.48 | High distribution drift — predicted revenue mix ≠ actual mix |
+| **PSI** | 8.37 | High train→holdout target drift — holdout revenue regime differs from training |
 | **Gini** | 0.74 | Decent ranking — model often knows which months are bigger |
-| **K2** | ~16,000,000 | Large range-level bias — peaks/weak months systematically off in some bins |
+| **K2** | 9.23 | Elevated D'Agostino K² — holdout residuals show non-random error shape (see V8) |
 
-**Rubric note:** Context-19 requires **reporting** these honestly, not hitting metric thresholds. High PSI/K2 supports the README narrative that MSE alone is insufficient and may warrant retraining discussion per §3.
+**Rubric note:** Context-19 requires **reporting** these honestly, not hitting metric thresholds. Elevated PSI/K2 support the README narrative that MSE alone is insufficient and may warrant retraining discussion per §3.
 
 ---
 
@@ -378,21 +378,21 @@ Eight charts for Finance and the tech lead. Each must have a **title**, **axis l
 | **Title** | `Model Evaluation on Holdout Period (2024–2025)` |
 | **Columns** | `Metric`, `Value`, `What it means` |
 | **Rows** | MSE, MAPE, RMSE scale, PSI, Gini, K2 — each with plain-language explanation |
-| **Caption** | Low MSE alone does not guarantee a good model; PSI, Gini, and K2 catch drift, ranking, and range-level bias. |
+| **Caption** | Low MSE alone is not enough: PSI flags train→holdout target drift, K2 (D'Agostino) flags residual shape, Gini flags ranking quality. |
 | **Output** | Notebook cell + optional `docs/forecasting/outputs/v4_metrics_summary.md` |
 
-### V5 — Binned actual vs predicted distribution (PSI / K2 support)
+### V5 — Binned actual vs predicted distribution (forecast-mix supplementary)
 
 | Field | Value |
 | ----- | ----- |
-| **Purpose** | Show whether forecast *distribution* matches reality |
+| **Purpose** | Visual forecast calibration: do predicted months fall in the same revenue buckets as actuals? |
 | **Chart type** | Grouped bar chart (side-by-side bins) |
 | **Data** | Test set; same bin edges for actual and predicted |
 | **Title** | `Distribution of Actual vs Predicted Revenue (Holdout)` |
 | **X-axis label** | `Revenue bin (USD)` |
 | **Y-axis label** | `Share of months (%)` |
 | **Legend labels** | `Actual`, `Predicted` |
-| **Caption** | Supports PSI and K2: mismatched bar heights indicate systematic bias in certain revenue ranges. |
+| **Caption** | Supplementary forecast-mix view. Mismatched bar heights show calibration bias; Finance PSI/K2 in V4 use train→holdout drift and D'Agostino residual normality. |
 | **Output file** | `docs/forecasting/outputs/v5_binned_distribution.png` |
 
 ### V6 — Random Forest feature importance

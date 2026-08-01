@@ -165,7 +165,7 @@ Open the notebook and select kernel **Brasaland Forecasting (Python 3.12)**.
 cd services/api && uv run jupyter notebook ../../notebooks/sales_forecasting.ipynb
 ```
 
-Holdout metrics (2024–2025 test window) include **MAPE** (~6% avg. forecast error) alongside MSE, PSI, Gini, and K2 — see `data/forecasting/evaluate.py` and V4 in the notebook.
+Holdout metrics (2024–2025 test window) include **MAPE** (~6% avg. forecast error) alongside MSE, **PSI (train→holdout drift)**, Gini, and **K2 (D'Agostino on residuals)** — see `data/forecasting/evaluate.py` and V4 in the notebook.
 
 Tests:
 
