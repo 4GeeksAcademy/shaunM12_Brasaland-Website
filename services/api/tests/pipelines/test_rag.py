@@ -189,7 +189,8 @@ def test_query_calls_generation_llm_with_retrieved_context(
     user_content = messages[1]["content"]
     assert "Gold requires 50+ points." in user_content
     assert "How many points for Gold?" in user_content
-    assert "Retrieved context:" in user_content
+    assert "Untrusted retrieved documents" in user_content
+    assert "Instruction authority" in messages[0]["content"]
 
 
 def test_query_passes_default_k_and_min_score_to_retrieve(
@@ -231,6 +232,7 @@ def test_refusal_message_is_stable():
     msg = rag_mod.refusal_message()
     assert "don't have enough information" in msg.lower()
     assert "knowledge base" in msg.lower()
+    assert "support agent" in msg.lower()
 
 
 def test_generate_answer_rejects_empty_inputs():
@@ -275,3 +277,5 @@ def test_generate_answer_calls_llm_without_retrieve(
     messages = mock_client.chat.completions.create.call_args.kwargs["messages"]
     assert "Gold requires 50+ points." in messages[1]["content"]
     assert "How many points for Gold?" in messages[1]["content"]
+    assert "Untrusted retrieved documents" in messages[1]["content"]
+    assert "Instruction authority" in messages[0]["content"]

@@ -15,7 +15,8 @@ from knowledge.bootstrap import ensure_repo_root_on_path
 from users.models import UserResponse
 
 from .graph import invoke_support_agent
-from .schemas import AgentQueryRequest, AgentQueryResponse
+from .guardrails.summary import build_guardrail_summary_response
+from .schemas import AgentQueryRequest, AgentQueryResponse, GuardrailSummaryResponse
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["agent"])
@@ -57,3 +58,11 @@ def agent_query(
         state.get("trace_events"),
     )
     return AgentQueryResponse(answer=state["answer"])
+
+
+@router.get("/guardrails/summary", response_model=GuardrailSummaryResponse)
+def agent_guardrails_summary(
+    _: UserResponse = Depends(get_current_user),
+) -> GuardrailSummaryResponse:
+    """Return in-memory guardrail counters for the running API process."""
+    return build_guardrail_summary_response()

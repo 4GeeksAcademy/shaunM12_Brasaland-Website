@@ -13,3 +13,14 @@ class AgentQueryResponse(BaseModel):
     """Client-facing answer only — trace stays server-side (context-23 P1-L6)."""
 
     answer: str
+
+
+class GuardrailSummaryResponse(BaseModel):
+    """In-process guardrail counters since API start (context-25 P25-L22b)."""
+
+    since: str
+    blocks: int
+    redirects: int
+    validation_failures: int
+    by_failure_type: dict[str, int] = Field(default_factory=dict)
+    by_reason: dict[str, int] = Field(default_factory=dict)
