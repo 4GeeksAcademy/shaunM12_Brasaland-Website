@@ -10,6 +10,8 @@ from tests.pipelines.agent_trace_assertions import (
     assert_guardrail_prefix,
     assert_no_validate_output,
     assert_validate_after_generate,
+    mock_structured_generation,
+    structured_generation_result,
     trace_nodes,
 )
 
@@ -88,16 +90,15 @@ def test_routing_eval_incident_path_skips_retrieve(monkeypatch: pytest.MonkeyPat
     monkeypatch.setattr(rag_mod, "retrieve", _retrieve)
     import agent.generation as generation_mod
 
-    monkeypatch.setattr(
-        generation_mod,
-        "generate_support_answer",
-        lambda _q, **kwargs: (
+    def _support(_q, **kwargs):
+        return structured_generation_result(
             "Open incidents at Miami Doral: #55 Slow order complaint, #63 Uniform protocol breach."
             if kwargs.get("tool_results")
             and len(kwargs["tool_results"][0]["rows"]) == 2
             else "missing tool context"
-        ),
-    )
+        )
+
+    monkeypatch.setattr(generation_mod, "generate_structured_support_response", _support)
 
     state = graph_mod.invoke_support_agent(
         "List open incidents at Miami Doral",
@@ -143,10 +144,9 @@ def test_routing_eval_rag_path_never_calls_tool_http(monkeypatch: pytest.MonkeyP
     from data.pipelines import rag as rag_mod
 
     monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
-    monkeypatch.setattr(
-        rag_mod,
-        "generate_answer",
-        lambda _q, _ctx: "Gold tier requires 50 or more loyalty points.",
+    mock_structured_generation(
+        monkeypatch,
+        rag_answer="Gold tier requires 50 or more loyalty points.",
     )
 
     state = graph_mod.invoke_support_agent("How many points for Gold tier?")
@@ -178,7 +178,7 @@ def test_routing_eval_incident_unavailable_uses_fallback(monkeypatch: pytest.Mon
     def _generate(*_a, **_k):
         nonlocal generate_called
         generate_called = True
-        return "made up incidents"
+        return structured_generation_result("made up incidents")
 
     monkeypatch.setattr(
         "agent.graph.lookup_incidents_via_mcp",
@@ -186,11 +186,10 @@ def test_routing_eval_incident_unavailable_uses_fallback(monkeypatch: pytest.Mon
     )
     ensure_repo_root_on_path()
     from data.pipelines import rag as rag_mod
-
-    monkeypatch.setattr(rag_mod, "retrieve", _retrieve)
     import agent.generation as generation_mod
 
-    monkeypatch.setattr(generation_mod, "generate_support_answer", _generate)
+    monkeypatch.setattr(rag_mod, "retrieve", _retrieve)
+    monkeypatch.setattr(generation_mod, "generate_structured_support_response", _generate)
 
     state = graph_mod.invoke_support_agent("List open incidents at Miami Doral")
 
@@ -225,7 +224,7 @@ def test_routing_eval_incident_write_uses_template_confirmation(
     def _generate(*_a, **_k):
         nonlocal generate_called
         generate_called = True
-        return "LLM should not run"
+        return structured_generation_result("LLM should not run")
 
     monkeypatch.setattr(
         "agent.graph.mutate_incident_via_mcp",
@@ -235,7 +234,7 @@ def test_routing_eval_incident_write_uses_template_confirmation(
     ensure_repo_root_on_path()
     import agent.generation as generation_mod
 
-    monkeypatch.setattr(generation_mod, "generate_support_answer", _generate)
+    monkeypatch.setattr(generation_mod, "generate_structured_support_response", _generate)
 
     state = graph_mod.invoke_support_agent(
         "Create incident for broken POS at Miami Doral: terminal frozen during lunch rush",
@@ -288,16 +287,14 @@ def test_routing_eval_incident_summary_skips_retrieve(monkeypatch: pytest.Monkey
     monkeypatch.setattr(rag_mod, "retrieve", _retrieve)
     import agent.generation as generation_mod
 
-    monkeypatch.setattr(
-        generation_mod,
-        "generate_support_answer",
-        lambda _q, **kwargs: (
+    def _support(_q, **kwargs):
+        return structured_generation_result(
             "3 open incidents"
-            if kwargs.get("tool_results")
-            and kwargs["tool_results"][0].get("summary")
+            if kwargs.get("tool_results") and kwargs["tool_results"][0].get("summary")
             else "missing"
-        ),
-    )
+        )
+
+    monkeypatch.setattr(generation_mod, "generate_structured_support_response", _support)
 
     state = graph_mod.invoke_support_agent("How many open incidents are there?")
 
@@ -341,16 +338,15 @@ def test_routing_eval_inventory_path_skips_retrieve(monkeypatch: pytest.MonkeyPa
     monkeypatch.setattr(rag_mod, "retrieve", _retrieve)
     import agent.generation as generation_mod
 
-    monkeypatch.setattr(
-        generation_mod,
-        "generate_support_answer",
-        lambda _q, **kwargs: (
+    def _support(_q, **kwargs):
+        return structured_generation_result(
             "BRS-BEEF-001 has 50 kg in stock."
             if kwargs.get("tool_results")
             and kwargs["tool_results"][0]["rows"][0]["sku"] == "BRS-BEEF-001"
             else "missing"
-        ),
-    )
+        )
+
+    monkeypatch.setattr(generation_mod, "generate_structured_support_response", _support)
 
     state = graph_mod.invoke_support_agent(
         "Current stock for SKU BEEF-001",

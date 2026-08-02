@@ -13,6 +13,8 @@ from tests.pipelines.agent_trace_assertions import (
     assert_guardrail_prefix,
     assert_no_validate_output,
     assert_validate_after_generate,
+    mock_structured_generation,
+    structured_generation_result,
     trace_nodes,
 )
 
@@ -66,10 +68,9 @@ def test_invoke_gold_tier_retrieve_before_generate(monkeypatch: pytest.MonkeyPat
         }
     ]
     monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
-    monkeypatch.setattr(
-        rag_mod,
-        "generate_answer",
-        lambda _q, _ctx: "Gold tier requires 50 or more loyalty points.",
+    mock_structured_generation(
+        monkeypatch,
+        rag_answer="Gold tier requires 50 or more loyalty points.",
     )
 
     state = graph_mod.invoke_support_agent("How many points for Gold tier?")
@@ -113,7 +114,13 @@ def test_invoke_generation_provider_error_returns_fallback(
             body=None,
         )
 
-    monkeypatch.setattr(rag_mod, "generate_answer", _raise_provider_block)
+    import agent.generation as generation_mod
+
+    monkeypatch.setattr(
+        generation_mod,
+        "generate_structured_rag_response",
+        _raise_provider_block,
+    )
 
     state = graph_mod.invoke_support_agent("How many points for Gold tier?")
 
@@ -154,16 +161,17 @@ def test_invoke_empty_retrieval_refuses_without_generate(
 ):
     generate_called = False
 
-    def _generate(*_a, **_k):
+    def _structured_rag(*_a, **_k):
         nonlocal generate_called
         generate_called = True
-        return "should not run"
+        return structured_generation_result("should not run")
 
     ensure_repo_root_on_path()
     from data.pipelines import rag as rag_mod
+    import agent.generation as generation_mod
 
     monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: [])
-    monkeypatch.setattr(rag_mod, "generate_answer", _generate)
+    monkeypatch.setattr(generation_mod, "generate_structured_rag_response", _structured_rag)
 
     state = graph_mod.invoke_support_agent("What is the secret menu?")
 
@@ -176,6 +184,61 @@ def test_invoke_empty_retrieval_refuses_without_generate(
     assert "generate" not in nodes
     assert_no_validate_output(nodes)
     assert "don't have enough information" in state["answer"].lower()
+
+
+def test_invoke_ambiguous_medellin_returns_disambiguation(monkeypatch: pytest.MonkeyPatch):
+    ensure_repo_root_on_path()
+    from data.pipelines import rag as rag_mod
+
+    monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: [])
+
+    state = graph_mod.invoke_support_agent(
+        "At Medellín the meat supplier delivers on Wednesday. Can you remember that?"
+    )
+
+    assert state["route"] == "location_disambiguate"
+    assert "Centro" in state["answer"]
+    assert "Laureles" in state["answer"]
+    assert "Envigado" in state["answer"]
+    nodes = _trace_nodes(state)
+    assert "classify" not in nodes
+
+
+def test_invoke_empty_retrieval_memory_correction_routes_to_generate(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    correction_called = False
+
+    def _memory_correction(*_a, **_k):
+        nonlocal correction_called
+        correction_called = True
+        return structured_generation_result(
+            "Miami Beach closes at 11pm on weekends. Want me to remember that?"
+        )
+
+    ensure_repo_root_on_path()
+    from data.pipelines import rag as rag_mod
+    import agent.generation as generation_mod
+
+    monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: [])
+    monkeypatch.setattr(
+        generation_mod,
+        "generate_structured_memory_correction_response",
+        _memory_correction,
+    )
+
+    question = (
+        "At Miami Beach we close at 11pm on weekends, not 10pm like the manual says. "
+        "Can you remember that for next time?"
+    )
+    state = graph_mod.invoke_support_agent(question)
+
+    assert correction_called is True
+    assert state["route"] == "generate"
+    nodes = _trace_nodes(state)
+    assert "refuse" not in nodes
+    assert "generate" in nodes
+    assert_validate_after_generate(nodes)
 
 
 def test_resolve_procedure_hint_for_incident_create():
@@ -241,13 +304,8 @@ def test_invoke_show_all_incidents_skips_retrieve(monkeypatch: pytest.MonkeyPatc
         },
     )
     ensure_repo_root_on_path()
-    import agent.generation as generation_mod
 
-    monkeypatch.setattr(
-        generation_mod,
-        "generate_support_answer",
-        lambda _q, **kwargs: "Incident list answer",
-    )
+    mock_structured_generation(monkeypatch, support_answer="Incident list answer")
 
     state = graph_mod.invoke_support_agent("show me all incidents")
 
@@ -340,16 +398,11 @@ def test_invoke_incident_with_rows_generates(monkeypatch: pytest.MonkeyPatch):
         },
     )
     ensure_repo_root_on_path()
-    import agent.generation as generation_mod
 
-    monkeypatch.setattr(
-        generation_mod,
-        "generate_support_answer",
-        lambda _q, **kwargs: (
+    mock_structured_generation(
+        monkeypatch,
+        support_answer=(
             "Oven fault"
-            if kwargs.get("tool_results")
-            and kwargs["tool_results"][0]["rows"][0]["title"] == "Oven fault"
-            else "missing"
         ),
     )
 
@@ -393,7 +446,7 @@ def test_invoke_both_path_uses_generate_support_answer(monkeypatch: pytest.Monke
         support_called = True
         assert kwargs.get("tool_results")
         assert kwargs.get("rag_context")
-        return "Combined incidents and waste policy answer."
+        return structured_generation_result("Combined incidents and waste policy answer.")
 
     monkeypatch.setattr(
         "agent.graph.lookup_incidents_via_mcp",
@@ -409,11 +462,10 @@ def test_invoke_both_path_uses_generate_support_answer(monkeypatch: pytest.Monke
     )
     ensure_repo_root_on_path()
     from data.pipelines import rag as rag_mod
-
-    monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
     import agent.generation as generation_mod
 
-    monkeypatch.setattr(generation_mod, "generate_support_answer", _support)
+    monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
+    monkeypatch.setattr(generation_mod, "generate_structured_support_response", _support)
 
     state = graph_mod.invoke_support_agent(
         "Open incidents at Miami Doral and our waste disposal policy",
@@ -453,11 +505,7 @@ def test_graph_nodes_never_call_monolithic_query(monkeypatch: pytest.MonkeyPatch
     ]
     monkeypatch.setattr(rag_mod, "query", _query)
     monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
-    monkeypatch.setattr(
-        rag_mod,
-        "generate_answer",
-        lambda _q, _ctx: "Gold needs 50+ points.",
-    )
+    mock_structured_generation(monkeypatch, rag_answer="Gold needs 50+ points.")
 
     state = graph_mod.invoke_support_agent("How many points for Gold tier?")
 
@@ -466,4 +514,4 @@ def test_graph_nodes_never_call_monolithic_query(monkeypatch: pytest.MonkeyPatch
     nodes = _trace_nodes(state)
     assert_guardrail_prefix(nodes)
     assert_validate_after_generate(nodes)
-    assert len(state["trace_events"]) >= 6
+    assert len(state["trace_events"]) >= 8

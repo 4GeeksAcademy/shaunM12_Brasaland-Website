@@ -25,7 +25,7 @@ Internal Next.js + TypeScript ops app (incidents, suppliers, inventory, reportin
 | `/inventory/orders` | Combined order history (read-only) |
 | `/reporting` | Weekly location KPI dashboard |
 | `/knowledge` | RAG knowledge query + reindex (needs Qdrant) |
-| `/support` | LangGraph support agent query (needs Qdrant; no reindex) |
+| `/support` | LangGraph support agent query (needs Qdrant; optional `thread_id` for memory propose/confirm; UI coaching for approve phrasing) |
 | `/account/profile` | User profile |
 | `/account/users` | User admin (admin only) |
 

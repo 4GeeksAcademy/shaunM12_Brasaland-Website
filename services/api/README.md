@@ -15,7 +15,7 @@ FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralize
 | `telemetry/` | Event capture, storage, on-demand report |
 | `reporting/` | Weekly KPI APIs + pipeline trigger (enqueues Celery; see DEV-55) |
 | `knowledge/` | RAG query + reindex (`POST /knowledge/query`, `POST /knowledge/reindex`) |
-| `agent/` | LangGraph support agent (`POST /agent/query`; SQLite checkpoint — context-23 P1) |
+| `agent/` | LangGraph support agent (`POST /agent/query`; SQLite checkpoint — context-23; MEM-092 memory in `agent/memory/`) |
 | `celery_app.py` | Celery app (Redis broker + result backend) + async pipeline task |
 | `job_runner/` | Nightly job status (`reporting.job_runs`) — used by `scripts/nightly_export.py` |
 | `seeds/` | Demo/bootstrap loaders (suppliers, inventory, incidents, telemetry) |
@@ -52,6 +52,7 @@ cp ../../.env.example ../../.env
 | `AGENT_CHECKPOINT_DB_PATH` | Support Agent LangGraph SQLite checkpointer (default `data/agent/checkpoints.db`) |
 | `AGENT_MCP_SERVER_URL` | MCP company-tools URL for incident ops (default `http://127.0.0.1:8765`; context-24) |
 | `AGENT_DEFAULT_LOCATION_ID` | Default inventory location when omitted in stock questions (default `1`) |
+| `AGENT_MEMORY_*` | Agent memory caps, TTLs, proposal rate limit, injection max (MEM-092; see root `.env.example`) |
 | `MCPAUTH_REGISTRATION_SECRET` | Required for MCP server + agent token minting — see root `.env.example` |
 
 API keys come from the environment only — never commit them.
@@ -139,7 +140,23 @@ JWT bearer on supplier, incident, inventory, reporting, knowledge, agent, and mo
 | Telemetry | `/telemetry` | Ingest + report |
 | Reporting | `/reporting` | Weekly location KPIs; `POST /reporting/pipeline-runs` (202 + `task_id` via Celery) |
 | Knowledge | `/knowledge` | `POST /knowledge/query`, `POST /knowledge/reindex` (Qdrant + LLM env required) |
-| Support Agent | `/agent` | `POST /agent/query` — LangGraph retrieve/generate/refuse (same RAG env as Knowledge) |
+| Support Agent | `/agent` | `POST /agent/query` — LangGraph + optional `thread_id`; user-approved memory (MEM-092); same RAG env as Knowledge |
+
+### Agent memory module (`agent/memory/`)
+
+Postgres-backed episodic store with audit log. Graph nodes: `resolve_memory_proposal`, `read_memory`, `memory_ack` / `memory_reject`. Design: [docs/agent/memory-design.md](../../docs/agent/memory-design.md).
+
+| File | Role |
+| ---- | ---- |
+| `store.py` | `read_memory()`, `write_memory()`, `log_proposal()` |
+| `proposal.py`, `patterns_proposal.py` | Rule-first approve/reject/edit classifier (P26-L9) |
+| `denylist.py`, `keys.py`, `schemas.py` | Write gates and allowlists |
+| `proposal_inference.py` | Infer proposal when LLM omits JSON |
+| `correction_intent.py`, `location_hint.py` | Correction detection and location scoping |
+| `models.py` | SQLModel tables (`agent_memory_entries`, `agent_memory_audit_log`) |
+
+**Tests:** `uv run pytest tests/pipelines/test_agent_memory*.py tests/test_agent_api.py -q`
+
 | Tasks | `/tasks` | `GET /tasks/{task_id}` — Celery status (`pending` / `started` / `success` / `failure`) |
 | Health | `/api/health` | Liveness |
 

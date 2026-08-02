@@ -1,4 +1,4 @@
-/** Support Agent API client (context-23 Part 1 Phase 3). */
+/** Support Agent API client (context-23 Part 1 Phase 3 + MEM-092 thread continuity). */
 
 import { formatApiError } from "@/lib/api-error";
 import { authorizedFetch } from "@/lib/http";
@@ -6,6 +6,13 @@ import { authorizedFetch } from "@/lib/http";
 export interface AgentQueryResponse {
   answer: string;
 }
+
+export interface AgentQueryRequest {
+  question: string;
+  thread_id?: string;
+}
+
+const SUPPORT_THREAD_STORAGE_KEY = "brasaland_support_thread_id";
 
 function getBaseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_AGENT_API_BASE_URL?.trim();
@@ -44,13 +51,39 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return JSON.parse(body) as T;
 }
 
+export function getSupportThreadId(): string {
+  if (typeof window === "undefined") {
+    return "";
+  }
+  let threadId = sessionStorage.getItem(SUPPORT_THREAD_STORAGE_KEY);
+  if (!threadId) {
+    threadId = crypto.randomUUID();
+    sessionStorage.setItem(SUPPORT_THREAD_STORAGE_KEY, threadId);
+  }
+  return threadId;
+}
+
+export function resetSupportThreadId(): string {
+  const threadId = crypto.randomUUID();
+  if (typeof window !== "undefined") {
+    sessionStorage.setItem(SUPPORT_THREAD_STORAGE_KEY, threadId);
+  }
+  return threadId;
+}
+
 export async function askSupportAgent(
   question: string,
+  threadId?: string,
 ): Promise<AgentQueryResponse> {
+  const payload: AgentQueryRequest = { question };
+  const resolvedThreadId = threadId ?? getSupportThreadId();
+  if (resolvedThreadId) {
+    payload.thread_id = resolvedThreadId;
+  }
   return request<AgentQueryResponse>(agentPath("/query"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify(payload),
   });
 }
 

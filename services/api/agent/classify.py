@@ -217,6 +217,30 @@ def classify_question(question: str) -> ClassifyResult:
     if write_result is not None:
         return write_result
 
+    from agent.memory.correction_intent import looks_like_memory_correction
+
+    if looks_like_memory_correction(text):
+        from agent.memory.proposal import extract_continued_question, matches_approve_with_memory_intent
+
+        continued = (
+            extract_continued_question(text)
+            if matches_approve_with_memory_intent(text)
+            else None
+        )
+        if continued:
+            matched.append("approve_and_continue")
+            return classify_question(continued)
+        matched.append("memory_correction")
+        matched.append("intent:rag")
+        return ClassifyResult(intent="rag", matched=matched)
+
+    if _looks_like_operational_policy_question(text) and not _has_core_incident_signals(
+        text, matched, relaxed_hash=False
+    ):
+        matched.append("operational_policy")
+        matched.append("intent:rag")
+        return ClassifyResult(intent="rag", matched=matched)
+
     has_incident = _has_incident_signals(text, matched)
     has_kb = _has_kb_signals(text, matched)
     has_inventory = _has_inventory_signals(text, matched)
@@ -511,12 +535,13 @@ def _detect_incident_action(
     return "list"
 
 
-def _has_incident_signals(
+def _has_core_incident_signals(
     text: str,
     matched: list[str],
     *,
     relaxed_hash: bool = True,
 ) -> bool:
+    """Incident list/get/summary phrasing — not branch names alone."""
     lower = text.lower()
 
     if _has_list_incident_phrasing(lower, matched):
@@ -544,16 +569,46 @@ def _has_incident_signals(
         matched.append("incident_id_pattern")
         return True
 
-    for branch in BRANCH_VALUES:
-        pattern = branch.replace("_", " ")
-        if _contains_phrase(lower, pattern) or _contains_phrase(lower, branch):
-            matched.append(f"branch:{branch}")
+    for signal in SUMMARY_SIGNALS:
+        if signal in lower:
+            matched.append(f"summary:{signal}")
             return True
 
-    for _key, label in BRANCH_LABELS.items():
-        if _contains_phrase(lower, label.lower()):
-            matched.append(f"branch_label:{label}")
-            return True
+    return False
+
+
+_OPERATIONAL_POLICY_PATTERNS: tuple[re.Pattern[str], ...] = (
+    re.compile(
+        r"\bwhen\b.+\b(?:deliver\w*|delivery|supplier|vegetable|meat|produce)\b",
+        re.I,
+    ),
+    re.compile(
+        r"\b(?:deliver\w*|delivery|supplier)\b.+\b(?:when|day|schedule|arrive)\b",
+        re.I,
+    ),
+    re.compile(r"\bwhat day\b.+\b(?:deliver\w*|delivery|supplier)\b", re.I),
+    re.compile(r"\b(?:hours?|open|clos\w*)\b.+\b(?:at|for)\s+[A-Za-z]", re.I),
+)
+
+
+def _looks_like_operational_policy_question(text: str) -> bool:
+    """Supplier delivery / hours lookups — RAG + memory, not live incidents."""
+    stripped = (text or "").strip()
+    if not stripped:
+        return False
+    return any(pattern.search(stripped) for pattern in _OPERATIONAL_POLICY_PATTERNS)
+
+
+def _has_incident_signals(
+    text: str,
+    matched: list[str],
+    *,
+    relaxed_hash: bool = True,
+) -> bool:
+    lower = text.lower()
+
+    if _has_core_incident_signals(text, matched, relaxed_hash=relaxed_hash):
+        return True
 
     for status_phrase, status_value in STATUS_PHRASES:
         if _contains_phrase(lower, status_phrase):
@@ -563,11 +618,6 @@ def _has_incident_signals(
     for origin in ORIGIN_VALUES:
         if _contains_phrase(lower, origin):
             matched.append(f"origin:{origin}")
-            return True
-
-    for signal in SUMMARY_SIGNALS:
-        if signal in lower:
-            matched.append(f"summary:{signal}")
             return True
 
     if any(_contains_phrase(lower, word) for word in GENERIC_ISSUE_WORDS):

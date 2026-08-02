@@ -6,6 +6,7 @@ import logging
 import os
 import sqlite3
 import uuid
+from datetime import datetime, timezone
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -31,7 +32,9 @@ from .write_confirmations import format_write_confirmation
 logger = logging.getLogger(__name__)
 
 RouteAfterIntake = Literal["error", "guard_input"]
-RouteAfterGuardInput = Literal["guard_block", "classify"]
+RouteAfterGuardInput = Literal["guard_block", "resolve_memory_proposal"]
+RouteAfterResolveMemory = Literal["memory_ack", "memory_reject", "read_memory"]
+RouteAfterReadMemory = Literal["classify", "location_disambiguate"]
 RouteAfterClassify = Literal[
     "retrieve",
     "lookup_incident",
@@ -48,6 +51,31 @@ _EMPTY_QUESTION_ANSWER = (
     "Please enter a question so the Support Agent can look it up in Brasaland's "
     "knowledge base."
 )
+
+MEMORY_ACK_MESSAGE = "Got it — I'll remember that for next time."
+
+
+def _invoke_configurable() -> dict[str, Any]:
+    config = get_config() or {}
+    return config.get("configurable") or {}
+
+
+def _config_int(key: str) -> int | None:
+    raw = _invoke_configurable().get(key)
+    if raw is None:
+        return None
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
+def _config_str(key: str) -> str | None:
+    raw = _invoke_configurable().get(key)
+    if raw is None:
+        return None
+    text = str(raw).strip()
+    return text or None
 
 
 def _default_min_score() -> float:
@@ -168,6 +196,297 @@ def casual_reply_node(state: AgentState) -> dict[str, Any]:
                 "reason": "domain_redirect:casual_reply",
             }
         ],
+    }
+
+
+def resolve_memory_proposal_node(state: AgentState) -> dict[str, Any]:
+    """Resolve pending memory proposal from prior turn (P26-L10, P26-L14)."""
+    from agent.memory.proposal import classify_memory_decision, pending_is_expired
+    from agent.memory.schemas import MemoryProposal
+    from agent.memory.session import open_memory_session
+    from agent.memory.store import log_proposal, write_memory
+
+    pending = state.get("pending_proposal")
+    if not pending:
+        from agent.memory.constants import (
+            MEMORY_NO_PENDING_APPROVE_MESSAGE,
+            MEMORY_NO_PENDING_BARE_ASSENT_MESSAGE,
+        )
+        from agent.memory.proposal import is_bare_assent, matches_approve_with_memory_intent
+
+        question = state.get("question") or ""
+        if is_bare_assent(question):
+            return {
+                "answer": MEMORY_NO_PENDING_BARE_ASSENT_MESSAGE,
+                "route": "memory_reject",
+                "memory_next": "reject",
+                "trace_events": _trace(
+                    "resolve_memory_proposal",
+                    action="bare_assent_no_pending",
+                ),
+            }
+        if matches_approve_with_memory_intent(question):
+            return {
+                "answer": MEMORY_NO_PENDING_APPROVE_MESSAGE,
+                "route": "memory_reject",
+                "memory_next": "reject",
+                "trace_events": _trace(
+                    "resolve_memory_proposal",
+                    action="approve_no_pending",
+                ),
+            }
+        return {
+            "memory_next": "continue",
+            "trace_events": _trace("resolve_memory_proposal", action="noop"),
+        }
+
+    user_id = _config_int("user_id")
+    thread_id = _config_str("thread_id")
+    pending_at = state.get("pending_proposal_at")
+
+    if pending_is_expired(pending_at):
+        trace: dict[str, Any] = {
+            "node": "resolve_memory_proposal",
+            "action": "expired",
+            "outcome": "expired_no_response",
+        }
+        updates: dict[str, Any] = {
+            "pending_proposal": None,
+            "pending_proposal_at": None,
+            "last_memory_outcome": "expired_no_response",
+            "memory_next": "continue",
+            "trace_events": [trace],
+        }
+        if user_id is not None:
+            with open_memory_session() as session:
+                if session is not None:
+                    log_proposal(
+                        session,
+                        user_id=user_id,
+                        outcome="expired_no_response",
+                        proposal=pending,
+                        reason="pending_ttl",
+                        user_message=state.get("question"),
+                        thread_id=thread_id,
+                    )
+        return updates
+
+    resolution = classify_memory_decision(state.get("question") or "", pending=pending)
+    trace = {
+        "node": "resolve_memory_proposal",
+        "action": "classify",
+        "outcome": resolution.outcome,
+    }
+    if resolution.reason:
+        trace["reason"] = resolution.reason
+
+    clear_pending: dict[str, Any] = {
+        "pending_proposal": None,
+        "pending_proposal_at": None,
+        "last_memory_outcome": resolution.outcome,
+    }
+
+    if resolution.outcome in {"ambiguous", "reject"}:
+        from agent.memory.constants import memory_reject_message
+        from agent.memory.proposal import should_continue_after_ambiguous_pending_resolution
+
+        audit_outcome = (
+            "rejected_ambiguous" if resolution.outcome == "ambiguous" else "rejected"
+        )
+        if user_id is not None:
+            with open_memory_session() as session:
+                if session is not None:
+                    log_proposal(
+                        session,
+                        user_id=user_id,
+                        outcome=audit_outcome,
+                        proposal=pending,
+                        reason=resolution.reason,
+                        user_message=state.get("question"),
+                        thread_id=thread_id,
+                    )
+        if resolution.outcome == "ambiguous" and should_continue_after_ambiguous_pending_resolution(
+            resolution,
+            state.get("question") or "",
+        ):
+            from agent.memory.constants import MEMORY_REJECT_TOPIC_CHANGE_MESSAGE
+
+            trace["action"] = "superseded"
+            updates: dict[str, Any] = {
+                **clear_pending,
+                "memory_next": "continue",
+                "trace_events": [trace],
+            }
+            if resolution.reason == "topic_change":
+                updates["memory_notice"] = MEMORY_REJECT_TOPIC_CHANGE_MESSAGE
+                updates["last_memory_outcome"] = "rejected_ambiguous"
+            return updates
+        return {
+            **clear_pending,
+            "answer": memory_reject_message(
+                outcome=resolution.outcome,
+                reason=resolution.reason,
+            ),
+            "route": "memory_reject",
+            "memory_next": "reject",
+            "trace_events": [trace],
+        }
+
+    if user_id is None or user_id <= 0:
+        trace["reason"] = "missing_user_id"
+        return {
+            **clear_pending,
+            "last_memory_outcome": "rejected",
+            "memory_next": "continue",
+            "trace_events": [trace],
+        }
+
+    proposal_model = MemoryProposal.model_validate(pending)
+    if resolution.outcome == "edit" and resolution.edited_value:
+        proposal_model = proposal_model.model_copy(update={"value": resolution.edited_value})
+
+    audit_outcome = "approved_edited" if resolution.outcome == "edit" else "approved"
+    with open_memory_session() as session:
+        if session is None:
+            trace["reason"] = "database_unavailable"
+            return {
+                **clear_pending,
+                "last_memory_outcome": "rejected",
+                "memory_next": "continue",
+                "trace_events": [trace],
+            }
+        write_result = write_memory(
+            session,
+            proposal=proposal_model,
+            approved_by=user_id,
+            outcome=audit_outcome,
+        )
+        if not write_result.ok:
+            trace["write_outcome"] = write_result.outcome
+            if write_result.reason:
+                trace["reason"] = write_result.reason
+            if write_result.outcome == "rejected_denylist":
+                from agent.memory.constants import memory_reject_message
+
+                denylist_reason = write_result.reason or "denylist"
+                return {
+                    **clear_pending,
+                    "answer": memory_reject_message(
+                        outcome=write_result.outcome,
+                        reason=denylist_reason,
+                    ),
+                    "route": "memory_reject",
+                    "memory_next": "reject",
+                    "trace_events": [trace],
+                }
+            return {
+                **clear_pending,
+                "last_memory_outcome": write_result.outcome,
+                "memory_next": "continue",
+                "trace_events": [trace],
+            }
+
+    continued = resolution.continued_question
+    if continued:
+        trace["continued_question"] = continued
+        return {
+            **clear_pending,
+            "question": continued,
+            "memory_next": "continue",
+            "trace_events": [trace],
+        }
+
+    return {
+        **clear_pending,
+        "answer": MEMORY_ACK_MESSAGE,
+        "route": "memory_ack",
+        "memory_next": "ack",
+        "trace_events": [trace],
+    }
+
+
+def read_memory_node(state: AgentState) -> dict[str, Any]:
+    """Load approved memory for prompt injection (P26-L12c)."""
+    from agent.memory.location_hint import (
+        build_location_disambiguation_message,
+        question_needs_location_scope,
+        resolve_injection_location_id,
+        resolve_injection_scope,
+    )
+    from agent.memory.session import open_memory_session
+    from agent.memory.store import format_memory_context, read_memory
+
+    user_id = _config_int("user_id")
+    question = state.get("question") or ""
+    pending = state.get("pending_proposal")
+    pending_dict = pending if isinstance(pending, dict) else None
+    scope = resolve_injection_scope(question, pending_proposal=pending_dict)
+
+    if scope.is_ambiguous and question_needs_location_scope(question):
+        message = build_location_disambiguation_message(scope.ambiguous_ids or ())
+        trace: dict[str, Any] = {
+            "node": "read_memory",
+            "action": "location_disambiguate",
+            "ambiguous_ids": list(scope.ambiguous_ids or ()),
+        }
+        return {
+            "memory_context": "",
+            "answer": message,
+            "route": "location_disambiguate",
+            "trace_events": [trace],
+        }
+
+    location_id = scope.resolved_id
+    if location_id is None:
+        location_id = resolve_injection_location_id(
+            question,
+            pending_proposal=pending_dict,
+        )
+
+    entries: list[Any] = []
+    with open_memory_session() as session:
+        if session is not None:
+            entries = read_memory(
+                session,
+                user_id=user_id,
+                location_id=location_id,
+            )
+
+    memory_context = format_memory_context(entries, scoped_location_id=location_id)
+    trace = {
+        "node": "read_memory",
+        "row_count": len(entries),
+    }
+    if location_id is not None:
+        trace["location_id"] = location_id
+    if memory_context:
+        trace["memory_injected"] = True
+
+    return {
+        "memory_context": memory_context,
+        "trace_events": [trace],
+    }
+
+
+def memory_ack_node(state: AgentState) -> dict[str, Any]:
+    """Terminal ack after approve-only memory resolution (P26-L14c)."""
+    answer = (state.get("answer") or "").strip() or MEMORY_ACK_MESSAGE
+    return {
+        "answer": answer,
+        "route": "memory_ack",
+        "trace_events": _trace("memory_ack"),
+    }
+
+
+def memory_reject_node(state: AgentState) -> dict[str, Any]:
+    """Terminal reply when pending memory is not stored (P26-L9b)."""
+    from agent.memory.constants import MEMORY_REJECT_GENERIC_MESSAGE
+
+    answer = (state.get("answer") or "").strip() or MEMORY_REJECT_GENERIC_MESSAGE
+    return {
+        "answer": answer,
+        "route": "memory_reject",
+        "trace_events": _trace("memory_reject"),
     }
 
 
@@ -383,47 +702,77 @@ def _generation_provider_fallback(state: AgentState, exc: BaseException) -> dict
 
 def generate_node(state: AgentState) -> dict[str, Any]:
     ensure_repo_root_on_path()
-    from data.pipelines.rag import generate_answer
 
-    from .generation import build_combined_context, generate_support_answer
+    from .generation import (
+        generate_structured_memory_correction_response,
+        generate_structured_rag_response,
+        generate_structured_support_response,
+    )
+    from agent.memory.correction_intent import looks_like_memory_correction
 
     intent = state.get("intent", "rag")
     rag_context = state.get("context_text") or ""
     tool = _latest_tool(state)
+    memory_context = state.get("memory_context") or ""
+    pending_active = bool(state.get("pending_proposal"))
+    question = state.get("question") or ""
+    memory_correction = looks_like_memory_correction(question)
 
     if intent == "rag":
         if not has_usable_sanitized_text(rag_context):
-            message, reason = resolve_fallback_message(
-                {**state, "fallback_reason": "empty_context_after_sanitize"}
-            )
-            return {
-                "answer": message,
-                "route": "fallback",
-                "fallback_reason": reason,
-                "trace_events": _trace(
-                    "generate",
-                    grounded=False,
-                    reason="empty_context_after_sanitize",
-                ),
-            }
-        try:
-            answer = generate_answer(state["question"], rag_context)
-        except Exception as exc:
-            if _is_generation_provider_error(exc):
-                return _generation_provider_fallback(state, exc)
-            raise
+            if memory_correction:
+                try:
+                    generation = generate_structured_memory_correction_response(
+                        question,
+                        memory_context=memory_context,
+                        pending_proposal_active=pending_active,
+                    )
+                except Exception as exc:
+                    if _is_generation_provider_error(exc):
+                        return _generation_provider_fallback(state, exc)
+                    raise
+            else:
+                message, reason = resolve_fallback_message(
+                    {**state, "fallback_reason": "empty_context_after_sanitize"}
+                )
+                return {
+                    "answer": message,
+                    "route": "fallback",
+                    "fallback_reason": reason,
+                    "trace_events": _trace(
+                        "generate",
+                        grounded=False,
+                        reason="empty_context_after_sanitize",
+                    ),
+                }
+        else:
+            try:
+                generation = generate_structured_rag_response(
+                    question,
+                    rag_context,
+                    memory_context=memory_context,
+                    pending_proposal_active=pending_active,
+                )
+            except Exception as exc:
+                if _is_generation_provider_error(exc):
+                    return _generation_provider_fallback(state, exc)
+                raise
     else:
         caveat: str | None = None
         if intent == "both" and tool is not None and not tool.get("ok"):
             caveat = (
                 "Note: live incident lookup failed; answering from the knowledge base only."
             )
-        combined = build_combined_context(
-            rag_context=rag_context,
-            tool_results=state.get("tool_results"),
-            caveat=caveat,
-        )
-        if not combined.strip():
+        try:
+            generation = generate_structured_support_response(
+                state["question"],
+                rag_context=rag_context,
+                tool_results=state.get("tool_results"),
+                caveat=caveat,
+                memory_context=memory_context,
+                pending_proposal_active=pending_active,
+            )
+        except ValueError:
             message, reason = resolve_fallback_message(
                 {**state, "fallback_reason": "empty_context_after_sanitize"}
             )
@@ -437,26 +786,67 @@ def generate_node(state: AgentState) -> dict[str, Any]:
                     reason="empty_context_after_sanitize",
                 ),
             }
-        try:
-            answer = generate_support_answer(
-                state["question"],
-                rag_context=rag_context,
-                tool_results=state.get("tool_results"),
-                caveat=caveat,
-            )
         except Exception as exc:
             if _is_generation_provider_error(exc):
                 return _generation_provider_fallback(state, exc)
             raise
 
-    return {
-        "answer": answer,
+    trace_fields: dict[str, Any] = {"grounded": True, "intent": intent}
+    from agent.memory.correction_intent import (
+        strip_memory_confirmation_ask,
+        user_wants_memory_proposal,
+    )
+
+    wants_proposal = user_wants_memory_proposal(question)
+    proposal = generation.memory_proposal if wants_proposal else None
+    proposal_trace = generation.proposal_trace if wants_proposal else None
+    if generation.memory_proposal is not None and not wants_proposal:
+        proposal_trace = "suppressed_read_query"
+
+    if proposal is None and not pending_active and wants_proposal:
+        from agent.memory.proposal_inference import infer_validated_memory_proposal
+
+        inferred = infer_validated_memory_proposal(
+            question,
+            answer=generation.answer,
+        )
+        if inferred is not None:
+            proposal = inferred
+            proposal_trace = "inferred_from_correction"
+
+    if proposal_trace:
+        trace_fields["proposal_trace"] = proposal_trace
+
+    from agent.memory.constants import MEMORY_PROPOSE_CONFIRMATION_FALLBACK
+    from agent.memory.structured_generation import (
+        SAFE_ANSWER_FALLBACK,
+        looks_like_json_object_text,
+    )
+
+    visible_answer = generation.answer
+    if not wants_proposal:
+        visible_answer = strip_memory_confirmation_ask(visible_answer)
+    elif proposal is not None and (
+        visible_answer == SAFE_ANSWER_FALLBACK
+        or looks_like_json_object_text(visible_answer)
+        or not visible_answer.strip()
+    ):
+        visible_answer = MEMORY_PROPOSE_CONFIRMATION_FALLBACK
+
+    updates: dict[str, Any] = {
+        "answer": visible_answer,
         "route": "generate",
-        "trace_events": _trace("generate", grounded=True, intent=intent),
+        "trace_events": [_trace("generate", **trace_fields)[0]],
     }
+    if proposal is not None and not pending_active:
+        updates["memory_proposal_candidate"] = proposal.model_dump(mode="json")
+    return updates
 
 
 def validate_output_node(state: AgentState) -> dict[str, Any]:
+    from agent.memory.session import open_memory_session
+    from agent.memory.store import check_proposal_rate_limit, log_proposal
+
     result = validate_agent_output(
         state.get("answer") or "",
         redirect_required=bool(state.get("redirect_required")),
@@ -486,10 +876,52 @@ def validate_output_node(state: AgentState) -> dict[str, Any]:
             question=state.get("question"),
         )
 
-    return {
+    updates: dict[str, Any] = {
         "answer": result.answer,
         "trace_events": [trace],
+        "memory_proposal_candidate": None,
     }
+    if result.ok:
+        candidate = state.get("memory_proposal_candidate")
+        if candidate and not state.get("pending_proposal"):
+            user_id = _config_int("user_id")
+            thread_id = _config_str("thread_id")
+            rate_limited = False
+            if user_id is not None and user_id > 0:
+                with open_memory_session() as session:
+                    if session is not None:
+                        rate = check_proposal_rate_limit(session, user_id)
+                        if not rate.allowed:
+                            rate_limited = True
+                            trace["memory_rate_limited"] = True
+                            trace["proposal_count"] = rate.count
+                            trace["proposal_limit"] = rate.limit
+                            log_proposal(
+                                session,
+                                user_id=user_id,
+                                outcome="rejected_rate_limit",
+                                proposal=candidate,
+                                reason="rate_limit_exceeded",
+                                user_message=state.get("question"),
+                                thread_id=thread_id,
+                            )
+                        else:
+                            log_proposal(
+                                session,
+                                user_id=user_id,
+                                outcome="proposed",
+                                proposal=candidate,
+                                user_message=state.get("question"),
+                                thread_id=thread_id,
+                            )
+            if not rate_limited:
+                updates["pending_proposal"] = candidate
+                updates["pending_proposal_at"] = datetime.now(timezone.utc).isoformat()
+            else:
+                from agent.memory.constants import MEMORY_PROPOSAL_RATE_LIMIT_MESSAGE
+
+                updates["answer"] = f"{result.answer}\n\n{MEMORY_PROPOSAL_RATE_LIMIT_MESSAGE}"
+    return updates
 
 
 def refuse_node(state: AgentState) -> dict[str, Any]:
@@ -546,7 +978,21 @@ def route_after_intake(state: AgentState) -> RouteAfterIntake:
 def route_after_guard_input(state: AgentState) -> RouteAfterGuardInput:
     if state.get("route") == "guard_block":
         return "guard_block"
+    return "resolve_memory_proposal"
+
+
+def route_after_read_memory(state: AgentState) -> RouteAfterReadMemory:
+    if state.get("route") == "location_disambiguate":
+        return "location_disambiguate"
     return "classify"
+
+
+def route_after_resolve_memory_proposal(state: AgentState) -> RouteAfterResolveMemory:
+    if state.get("memory_next") == "ack":
+        return "memory_ack"
+    if state.get("memory_next") == "reject":
+        return "memory_reject"
+    return "read_memory"
 
 
 def route_after_classify(state: AgentState) -> RouteAfterClassify:
@@ -585,10 +1031,13 @@ def route_after_mutate_incident(state: AgentState) -> RouteAfterMutateIncident:
 
 
 def route_after_retrieve(state: AgentState) -> RouteAfterRetrieve:
+    from agent.memory.correction_intent import looks_like_memory_correction
+
     intent = state.get("intent", "rag")
     chunks = state.get("chunks") or []
     tool = _latest_tool(state)
     context_text = (state.get("context_text") or "").strip()
+    question = state.get("question") or ""
 
     if state.get("fallback_reason") == "empty_context_after_sanitize":
         return "fallback"
@@ -596,7 +1045,11 @@ def route_after_retrieve(state: AgentState) -> RouteAfterRetrieve:
     if intent == "rag":
         if state.get("redirect_required") and not chunks:
             return "casual_reply"
-        return "generate" if context_text else "refuse"
+        if context_text:
+            return "generate"
+        if looks_like_memory_correction(question):
+            return "generate"
+        return "refuse"
 
     if intent == "both":
         if tool is not None and not tool.get("ok") and not chunks:
@@ -613,6 +1066,10 @@ def build_graph() -> StateGraph:
     builder.add_node("guard_input", guard_input_node)
     builder.add_node("guard_block", guard_block_node)
     builder.add_node("casual_reply", casual_reply_node)
+    builder.add_node("resolve_memory_proposal", resolve_memory_proposal_node)
+    builder.add_node("read_memory", read_memory_node)
+    builder.add_node("memory_ack", memory_ack_node)
+    builder.add_node("memory_reject", memory_reject_node)
     builder.add_node("classify", classify_node)
     builder.add_node("lookup_incident", lookup_incident_node)
     builder.add_node("mutate_incident", mutate_incident_node)
@@ -635,7 +1092,21 @@ def build_graph() -> StateGraph:
     builder.add_conditional_edges(
         "guard_input",
         route_after_guard_input,
-        {"guard_block": "guard_block", "classify": "classify"},
+        {"guard_block": "guard_block", "resolve_memory_proposal": "resolve_memory_proposal"},
+    )
+    builder.add_conditional_edges(
+        "resolve_memory_proposal",
+        route_after_resolve_memory_proposal,
+        {
+            "memory_ack": "memory_ack",
+            "memory_reject": "memory_reject",
+            "read_memory": "read_memory",
+        },
+    )
+    builder.add_conditional_edges(
+        "read_memory",
+        route_after_read_memory,
+        {"classify": "classify", "location_disambiguate": END},
     )
     builder.add_conditional_edges(
         "classify",
@@ -684,6 +1155,8 @@ def build_graph() -> StateGraph:
     builder.add_edge("refuse", END)
     builder.add_edge("fallback", END)
     builder.add_edge("confirm_write", END)
+    builder.add_edge("memory_ack", END)
+    builder.add_edge("memory_reject", END)
     builder.add_edge("generate", "validate_output")
     builder.add_edge("validate_output", END)
     return builder
@@ -704,19 +1177,35 @@ def get_compiled_graph():
     return build_graph().compile(checkpointer=_sqlite_checkpointer())
 
 
+def _finalize_answer_with_memory_notice(state: AgentState) -> AgentState:
+    """Prepend a topic-change memory notice before the ops answer (Cycle C / P26-L14d)."""
+    notice = (state.get("memory_notice") or "").strip()
+    answer = (state.get("answer") or "").strip()
+    if not notice or not answer or answer.startswith(notice):
+        return state
+    return {**state, "answer": f"{notice}\n\n{answer}"}
+
+
 def invoke_support_agent(
     question: str,
     *,
     thread_id: str | None = None,
     auth_header: str | None = None,
+    user_id: int | None = None,
 ) -> AgentState:
     """Run the Support Agent graph synchronously and return final state."""
     graph = get_compiled_graph()
-    config: dict[str, Any] = {
-        "configurable": {
-            "thread_id": thread_id or str(uuid.uuid4()),
-        }
+    configurable: dict[str, Any] = {
+        "thread_id": thread_id or str(uuid.uuid4()),
     }
     if auth_header:
-        config["configurable"]["auth_header"] = auth_header
-    return graph.invoke(initial_state(question), config)
+        configurable["auth_header"] = auth_header
+    if user_id is not None:
+        configurable["user_id"] = user_id
+    config: dict[str, Any] = {"configurable": configurable}
+    input_state = dict(initial_state(question))
+    # Let the checkpointer retain pending proposal fields across turns (P26-L6b, P26-L20).
+    input_state.pop("pending_proposal", None)
+    input_state.pop("pending_proposal_at", None)
+    result = graph.invoke(input_state, config)
+    return _finalize_answer_with_memory_notice(result)

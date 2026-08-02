@@ -159,20 +159,186 @@ def build_combined_context(
     rag_context: str = "",
     tool_results: list[dict[str, Any]] | None = None,
     caveat: str | None = None,
+    memory_context: str = "",
 ) -> str:
-    """Merge tool operational data and optional RAG context for ``generate_support_answer``."""
+    """Merge tool operational data, optional memory, and RAG context."""
     parts: list[str] = []
     if caveat and caveat.strip():
         parts.append(caveat.strip())
     tool_block = build_tool_context(tool_results)
     if tool_block:
         parts.append(tool_block)
+    memory_block = (memory_context or "").strip()
+    if memory_block:
+        parts.append(
+            "## Approved operational memory (user-confirmed; may differ from official KB)\n"
+            f"{memory_block}"
+        )
     rag_block = rag_context.strip()
     if rag_block and not is_sanitized_rag_context(rag_block):
         rag_block = sanitize_rag_context(rag_block)
     if rag_block:
         parts.append(f"## Knowledge base\n{rag_block}")
     return "\n\n".join(parts).strip()
+
+
+def _invoke_structured_completion(*, system_prompt: str, user_prompt: str) -> str:
+    _load_env()
+    _, _, model_id = _generation_settings()
+    client = generation_client()
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt},
+    ]
+    try:
+        response = client.chat.completions.create(
+            model=model_id,
+            messages=messages,
+            temperature=0.2,
+            response_format={"type": "json_object"},
+        )
+    except TypeError:
+        response = client.chat.completions.create(
+            model=model_id,
+            messages=messages,
+            temperature=0.2,
+        )
+    content = (response.choices[0].message.content or "").strip()
+    if not content:
+        raise RuntimeError("Generation model returned an empty answer")
+    return content
+
+
+def _scoped_location_for_question(question: str) -> int | None:
+    from agent.memory.location_hint import resolve_injection_scope
+
+    return resolve_injection_scope(question).resolved_id
+
+
+def generate_structured_support_response(
+    question: str,
+    *,
+    rag_context: str = "",
+    tool_results: list[dict[str, Any]] | None = None,
+    caveat: str | None = None,
+    memory_context: str = "",
+    pending_proposal_active: bool = False,
+):
+    """Generate JSON ``{ answer, memory_proposal }`` for tool/RAG paths (P26-L8, P26-L12)."""
+    from agent.memory.correction_intent import user_wants_memory_proposal
+    from agent.memory.schemas import GenerationResult
+    from agent.memory.structured_generation import build_generation_result
+    from agent.guardrails.prompts import build_support_user_prompt, support_system_prompt_with_memory
+
+    if not question or not question.strip():
+        raise ValueError("generate_structured_support_response() requires a non-empty question")
+
+    context = build_combined_context(
+        rag_context=rag_context,
+        tool_results=tool_results,
+        caveat=caveat,
+        memory_context=memory_context,
+    )
+    if not context:
+        raise ValueError("generate_structured_support_response() requires non-empty combined context")
+
+    user_prompt = build_support_user_prompt(
+        question=question.strip(),
+        context=context,
+        memory_context="",
+        scoped_location_id=_scoped_location_for_question(question),
+    )
+    raw = _invoke_structured_completion(
+        system_prompt=support_system_prompt_with_memory(),
+        user_prompt=user_prompt,
+    )
+    return build_generation_result(
+        raw,
+        allow_proposal=not pending_proposal_active and user_wants_memory_proposal(question),
+        question=question.strip(),
+    )
+
+
+def generate_structured_rag_response(
+    question: str,
+    rag_context: str,
+    *,
+    memory_context: str = "",
+    pending_proposal_active: bool = False,
+):
+    """Structured generation for pure RAG path — Knowledge ``generate_answer`` unchanged (P26-L8)."""
+    from agent.memory.correction_intent import user_wants_memory_proposal
+    from agent.memory.schemas import GenerationResult
+    from agent.memory.structured_generation import build_generation_result
+    from agent.guardrails.prompts import build_support_user_prompt, support_system_prompt_with_memory
+
+    if not question or not question.strip():
+        raise ValueError("generate_structured_rag_response() requires a non-empty question")
+    if not rag_context or not rag_context.strip():
+        raise ValueError("generate_structured_rag_response() requires non-empty context")
+
+    rag_block = rag_context.strip()
+    if not is_sanitized_rag_context(rag_block):
+        rag_block = sanitize_rag_context(rag_block)
+
+    combined = f"## Knowledge base\n{rag_block}"
+    user_prompt = build_support_user_prompt(
+        question=question.strip(),
+        context=combined,
+        memory_context=memory_context,
+        scoped_location_id=_scoped_location_for_question(question),
+    )
+    raw = _invoke_structured_completion(
+        system_prompt=support_system_prompt_with_memory(),
+        user_prompt=user_prompt,
+    )
+    return build_generation_result(
+        raw,
+        allow_proposal=not pending_proposal_active and user_wants_memory_proposal(question),
+        question=question.strip(),
+    )
+
+
+MEMORY_CORRECTION_CONTEXT = (
+    "No knowledge-base sections matched this question. "
+    "The user may be sharing a recurring local operational correction for a Brasaland location. "
+    "If they ask you to remember a local practice or exception, propose memory even when "
+    "a general policy might sound similar — local confirmations are stored per location_id."
+)
+
+
+def generate_structured_memory_correction_response(
+    question: str,
+    *,
+    memory_context: str = "",
+    pending_proposal_active: bool = False,
+):
+    """Structured generation when retrieval is empty but the user offers a local correction."""
+    from agent.memory.correction_intent import user_wants_memory_proposal
+    from agent.memory.structured_generation import build_generation_result
+    from agent.guardrails.prompts import build_support_user_prompt, support_system_prompt_with_memory
+
+    if not question or not question.strip():
+        raise ValueError(
+            "generate_structured_memory_correction_response() requires a non-empty question"
+        )
+
+    combined = f"## Knowledge base\n{MEMORY_CORRECTION_CONTEXT}"
+    user_prompt = build_support_user_prompt(
+        question=question.strip(),
+        context=combined,
+        memory_context=memory_context,
+        scoped_location_id=_scoped_location_for_question(question),
+    )
+    raw = _invoke_structured_completion(
+        system_prompt=support_system_prompt_with_memory(),
+        user_prompt=user_prompt,
+    )
+    return build_generation_result(
+        raw,
+        allow_proposal=not pending_proposal_active and user_wants_memory_proposal(question),
+        question=question.strip(),
+    )
 
 
 def generate_support_answer(

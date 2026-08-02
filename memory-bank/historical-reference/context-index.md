@@ -40,6 +40,7 @@ Ordered index of historical reference context documents.
 - `context-23-support-agent-langgraph-p2.md` — Support agent LangGraph Part 2 (implemented): rule-based classifier, incident/inventory HTTP tools, auth forwarding, fallbacks, routing evals
 - `context-24-mcp-company-tools.md` — MCP server (OAuth/mcpauth) for incidents + read-only inventory; agent incidents migration via langchain-mcp-adapters; ops UX stretch (P24-OPT); **implemented P24-4**
 - `context-25-securing-agents-harness-guardrails.md` — SEC-114 Support Agent harness + guardrails (prompt hardening, input/content/security layers, sanitization, output validation, observability, CI tests; manual evaluation rubric)
+- `context-26-milestone-8-agent-memory.md` — MEM-092 agent memory + self-improvement (P26-0–P26-6 complete; Postgres store, propose/confirm/audit, graph integration; evidence in `docs/agent/memory-evidence.md`)
 
 ## Numbering Notes
 
@@ -56,4 +57,5 @@ Ordered index of historical reference context documents.
 - `context-23` is reserved for the support agent LangGraph workstream: Part 1 (graph migration + `/agent` + `/support` UI) and Part 2 (live service tools + auto-routing) as companion files `-p1` / `-p2`.
 - `context-24` is reserved for the MCP company-tools workstream (FastMCP + mcpauth + agent incidents migration + ops UX stretch).
 - `context-25` is reserved for SEC-114 agent harness and guardrails (Support Agent `/agent/query`).
+- `context-26` is reserved for MEM-092 agent memory and self-improvement (Support Agent `/agent/query`, Milestone 8).
 - `context-9` currently has three related companion files by design.
