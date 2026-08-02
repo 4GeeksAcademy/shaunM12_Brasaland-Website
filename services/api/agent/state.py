@@ -16,10 +16,14 @@ class AgentState(TypedDict):
     route: str
     error: str | None
     trace_events: Annotated[list[dict[str, Any]], operator.add]
-    # Part 2 (context-23 P2)
+    # Part 2 (context-23 P2) + P24-3b write path
     intent: str
     incident_id: int | None
     incident_filters: dict[str, str]
+    incident_action: str
+    write_action: str | None
+    write_payload: dict[str, str] | None
+    write_status: str | None
     sources_used: list[str]
     tool_results: list[dict[str, Any]]
 
@@ -37,6 +41,10 @@ def initial_state(question: str) -> AgentState:
         intent="rag",
         incident_id=None,
         incident_filters={},
+        incident_action="list",
+        write_action=None,
+        write_payload=None,
+        write_status=None,
         sources_used=[],
         tool_results=[],
     )

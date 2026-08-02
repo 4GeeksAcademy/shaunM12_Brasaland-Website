@@ -4,11 +4,28 @@ import { FormEvent, useState } from "react";
 
 import { askSupportAgent } from "@/lib/agent";
 
+const EXAMPLE_QUESTIONS = [
+  "Show me all incidents",
+  "List open incidents at Miami Doral",
+  "How many open incidents are there?",
+  "Stock for beef at Chapinero",
+  "How much beef do we have",
+  "Current stock for SKU BEEF-001",
+];
+
+const SUPPORT_TIPS = [
+  "Ask one topic per question — incidents, inventory, or knowledge base policy.",
+  "Incidents: \"Show me all incidents\", \"List open incidents at Miami Doral\", or create/update with branch + details.",
+  "Inventory reads only: use a product name (\"Stock for beef at Chapinero\"), SKU, or product ID — restock via the Inventory tab.",
+  "Policies & loyalty: \"How many points for Gold tier?\" or \"How do I create an incident?\"",
+];
+
 export default function SupportPage(): React.JSX.Element {
   const [question, setQuestion] = useState("");
   const [answer, setAnswer] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const [askError, setAskError] = useState("");
+  const [tipsOpen, setTipsOpen] = useState(false);
 
   const handleAsk = async (event: FormEvent) => {
     event.preventDefault();
@@ -44,15 +61,47 @@ export default function SupportPage(): React.JSX.Element {
           <p className="bo-eyebrow">Brasaland Support Agent</p>
           <h1 className="bo-title">Ask the traceable support agent</h1>
           <p className="bo-lead max-w-2xl">
-            Same official manuals as the Knowledge tab, but answers run through a
-            LangGraph workflow (retrieve → generate or refuse) with server-side
-            tracing. Use Knowledge for quick commercial Q&amp;A and reindexing; use
-            this tab to exercise the graph-backed agent path.
+            Live incidents and inventory stock via MCP and direct APIs, plus knowledge-base
+            policies. Answers run through a LangGraph workflow with server-side tracing.
           </p>
         </header>
 
         <section className="bo-header">
-          <form onSubmit={handleAsk} className="space-y-4">
+          <button
+            type="button"
+            className="text-sm font-medium text-[color:var(--bo-accent)] hover:underline"
+            onClick={() => setTipsOpen((open) => !open)}
+            aria-expanded={tipsOpen}
+          >
+            {tipsOpen ? "Hide tips" : "Show example questions"}
+          </button>
+          {tipsOpen ? (
+            <ul className="mt-3 list-disc space-y-2 pl-5 text-sm bo-muted">
+              {SUPPORT_TIPS.map((tip) => (
+                <li key={tip}>{tip}</li>
+              ))}
+            </ul>
+          ) : null}
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            {EXAMPLE_QUESTIONS.map((example) => (
+              <button
+                key={example}
+                type="button"
+                disabled={asking}
+                className="rounded-full border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] px-3 py-1.5 text-xs font-medium text-[color:var(--bo-fg)] transition hover:border-[color:var(--bo-accent)] hover:text-[color:var(--bo-accent)] disabled:opacity-50"
+                onClick={() => {
+                  setQuestion(example);
+                  setAskError("");
+                  setAnswer(null);
+                }}
+              >
+                {example}
+              </button>
+            ))}
+          </div>
+
+          <form onSubmit={handleAsk} className="mt-4 space-y-4">
             <label className="block space-y-2">
               <span className="text-xs font-semibold uppercase tracking-[0.12em] bo-muted">
                 Question
@@ -61,7 +110,7 @@ export default function SupportPage(): React.JSX.Element {
                 value={question}
                 onChange={(event) => setQuestion(event.target.value)}
                 rows={4}
-                placeholder="e.g. How many points do I need for Gold tier?"
+                placeholder='e.g. "Show me all incidents" or "Stock for beef at Chapinero"'
                 className="bo-textarea"
                 disabled={asking}
               />
@@ -73,7 +122,7 @@ export default function SupportPage(): React.JSX.Element {
 
           {asking ? (
             <p className="mt-4 text-sm bo-muted" role="status">
-              Running the support graph (retrieve → answer)…
+              Running the support graph…
             </p>
           ) : null}
 

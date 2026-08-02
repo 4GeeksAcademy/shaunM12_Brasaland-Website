@@ -32,6 +32,7 @@ def test_lookup_inventory_by_sku_filters_list(monkeypatch: pytest.MonkeyPatch):
     def _fetch(method, path, *, params=None, headers=None, timeout=None):
         captured["method"] = method
         captured["path"] = path
+        captured["params"] = params
         captured["headers"] = headers
         return 200, [_sample_product(), {"id": 2, "sku": "BRS-CHICK-001", "name": "Chicken"}], None
 
@@ -47,6 +48,7 @@ def test_lookup_inventory_by_sku_filters_list(monkeypatch: pytest.MonkeyPatch):
     assert envelope["rows"][0]["sku"] == "BRS-BEEF-001"
     assert envelope["filters"]["sku"] == "BEEF-001"
     assert captured["path"] == "/inventory/products"
+    assert captured["params"] == {"location_id": 1}
     assert captured["headers"]["Authorization"] == "Bearer test-token"
 
 
@@ -119,3 +121,41 @@ def test_lookup_inventory_timeout(monkeypatch: pytest.MonkeyPatch):
 
     assert envelope["ok"] is False
     assert envelope["reason"] == "timeout"
+
+
+def test_lookup_inventory_vague_query_skips_http():
+    envelope = inventory_mod.lookup_inventory_stock(
+        question="What is in inventory?",
+        auth_header=None,
+    )
+    assert envelope["ok"] is False
+    assert envelope["reason"] == "needs_clarification"
+
+
+def test_extract_inventory_hints_chapinero_location():
+    hints = inventory_mod.extract_inventory_hints("Current stock for beef at Chapinero")
+    assert hints["location_id"] == 4
+    assert "beef" in hints.get("name", "").lower()
+
+
+def test_extract_inventory_hints_id_hash_location():
+    hints = inventory_mod.extract_inventory_hints("Stock for SKU BEEF-001 at id#4")
+    assert hints["location_id"] == 4
+    assert hints["sku"] == "BEEF-001"
+
+
+def test_extract_inventory_hints_how_much_beef():
+    hints = inventory_mod.extract_inventory_hints("How much beef do we have")
+    assert hints.get("name", "").lower() == "beef"
+
+
+def test_extract_inventory_hints_beef_stock_suffix():
+    hints = inventory_mod.extract_inventory_hints("beef stock at Chapinero")
+    assert hints["location_id"] == 4
+    assert "beef" in hints.get("name", "").lower()
+
+
+def test_extract_inventory_hints_do_we_have():
+    hints = inventory_mod.extract_inventory_hints("Do we have any chicken at location 1")
+    assert hints.get("name", "").lower() == "chicken"
+    assert hints.get("location_id") == 1

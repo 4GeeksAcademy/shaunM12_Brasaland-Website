@@ -17,16 +17,24 @@ from langgraph.graph import END, START, StateGraph
 from knowledge.bootstrap import ensure_repo_root_on_path
 
 from .classify import classify_question
-from .fallbacks import resolve_fallback_message
+from .fallbacks import resolve_fallback_message, resolve_ops_misroute_hint, resolve_procedure_hint
 from .state import AgentState, initial_state
-from .tools.incidents import lookup_incidents
+from .mcp_client import lookup_incidents_via_mcp, mutate_incident_via_mcp
 from .tools.inventory import lookup_inventory_stock
+from .write_confirmations import format_write_confirmation
 
 logger = logging.getLogger(__name__)
 
 RouteAfterIntake = Literal["error", "classify"]
-RouteAfterClassify = Literal["retrieve", "lookup_incident", "lookup_inventory_stock"]
+RouteAfterClassify = Literal[
+    "retrieve",
+    "lookup_incident",
+    "lookup_inventory_stock",
+    "mutate_incident",
+    "inventory_write_block",
+]
 RouteAfterLookupIncident = Literal["retrieve", "generate", "fallback"]
+RouteAfterMutateIncident = Literal["confirm_write", "fallback"]
 RouteAfterLookupInventory = Literal["generate", "fallback"]
 RouteAfterRetrieve = Literal["refuse", "generate", "fallback"]
 
@@ -65,6 +73,8 @@ def _latest_tool(state: AgentState) -> dict[str, Any] | None:
 def _tool_has_rows(tool: dict[str, Any] | None) -> bool:
     if tool is None or not tool.get("ok"):
         return False
+    if tool.get("summary"):
+        return True
     rows = tool.get("rows")
     return isinstance(rows, list) and len(rows) > 0
 
@@ -95,10 +105,18 @@ def classify_node(state: AgentState) -> dict[str, Any]:
         trace["incident_id"] = result.incident_id
     if result.incident_filters:
         trace["filters"] = result.incident_filters
+    if result.incident_action != "list":
+        trace["incident_action"] = result.incident_action
+    if result.write_action:
+        trace["write_action"] = result.write_action
     return {
         "intent": result.intent,
         "incident_id": result.incident_id,
         "incident_filters": result.incident_filters,
+        "incident_action": result.incident_action,
+        "write_action": result.write_action,
+        "write_payload": result.write_payload,
+        "write_status": result.write_status,
         "trace_events": [trace],
     }
 
@@ -108,10 +126,11 @@ def lookup_incident_node(state: AgentState) -> dict[str, Any]:
     configurable = config.get("configurable") or {}
     auth_header = configurable.get("auth_header")
 
-    envelope = lookup_incidents(
+    envelope = lookup_incidents_via_mcp(
         incident_id=state.get("incident_id"),
         filters=state.get("incident_filters") or {},
         auth_header=auth_header,
+        incident_action=state.get("incident_action") or "list",
     )
     trace_fields: dict[str, Any] = {
         "ok": envelope.get("ok"),
@@ -125,9 +144,55 @@ def lookup_incident_node(state: AgentState) -> dict[str, Any]:
         "tool_results": [envelope],
         "trace_events": _trace("lookup_incident", **trace_fields),
     }
+    if envelope.get("ok") and (envelope.get("rows") or envelope.get("summary")):
+        updates["sources_used"] = ["incidents_api"]
+    return updates
+
+
+def mutate_incident_node(state: AgentState) -> dict[str, Any]:
+    config = get_config() or {}
+    configurable = config.get("configurable") or {}
+    auth_header = configurable.get("auth_header")
+
+    envelope = mutate_incident_via_mcp(
+        write_action=state.get("write_action") or "",
+        auth_header=auth_header,
+        incident_id=state.get("incident_id"),
+        write_status=state.get("write_status"),
+        write_payload=state.get("write_payload"),
+    )
+    trace_fields: dict[str, Any] = {
+        "ok": envelope.get("ok"),
+        "http_status": envelope.get("http_status"),
+        "write_action": state.get("write_action"),
+    }
+    if envelope.get("reason"):
+        trace_fields["reason"] = envelope.get("reason")
+
+    updates: dict[str, Any] = {
+        "tool_results": [envelope],
+        "trace_events": _trace("mutate_incident", **trace_fields),
+    }
     if envelope.get("ok") and envelope.get("rows"):
         updates["sources_used"] = ["incidents_api"]
     return updates
+
+
+def confirm_write_node(state: AgentState) -> dict[str, Any]:
+    tool = _latest_tool(state)
+    if tool is None or not tool.get("ok"):
+        message, reason = resolve_fallback_message(state)
+        return {
+            "answer": message,
+            "route": "fallback",
+            "trace_events": _trace("confirm_write", ok=False, reason=reason),
+        }
+    answer = format_write_confirmation(tool)
+    return {
+        "answer": answer,
+        "route": "confirm_write",
+        "trace_events": _trace("confirm_write", ok=True, write_action=tool.get("action")),
+    }
 
 
 def lookup_inventory_stock_node(state: AgentState) -> dict[str, Any]:
@@ -156,6 +221,22 @@ def lookup_inventory_stock_node(state: AgentState) -> dict[str, Any]:
     if envelope.get("ok") and envelope.get("rows"):
         updates["sources_used"] = ["inventory_api"]
     return updates
+
+
+def inventory_write_block_node(state: AgentState) -> dict[str, Any]:
+    return {
+        "tool_results": [
+            {
+                "source": "inventory_api",
+                "ok": False,
+                "http_status": 403,
+                "rows": [],
+                "reason": "inventory_write_forbidden",
+                "error": "inventory_write_forbidden",
+            }
+        ],
+        "trace_events": _trace("inventory_write_block"),
+    }
 
 
 def retrieve_node(state: AgentState) -> dict[str, Any]:
@@ -212,6 +293,22 @@ def refuse_node(state: AgentState) -> dict[str, Any]:
     ensure_repo_root_on_path()
     from data.pipelines.rag import refusal_message
 
+    procedure_hint = resolve_procedure_hint(state.get("question") or "")
+    if procedure_hint:
+        return {
+            "answer": procedure_hint,
+            "route": "refuse",
+            "trace_events": _trace("refuse", reason="procedure_hint"),
+        }
+
+    ops_hint = resolve_ops_misroute_hint(state.get("question") or "")
+    if ops_hint:
+        return {
+            "answer": ops_hint,
+            "route": "refuse",
+            "trace_events": _trace("refuse", reason="ops_misroute_hint"),
+        }
+
     return {
         "answer": refusal_message(),
         "route": "refuse",
@@ -249,6 +346,10 @@ def route_after_classify(state: AgentState) -> RouteAfterClassify:
         return "retrieve"
     if intent == "inventory":
         return "lookup_inventory_stock"
+    if intent == "inventory_write":
+        return "inventory_write_block"
+    if intent == "incident_write":
+        return "mutate_incident"
     return "lookup_incident"
 
 
@@ -264,6 +365,13 @@ def route_after_lookup_incident(state: AgentState) -> RouteAfterLookupIncident:
 def route_after_lookup_inventory(state: AgentState) -> RouteAfterLookupInventory:
     if _tool_has_rows(_latest_tool(state)):
         return "generate"
+    return "fallback"
+
+
+def route_after_mutate_incident(state: AgentState) -> RouteAfterMutateIncident:
+    tool = _latest_tool(state)
+    if tool is not None and tool.get("ok") and tool.get("rows"):
+        return "confirm_write"
     return "fallback"
 
 
@@ -289,7 +397,10 @@ def build_graph() -> StateGraph:
     builder.add_node("intake", intake_node)
     builder.add_node("classify", classify_node)
     builder.add_node("lookup_incident", lookup_incident_node)
+    builder.add_node("mutate_incident", mutate_incident_node)
+    builder.add_node("confirm_write", confirm_write_node)
     builder.add_node("lookup_inventory_stock", lookup_inventory_stock_node)
+    builder.add_node("inventory_write_block", inventory_write_block_node)
     builder.add_node("retrieve", retrieve_node)
     builder.add_node("generate", generate_node)
     builder.add_node("refuse", refuse_node)
@@ -309,7 +420,15 @@ def build_graph() -> StateGraph:
             "retrieve": "retrieve",
             "lookup_incident": "lookup_incident",
             "lookup_inventory_stock": "lookup_inventory_stock",
+            "mutate_incident": "mutate_incident",
+            "inventory_write_block": "inventory_write_block",
         },
+    )
+    builder.add_edge("inventory_write_block", "fallback")
+    builder.add_conditional_edges(
+        "mutate_incident",
+        route_after_mutate_incident,
+        {"confirm_write": "confirm_write", "fallback": "fallback"},
     )
     builder.add_conditional_edges(
         "lookup_incident",
@@ -333,6 +452,7 @@ def build_graph() -> StateGraph:
     builder.add_edge("error", END)
     builder.add_edge("refuse", END)
     builder.add_edge("fallback", END)
+    builder.add_edge("confirm_write", END)
     builder.add_edge("generate", END)
     return builder
 

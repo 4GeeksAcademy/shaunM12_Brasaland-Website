@@ -1,18 +1,56 @@
-"""Support Agent generation — tool + RAG context (P2-L35)."""
+"""Support Agent generation — tool + RAG context (P2-L35, P24-OPT-J)."""
 
 from __future__ import annotations
 
 from typing import Any
 
 from data.pipelines.rag import SYSTEM_PROMPT, _generation_settings, _load_env, generation_client
+from packages.shared.restaurant_locations import format_location_label
+
+MAX_TOOL_ROWS = 10
 
 SUPPORT_SYSTEM_PROMPT = """You are a Brasaland Support Agent helping backoffice operations staff.
 Use live operational data for current incidents, inventory, and stock facts.
+When operational data includes filters or a location scope, state that scope in your first sentence.
 Use knowledge base sections for policies, loyalty, allergens, and procedures.
 If a source is missing or insufficient, say so clearly — do not invent incident IDs, stock levels, or policies.
 Keep USD and COP amounts exactly as written in the context; do not convert currencies.
 Answer in English, clearly and professionally.
 Do not mention tools, HTTP APIs, vector search, chunks, or that you are an AI."""
+
+
+def _scope_header_for_envelope(envelope: dict[str, Any]) -> str:
+    source = envelope.get("source", "tool")
+    filters = envelope.get("filters") or {}
+
+    if source == "incidents_api":
+        if envelope.get("action") == "summary" or envelope.get("summary"):
+            return "scope=incident_summary"
+        filter_bits = [f"{key}={value}" for key, value in sorted(filters.items()) if value]
+        if filter_bits:
+            return f"scope=incidents filters={', '.join(filter_bits)}"
+        incident_id = envelope.get("incident_id")
+        if incident_id is not None:
+            return f"scope=incident_id={incident_id}"
+        return "scope=incidents"
+
+    if source == "inventory_api":
+        location_id = filters.get("location_id")
+        if location_id is not None:
+            return f"scope=location_id={location_id} ({format_location_label(int(location_id))})"
+        return "scope=inventory"
+
+    return f"scope={source}"
+
+
+def _cap_rows(rows: list[dict[str, Any]], envelope: dict[str, Any]) -> tuple[list[dict[str, Any]], str | None]:
+    if len(rows) <= MAX_TOOL_ROWS:
+        return rows, None
+    note = (
+        f"Showing first {MAX_TOOL_ROWS} of {len(rows)} matching rows; "
+        "ask with a narrower filter if you need a specific item."
+    )
+    return rows[:MAX_TOOL_ROWS], note
 
 
 def format_inventory_rows(rows: list[dict[str, Any]]) -> str:
@@ -36,6 +74,23 @@ def format_inventory_rows(rows: list[dict[str, Any]]) -> str:
             )
         )
     return "\n\n".join(blocks)
+
+
+def format_incident_summary(summary: dict[str, Any]) -> str:
+    lines: list[str] = ["Incident summary:"]
+    for section, label in (
+        ("by_status", "By status"),
+        ("by_category", "By category"),
+        ("by_origin", "By origin"),
+        ("by_branch", "By branch"),
+    ):
+        bucket = summary.get(section)
+        if not isinstance(bucket, dict):
+            continue
+        entries = [f"{key}={value}" for key, value in bucket.items() if value]
+        if entries:
+            lines.append(f"{label}: " + ", ".join(entries))
+    return "\n".join(lines)
 
 
 def format_incident_rows(rows: list[dict[str, Any]]) -> str:
@@ -65,19 +120,31 @@ def build_tool_context(tool_results: list[dict[str, Any]] | None) -> str:
     for envelope in tool_results:
         if not envelope.get("ok"):
             continue
+        scope_header = _scope_header_for_envelope(envelope)
+        summary = envelope.get("summary")
+        if isinstance(summary, dict):
+            parts.append(f"## Live operational data (incident summary)\n{scope_header}\n")
+            parts.append(format_incident_summary(summary))
+            continue
         rows = envelope.get("rows") or []
         if not rows:
             continue
+        capped_rows, cap_note = _cap_rows(rows, envelope)
         source = envelope.get("source", "tool")
         if source == "incidents_api":
-            parts.append("## Live operational data (incidents)\n")
-            parts.append(format_incident_rows(rows))
+            parts.append(f"## Live operational data (incidents)\n{scope_header}\n")
+            parts.append(format_incident_rows(capped_rows))
         elif source == "inventory_api":
-            parts.append("## Live operational data (inventory)\n")
-            parts.append(format_inventory_rows(rows))
+            parts.append(f"## Live operational data (inventory)\n{scope_header}\n")
+            parts.append(format_inventory_rows(capped_rows))
         else:
-            parts.append(f"## Live operational data ({source})\n")
-            parts.append(str(rows))
+            parts.append(f"## Live operational data ({source})\n{scope_header}\n")
+            parts.append(str(capped_rows))
+        truncated_note = envelope.get("truncated_note")
+        if cap_note:
+            parts.append(cap_note)
+        if truncated_note:
+            parts.append(str(truncated_note))
     return "\n\n".join(parts).strip()
 
 

@@ -1,10 +1,12 @@
-"""Unit tests for incident lookup tool (mocked HTTP — P2-L12)."""
+"""Unit tests for MCP incident lookup client (P24-3)."""
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
-from agent.tools import incidents as incidents_mod
+from agent import mcp_client as mcp_mod
 
 
 def _sample_incident(incident_id: int = 1) -> dict:
@@ -21,18 +23,21 @@ def _sample_incident(incident_id: int = 1) -> dict:
     }
 
 
+def _patch_mcp_call(monkeypatch: pytest.MonkeyPatch, result: dict) -> None:
+    async def _fake_call(**kwargs):
+        return result
+
+    monkeypatch.setattr(mcp_mod, "mint_mcp_access_token", lambda **k: "mcp-test-token")
+    monkeypatch.setattr(mcp_mod, "_call_manage_incident_tickets_async", _fake_call)
+
+
 def test_lookup_incident_detail_success(monkeypatch: pytest.MonkeyPatch):
-    captured: dict = {}
+    _patch_mcp_call(
+        monkeypatch,
+        {"ok": True, "action": "get", "data": _sample_incident(42)},
+    )
 
-    def _fetch(method, path, *, params=None, headers=None, timeout=None):
-        captured["method"] = method
-        captured["path"] = path
-        captured["headers"] = headers
-        return 200, _sample_incident(42), None
-
-    monkeypatch.setattr(incidents_mod, "fetch_json", _fetch)
-
-    envelope = incidents_mod.lookup_incidents(
+    envelope = mcp_mod.lookup_incidents_via_mcp(
         incident_id=42,
         filters={},
         auth_header="Bearer test-token",
@@ -41,20 +46,15 @@ def test_lookup_incident_detail_success(monkeypatch: pytest.MonkeyPatch):
     assert envelope["ok"] is True
     assert envelope["rows"][0]["origin"] == "branch"
     assert envelope["rows"][0]["id"] == 42
-    assert captured["path"] == "/incidents/42"
-    assert captured["headers"]["Authorization"] == "Bearer test-token"
 
 
 def test_lookup_incident_list_with_filters(monkeypatch: pytest.MonkeyPatch):
-    captured: dict = {}
+    _patch_mcp_call(
+        monkeypatch,
+        {"ok": True, "action": "list", "data": [_sample_incident()]},
+    )
 
-    def _fetch(method, path, *, params=None, headers=None, timeout=None):
-        captured["params"] = params
-        return 200, [_sample_incident()], None
-
-    monkeypatch.setattr(incidents_mod, "fetch_json", _fetch)
-
-    envelope = incidents_mod.lookup_incidents(
+    envelope = mcp_mod.lookup_incidents_via_mcp(
         incident_id=None,
         filters={"status": "open", "branch": "miami_doral"},
         auth_header=None,
@@ -62,17 +62,12 @@ def test_lookup_incident_list_with_filters(monkeypatch: pytest.MonkeyPatch):
 
     assert envelope["ok"] is True
     assert len(envelope["rows"]) == 1
-    assert captured["params"] == {"status": "open", "branch": "miami_doral"}
 
 
 def test_lookup_incident_empty_list(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        incidents_mod,
-        "fetch_json",
-        lambda *a, **k: (200, [], None),
-    )
+    _patch_mcp_call(monkeypatch, {"ok": True, "action": "list", "data": []})
 
-    envelope = incidents_mod.lookup_incidents(
+    envelope = mcp_mod.lookup_incidents_via_mcp(
         incident_id=None,
         filters={"status": "open"},
         auth_header=None,
@@ -84,13 +79,17 @@ def test_lookup_incident_empty_list(monkeypatch: pytest.MonkeyPatch):
 
 
 def test_lookup_incident_not_found(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        incidents_mod,
-        "fetch_json",
-        lambda *a, **k: (404, {"detail": "Not found"}, None),
+    _patch_mcp_call(
+        monkeypatch,
+        {
+            "ok": False,
+            "error_code": "UPSTREAM_NOT_FOUND",
+            "message": "Incident not found.",
+            "http_status": 404,
+        },
     )
 
-    envelope = incidents_mod.lookup_incidents(
+    envelope = mcp_mod.lookup_incidents_via_mcp(
         incident_id=999,
         filters={},
         auth_header="Bearer t",
@@ -100,35 +99,150 @@ def test_lookup_incident_not_found(monkeypatch: pytest.MonkeyPatch):
     assert envelope["reason"] == "not_found"
 
 
-def test_lookup_incident_timeout(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        incidents_mod,
-        "fetch_json",
-        lambda *a, **k: (0, None, "timeout"),
-    )
+def test_lookup_incident_mcp_transport_failure(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(mcp_mod, "mint_mcp_access_token", lambda **k: "mcp-test-token")
 
-    envelope = incidents_mod.lookup_incidents(
+    async def _fail(**kwargs):
+        raise TimeoutError("mcp timeout")
+
+    monkeypatch.setattr(mcp_mod, "_call_manage_incident_tickets_async", _fail)
+
+    envelope = mcp_mod.lookup_incidents_via_mcp(
         incident_id=None,
         filters={},
         auth_header=None,
     )
 
     assert envelope["ok"] is False
-    assert envelope["reason"] == "timeout"
+    assert envelope["reason"] == "http_error"
 
 
-def test_lookup_incident_http_401(monkeypatch: pytest.MonkeyPatch):
-    monkeypatch.setattr(
-        incidents_mod,
-        "fetch_json",
-        lambda *a, **k: (401, {"detail": "Unauthorized"}, None),
-    )
+def test_lookup_incident_token_mint_failure(monkeypatch: pytest.MonkeyPatch):
+    def _fail(**kwargs):
+        raise RuntimeError("mint failed")
 
-    envelope = incidents_mod.lookup_incidents(
+    monkeypatch.setattr(mcp_mod, "mint_mcp_access_token", _fail)
+
+    envelope = mcp_mod.lookup_incidents_via_mcp(
         incident_id=None,
         filters={},
         auth_header=None,
     )
 
     assert envelope["ok"] is False
-    assert envelope["reason"] == "http_401"
+    assert envelope["reason"] == "http_error"
+
+
+def test_parse_tool_result_langchain_content_blocks():
+    payload = {
+        "ok": True,
+        "action": "list",
+        "data": [{"id": 55, "title": "Slow order", "status": "open", "origin": "customer", "branch": "miami_doral", "category": "customer_complaint", "description": "x"}],
+    }
+    raw = [{"type": "text", "text": json.dumps(payload)}]
+    parsed = mcp_mod._parse_tool_result(raw)
+    assert parsed["ok"] is True
+    assert len(parsed["data"]) == 1
+
+
+def test_parse_tool_result_json_string():
+    raw = '{"ok": true, "action": "list", "data": []}'
+    parsed = mcp_mod._parse_tool_result(raw)
+    assert parsed["ok"] is True
+    assert parsed["data"] == []
+
+
+def test_lookup_incident_summary(monkeypatch: pytest.MonkeyPatch):
+    summary = {
+        "by_status": {"open": 3, "resolved": 10},
+        "by_category": {"customer_complaint": 2},
+        "by_origin": {"customer": 3},
+        "by_branch": {"miami_doral": 3},
+    }
+    _patch_mcp_call(
+        monkeypatch,
+        {"ok": True, "action": "summary", "data": summary},
+    )
+
+    envelope = mcp_mod.lookup_incidents_via_mcp(
+        incident_id=None,
+        filters={},
+        auth_header="Bearer test-token",
+        incident_action="summary",
+    )
+
+    assert envelope["ok"] is True
+    assert envelope["summary"] == summary
+    assert envelope["action"] == "summary"
+
+
+def test_mutate_incident_create_success(monkeypatch: pytest.MonkeyPatch):
+    created = _sample_incident(101)
+    _patch_mcp_call(
+        monkeypatch,
+        {"ok": True, "action": "create", "data": created},
+    )
+
+    envelope = mcp_mod.mutate_incident_via_mcp(
+        write_action="create",
+        auth_header="Bearer test-token",
+        write_payload={
+            "title": "Oven fault",
+            "description": "Main oven not heating",
+            "category": "equipment_failure",
+            "origin": "branch",
+            "branch": "miami_doral",
+        },
+    )
+
+    assert envelope["ok"] is True
+    assert envelope["action"] == "create"
+    assert envelope["rows"][0]["id"] == 101
+
+
+def test_mutate_incident_update_success(monkeypatch: pytest.MonkeyPatch):
+    open_row = _sample_incident(42)
+    in_progress = {**open_row, "status": "in_progress"}
+    resolved = {**open_row, "status": "resolved"}
+    calls: list[dict] = []
+
+    async def _sequenced_call(**kwargs):
+        arguments = kwargs.get("arguments") or {}
+        calls.append(arguments)
+        action = arguments.get("action")
+        if action == "get":
+            return {"ok": True, "action": "get", "data": open_row}
+        if action == "update_status" and arguments.get("status") == "in_progress":
+            return {"ok": True, "action": "update_status", "data": in_progress}
+        if action == "update_status" and arguments.get("status") == "resolved":
+            return {"ok": True, "action": "update_status", "data": resolved}
+        return {"ok": False, "error_code": "UPSTREAM_ERROR", "message": "unexpected call"}
+
+    monkeypatch.setattr(mcp_mod, "mint_mcp_access_token", lambda **k: "mcp-test-token")
+    monkeypatch.setattr(mcp_mod, "_call_manage_incident_tickets_async", _sequenced_call)
+
+    envelope = mcp_mod.mutate_incident_via_mcp(
+        write_action="update_status",
+        auth_header="Bearer test-token",
+        incident_id=42,
+        write_status="resolved",
+    )
+
+    assert envelope["ok"] is True
+    assert envelope["action"] == "update_status"
+    assert envelope["rows"][0]["status"] == "resolved"
+    assert [call.get("action") for call in calls] == [
+        "get",
+        "update_status",
+        "update_status",
+    ]
+
+
+def test_resolve_procedure_hint_for_incident_create():
+    from agent.fallbacks import resolve_procedure_hint
+
+    hint = resolve_procedure_hint("How do I create an incident")
+    assert hint is not None
+    assert "Create incident for" in hint
+
+    assert resolve_procedure_hint("how do you create an incident?") is not None

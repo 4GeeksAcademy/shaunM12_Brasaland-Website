@@ -126,6 +126,100 @@ def test_invoke_empty_retrieval_refuses_without_generate(
     assert "don't have enough information" in state["answer"].lower()
 
 
+def test_resolve_procedure_hint_for_incident_create():
+    from agent.fallbacks import resolve_procedure_hint
+
+    hint = resolve_procedure_hint("How do I create an incident")
+    assert hint is not None
+    assert "Create incident for" in hint
+
+    hint_you = resolve_procedure_hint("how do you create an incident?")
+    assert hint_you is not None
+    assert "Create incident for" in hint_you
+
+
+def test_invoke_procedure_incident_create_returns_hint(monkeypatch: pytest.MonkeyPatch):
+    ensure_repo_root_on_path()
+    from data.pipelines import rag as rag_mod
+
+    monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: [])
+
+    state = graph_mod.invoke_support_agent("How do I create an incident")
+
+    assert state["intent"] == "rag"
+    assert state["route"] == "refuse"
+    assert "Create incident for" in state["answer"]
+    assert "don't have enough information" not in state["answer"].lower()
+
+
+def test_invoke_how_do_you_create_incident_returns_hint(monkeypatch: pytest.MonkeyPatch):
+    ensure_repo_root_on_path()
+    from data.pipelines import rag as rag_mod
+
+    mcp_called = False
+
+    def _mcp_lookup(**_k):
+        nonlocal mcp_called
+        mcp_called = True
+        return {"ok": False, "rows": []}
+
+    monkeypatch.setattr("agent.graph.lookup_incidents_via_mcp", _mcp_lookup)
+    monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: [])
+
+    state = graph_mod.invoke_support_agent("how do you create an incident?")
+
+    assert mcp_called is False
+    assert state["intent"] == "rag"
+    assert state["route"] == "refuse"
+    assert "lookup_incident" not in _trace_nodes(state)
+    assert "Create incident for" in state["answer"]
+
+
+def test_invoke_show_all_incidents_skips_retrieve(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        "agent.graph.lookup_incidents_via_mcp",
+        lambda **k: {
+            "source": "incidents_api",
+            "ok": True,
+            "http_status": 200,
+            "filters": {},
+            "rows": [{"id": 1, "title": "Test", "status": "open", "branch": "miami_doral"}],
+            "error": None,
+            "reason": None,
+        },
+    )
+    ensure_repo_root_on_path()
+    import agent.generation as generation_mod
+
+    monkeypatch.setattr(
+        generation_mod,
+        "generate_support_answer",
+        lambda _q, **kwargs: "Incident list answer",
+    )
+
+    state = graph_mod.invoke_support_agent("show me all incidents")
+
+    assert state["intent"] == "incident"
+    nodes = _trace_nodes(state)
+    assert "lookup_incident" in nodes
+    assert "retrieve" not in nodes
+    assert state["route"] == "generate"
+
+
+def test_resolve_ops_misroute_hint_for_incident_phrasing():
+    from agent.fallbacks import resolve_ops_misroute_hint
+
+    hint = resolve_ops_misroute_hint("show me all incidents")
+    assert hint is not None
+    assert "List open incidents" in hint
+
+
+def test_resolve_ops_misroute_hint_skips_kb_questions():
+    from agent.fallbacks import resolve_ops_misroute_hint
+
+    assert resolve_ops_misroute_hint("How many points for Gold tier?") is None
+
+
 def test_initial_state_seeds_required_keys():
     state = initial_state("loyalty points")
 
@@ -135,13 +229,23 @@ def test_initial_state_seeds_required_keys():
     assert state["intent"] == "rag"
     assert state["incident_id"] is None
     assert state["incident_filters"] == {}
+    assert state["incident_action"] == "list"
+    assert state["write_action"] is None
     assert state["tool_results"] == []
 
 
 def test_invoke_incident_path_skips_retrieve(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
-        "agent.tools.incidents.fetch_json",
-        lambda *a, **k: (200, [], None),
+        "agent.graph.lookup_incidents_via_mcp",
+        lambda **k: {
+            "source": "incidents_api",
+            "ok": True,
+            "http_status": 200,
+            "filters": {},
+            "rows": [],
+            "error": None,
+            "reason": "empty",
+        },
     )
 
     state = graph_mod.invoke_support_agent("List open incidents at Miami Doral")
@@ -165,8 +269,16 @@ def test_invoke_incident_with_rows_generates(monkeypatch: pytest.MonkeyPatch):
         "category": "equipment_failure",
     }
     monkeypatch.setattr(
-        "agent.tools.incidents.fetch_json",
-        lambda *a, **k: (200, [incident], None),
+        "agent.graph.lookup_incidents_via_mcp",
+        lambda **k: {
+            "source": "incidents_api",
+            "ok": True,
+            "http_status": 200,
+            "filters": {},
+            "rows": [incident],
+            "error": None,
+            "reason": None,
+        },
     )
     ensure_repo_root_on_path()
     import agent.generation as generation_mod
@@ -223,8 +335,16 @@ def test_invoke_both_path_uses_generate_support_answer(monkeypatch: pytest.Monke
         return "Combined incidents and waste policy answer."
 
     monkeypatch.setattr(
-        "agent.tools.incidents.fetch_json",
-        lambda *a, **k: (200, [incident], None),
+        "agent.graph.lookup_incidents_via_mcp",
+        lambda **k: {
+            "source": "incidents_api",
+            "ok": True,
+            "http_status": 200,
+            "filters": {},
+            "rows": [incident],
+            "error": None,
+            "reason": None,
+        },
     )
     ensure_repo_root_on_path()
     from data.pipelines import rag as rag_mod

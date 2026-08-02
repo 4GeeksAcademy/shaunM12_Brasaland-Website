@@ -1,0 +1,34 @@
+[project]
+name = "brasaland-company-tools"
+version = "0.1.0"
+description = "Brasaland MCP server for incidents manager and read-only inventory (Context 24)"
+readme = "README.md"
+authors = [
+    { name = "shaunM12", email = "92561464+shaunM12@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=3.4.5",
+    "getmcpauth>=0.1.0",
+    "httpx>=0.28.1",
+    "pydantic>=2.13.4",
+    "python-dotenv>=1.2.2",
+]
+
+[project.scripts]
+brasaland-company-tools = "brasaland_company_tools:main"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[build-system]
+requires = ["uv_build>=0.11.21,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+]
