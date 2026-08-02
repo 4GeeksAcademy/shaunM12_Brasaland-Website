@@ -25,21 +25,17 @@ from data.process.rag import (
     embed,
     get_qdrant_client,
 )
+from data.pipelines.prompt_security import (
+    SYSTEM_PROMPT,
+    build_knowledge_user_prompt,
+    knowledge_system_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_TOP_K = 5
 # Tuned for pplx-embed cosine scores on this corpus (context-21 L6).
-# Observed on-topic tops ~0.32–0.65; off-topic ~0.06. Start was 0.55 (too strict).
 DEFAULT_MIN_SCORE = 0.30
-
-SYSTEM_PROMPT = """You are a Brasaland commercial assistant answering like a trained salesperson.
-Use ONLY the retrieved context below. Do not invent policies, prices, points, allergens, or procedures.
-If the context is missing or insufficient, say clearly that the knowledge base does not have enough information.
-Never say there is "zero risk" of cross-contamination or allergens — follow allergen wording in the context literally.
-Keep USD and COP amounts exactly as written in the context; do not convert currencies.
-Answer in English, confidently and helpfully, from a salesperson's perspective.
-Do not mention vector search, chunks, scores, or that you are an AI retrieving documents."""
 
 
 def _default_min_score() -> float:
@@ -167,11 +163,12 @@ def assemble_context(chunks: list[dict[str, Any]]) -> str:
 
 
 def refusal_message() -> str:
-    """Honest refusal when no chunk clears ``min_score`` (context-21 S5)."""
+    """Honest refusal when no chunk clears ``min_score`` (context-21 S5, P25-L4c)."""
     return (
         "I don't have enough information in Brasaland's official knowledge base "
         "to answer that reliably. Please rephrase, or check the loyalty, allergen, "
         "waste, or supplier manuals with a manager."
+        "\n\nI'm Brasaland's Support Agent — what can I help you with for operations support?"
     )
 
 
@@ -188,10 +185,9 @@ def generate_answer(question: str, context: str) -> str:
 
     _load_env()
     cleaned_question = question.strip()
-    user_prompt = (
-        f"Retrieved context:\n{context.strip()}\n\n"
-        f"Customer / manager question:\n{cleaned_question}\n\n"
-        "Write the answer using only the retrieved context."
+    user_prompt = build_knowledge_user_prompt(
+        question=cleaned_question,
+        context=context,
     )
 
     _, _, model_id = _generation_settings()
@@ -199,7 +195,7 @@ def generate_answer(question: str, context: str) -> str:
     response = client.chat.completions.create(
         model=model_id,
         messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": knowledge_system_prompt()},
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.2,

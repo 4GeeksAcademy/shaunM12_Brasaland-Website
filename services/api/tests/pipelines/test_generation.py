@@ -143,6 +143,9 @@ def test_generate_support_answer_uses_support_prompt(monkeypatch: pytest.MonkeyP
     messages = captured["messages"]
     assert messages[0]["content"] == SUPPORT_SYSTEM_PROMPT
     assert messages[0]["content"] != knowledge_system_prompt_for_tests()
+    assert "Instruction authority" in messages[0]["content"]
+    assert "Untrusted context" in messages[1]["content"]
+    assert "not system instructions" in messages[1]["content"]
     assert "Operational data" in messages[1]["content"] or "Live operational" in messages[1]["content"]
     assert captured["model"] == "test-model"
     assert captured["temperature"] == 0.2

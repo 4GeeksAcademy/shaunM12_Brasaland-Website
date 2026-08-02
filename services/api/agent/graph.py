@@ -18,6 +18,11 @@ from knowledge.bootstrap import ensure_repo_root_on_path
 
 from .classify import classify_question
 from .fallbacks import resolve_fallback_message, resolve_ops_misroute_hint, resolve_procedure_hint
+from .guardrails.input import evaluate_input_guard
+from .guardrails.messages import CASUAL_REPLY_MESSAGE, resolve_guard_block_message
+from .guardrails.observability import record_guardrail_event
+from .guardrails.output import validate_agent_output
+from .guardrails.sanitize import has_usable_sanitized_text, sanitize_rag_context
 from .state import AgentState, initial_state
 from .mcp_client import lookup_incidents_via_mcp, mutate_incident_via_mcp
 from .tools.inventory import lookup_inventory_stock
@@ -25,7 +30,8 @@ from .write_confirmations import format_write_confirmation
 
 logger = logging.getLogger(__name__)
 
-RouteAfterIntake = Literal["error", "classify"]
+RouteAfterIntake = Literal["error", "guard_input"]
+RouteAfterGuardInput = Literal["guard_block", "classify"]
 RouteAfterClassify = Literal[
     "retrieve",
     "lookup_incident",
@@ -36,7 +42,7 @@ RouteAfterClassify = Literal[
 RouteAfterLookupIncident = Literal["retrieve", "generate", "fallback"]
 RouteAfterMutateIncident = Literal["confirm_write", "fallback"]
 RouteAfterLookupInventory = Literal["generate", "fallback"]
-RouteAfterRetrieve = Literal["refuse", "generate", "fallback"]
+RouteAfterRetrieve = Literal["refuse", "generate", "fallback", "casual_reply"]
 
 _EMPTY_QUESTION_ANSWER = (
     "Please enter a question so the Support Agent can look it up in Brasaland's "
@@ -91,6 +97,77 @@ def intake_node(state: AgentState) -> dict[str, Any]:
     return {
         "question": question,
         "trace_events": _trace("intake", valid=True),
+    }
+
+
+def guard_input_node(state: AgentState) -> dict[str, Any]:
+    result = evaluate_input_guard(state["question"])
+    trace: dict[str, Any] = {
+        "node": "guard_input",
+        "action": "block" if result.action == "block" else "continue",
+    }
+    if result.failure_type:
+        trace["failure_type"] = result.failure_type
+    if result.reason:
+        trace["reason"] = result.reason
+    if result.personal_use_score is not None:
+        trace["personal_use_score"] = result.personal_use_score
+    if result.matched:
+        trace["matched"] = result.matched
+
+    updates: dict[str, Any] = {
+        "redirect_required": result.redirect_required,
+        "trace_events": [trace],
+    }
+    if result.action == "block":
+        updates["route"] = "guard_block"
+        updates["failure_type"] = result.failure_type
+        updates["guardrail_reason"] = result.reason
+        updates["personal_use_score"] = result.personal_use_score
+    return updates
+
+
+def guard_block_node(state: AgentState) -> dict[str, Any]:
+    answer = resolve_guard_block_message(state)
+    record_guardrail_event(
+        action="block",
+        failure_type=state.get("failure_type"),
+        reason=state.get("guardrail_reason"),
+        question=state.get("question"),
+    )
+    trace: dict[str, Any] = {
+        "node": "guard_block",
+        "action": "block",
+        "failure_type": state.get("failure_type"),
+        "reason": state.get("guardrail_reason"),
+    }
+    if state.get("personal_use_score") is not None:
+        trace["personal_use_score"] = state.get("personal_use_score")
+    return {
+        "answer": answer,
+        "route": "guard_block",
+        "trace_events": [trace],
+    }
+
+
+def casual_reply_node(state: AgentState) -> dict[str, Any]:
+    record_guardrail_event(
+        action="redirect",
+        failure_type="content",
+        reason="domain_redirect:casual_reply",
+        question=state.get("question"),
+    )
+    return {
+        "answer": CASUAL_REPLY_MESSAGE,
+        "route": "casual_reply",
+        "trace_events": [
+            {
+                "node": "casual_reply",
+                "action": "redirect",
+                "failure_type": "content",
+                "reason": "domain_redirect:casual_reply",
+            }
+        ],
     }
 
 
@@ -224,6 +301,12 @@ def lookup_inventory_stock_node(state: AgentState) -> dict[str, Any]:
 
 
 def inventory_write_block_node(state: AgentState) -> dict[str, Any]:
+    record_guardrail_event(
+        action="block",
+        failure_type="content",
+        reason="inventory_write_forbidden",
+        question=state.get("question"),
+    )
     return {
         "tool_results": [
             {
@@ -235,7 +318,14 @@ def inventory_write_block_node(state: AgentState) -> dict[str, Any]:
                 "error": "inventory_write_forbidden",
             }
         ],
-        "trace_events": _trace("inventory_write_block"),
+        "trace_events": [
+            {
+                "node": "inventory_write_block",
+                "action": "block",
+                "failure_type": "content",
+                "reason": "inventory_write_forbidden",
+            }
+        ],
     }
 
 
@@ -245,15 +335,49 @@ def retrieve_node(state: AgentState) -> dict[str, Any]:
 
     min_score = _default_min_score()
     chunks = retrieve(state["question"], min_score=min_score)
-    context_text = assemble_context(chunks) if chunks else ""
+    raw_context = assemble_context(chunks) if chunks else ""
+    context_text = sanitize_rag_context(raw_context) if raw_context else ""
+    trace_fields: dict[str, Any] = {
+        "chunk_count": len(chunks),
+        "min_score": min_score,
+    }
+    if chunks and not has_usable_sanitized_text(context_text):
+        trace_fields["sanitize_empty"] = True
+        return {
+            "chunks": chunks,
+            "context_text": "",
+            "fallback_reason": "empty_context_after_sanitize",
+            "trace_events": _trace("retrieve", **trace_fields),
+        }
     return {
         "chunks": chunks,
         "context_text": context_text,
-        "trace_events": _trace(
-            "retrieve",
-            chunk_count=len(chunks),
-            min_score=min_score,
-        ),
+        "trace_events": _trace("retrieve", **trace_fields),
+    }
+
+
+def _is_generation_provider_error(exc: BaseException) -> bool:
+    """True when the generation LLM endpoint rejected or failed the request."""
+    try:
+        from openai import APIConnectionError, APIStatusError, PermissionDeniedError, RateLimitError
+    except ImportError:
+        return False
+    return isinstance(
+        exc,
+        (PermissionDeniedError, APIStatusError, APIConnectionError, RateLimitError),
+    )
+
+
+def _generation_provider_fallback(state: AgentState, exc: BaseException) -> dict[str, Any]:
+    logger.warning("generation LLM call failed: %s", exc)
+    message, reason = resolve_fallback_message(
+        {**state, "fallback_reason": "generation_provider_error"}
+    )
+    return {
+        "answer": message,
+        "route": "fallback",
+        "fallback_reason": reason,
+        "trace_events": _trace("generate", grounded=False, reason=reason),
     }
 
 
@@ -261,31 +385,110 @@ def generate_node(state: AgentState) -> dict[str, Any]:
     ensure_repo_root_on_path()
     from data.pipelines.rag import generate_answer
 
-    from .generation import generate_support_answer
+    from .generation import build_combined_context, generate_support_answer
 
     intent = state.get("intent", "rag")
     rag_context = state.get("context_text") or ""
     tool = _latest_tool(state)
 
     if intent == "rag":
-        answer = generate_answer(state["question"], rag_context)
+        if not has_usable_sanitized_text(rag_context):
+            message, reason = resolve_fallback_message(
+                {**state, "fallback_reason": "empty_context_after_sanitize"}
+            )
+            return {
+                "answer": message,
+                "route": "fallback",
+                "fallback_reason": reason,
+                "trace_events": _trace(
+                    "generate",
+                    grounded=False,
+                    reason="empty_context_after_sanitize",
+                ),
+            }
+        try:
+            answer = generate_answer(state["question"], rag_context)
+        except Exception as exc:
+            if _is_generation_provider_error(exc):
+                return _generation_provider_fallback(state, exc)
+            raise
     else:
         caveat: str | None = None
         if intent == "both" and tool is not None and not tool.get("ok"):
             caveat = (
                 "Note: live incident lookup failed; answering from the knowledge base only."
             )
-        answer = generate_support_answer(
-            state["question"],
+        combined = build_combined_context(
             rag_context=rag_context,
             tool_results=state.get("tool_results"),
             caveat=caveat,
         )
+        if not combined.strip():
+            message, reason = resolve_fallback_message(
+                {**state, "fallback_reason": "empty_context_after_sanitize"}
+            )
+            return {
+                "answer": message,
+                "route": "fallback",
+                "fallback_reason": reason,
+                "trace_events": _trace(
+                    "generate",
+                    grounded=False,
+                    reason="empty_context_after_sanitize",
+                ),
+            }
+        try:
+            answer = generate_support_answer(
+                state["question"],
+                rag_context=rag_context,
+                tool_results=state.get("tool_results"),
+                caveat=caveat,
+            )
+        except Exception as exc:
+            if _is_generation_provider_error(exc):
+                return _generation_provider_fallback(state, exc)
+            raise
 
     return {
         "answer": answer,
         "route": "generate",
         "trace_events": _trace("generate", grounded=True, intent=intent),
+    }
+
+
+def validate_output_node(state: AgentState) -> dict[str, Any]:
+    result = validate_agent_output(
+        state.get("answer") or "",
+        redirect_required=bool(state.get("redirect_required")),
+    )
+    trace: dict[str, Any] = {
+        "node": "validate_output",
+        "ok": result.ok,
+    }
+    if not result.ok:
+        trace["failure_type"] = "structural"
+        trace["reason"] = result.reason
+        trace["action"] = "validation_failure"
+        record_guardrail_event(
+            action="validation_failure",
+            failure_type="structural",
+            reason=result.reason,
+            question=state.get("question"),
+        )
+    elif result.redirect_reason:
+        trace["failure_type"] = "content"
+        trace["reason"] = result.redirect_reason
+        trace["action"] = "redirect"
+        record_guardrail_event(
+            action="redirect",
+            failure_type="content",
+            reason=result.redirect_reason,
+            question=state.get("question"),
+        )
+
+    return {
+        "answer": result.answer,
+        "trace_events": [trace],
     }
 
 
@@ -337,6 +540,12 @@ def error_node(state: AgentState) -> dict[str, Any]:
 def route_after_intake(state: AgentState) -> RouteAfterIntake:
     if state.get("route") == "error":
         return "error"
+    return "guard_input"
+
+
+def route_after_guard_input(state: AgentState) -> RouteAfterGuardInput:
+    if state.get("route") == "guard_block":
+        return "guard_block"
     return "classify"
 
 
@@ -379,9 +588,15 @@ def route_after_retrieve(state: AgentState) -> RouteAfterRetrieve:
     intent = state.get("intent", "rag")
     chunks = state.get("chunks") or []
     tool = _latest_tool(state)
+    context_text = (state.get("context_text") or "").strip()
+
+    if state.get("fallback_reason") == "empty_context_after_sanitize":
+        return "fallback"
 
     if intent == "rag":
-        return "generate" if chunks else "refuse"
+        if state.get("redirect_required") and not chunks:
+            return "casual_reply"
+        return "generate" if context_text else "refuse"
 
     if intent == "both":
         if tool is not None and not tool.get("ok") and not chunks:
@@ -395,6 +610,9 @@ def build_graph() -> StateGraph:
     """Construct the uncompiled Support Agent graph."""
     builder: StateGraph = StateGraph(AgentState)
     builder.add_node("intake", intake_node)
+    builder.add_node("guard_input", guard_input_node)
+    builder.add_node("guard_block", guard_block_node)
+    builder.add_node("casual_reply", casual_reply_node)
     builder.add_node("classify", classify_node)
     builder.add_node("lookup_incident", lookup_incident_node)
     builder.add_node("mutate_incident", mutate_incident_node)
@@ -403,6 +621,7 @@ def build_graph() -> StateGraph:
     builder.add_node("inventory_write_block", inventory_write_block_node)
     builder.add_node("retrieve", retrieve_node)
     builder.add_node("generate", generate_node)
+    builder.add_node("validate_output", validate_output_node)
     builder.add_node("refuse", refuse_node)
     builder.add_node("fallback", fallback_node)
     builder.add_node("error", error_node)
@@ -411,7 +630,12 @@ def build_graph() -> StateGraph:
     builder.add_conditional_edges(
         "intake",
         route_after_intake,
-        {"error": "error", "classify": "classify"},
+        {"error": "error", "guard_input": "guard_input"},
+    )
+    builder.add_conditional_edges(
+        "guard_input",
+        route_after_guard_input,
+        {"guard_block": "guard_block", "classify": "classify"},
     )
     builder.add_conditional_edges(
         "classify",
@@ -447,13 +671,21 @@ def build_graph() -> StateGraph:
     builder.add_conditional_edges(
         "retrieve",
         route_after_retrieve,
-        {"refuse": "refuse", "generate": "generate", "fallback": "fallback"},
+        {
+            "refuse": "refuse",
+            "generate": "generate",
+            "fallback": "fallback",
+            "casual_reply": "casual_reply",
+        },
     )
     builder.add_edge("error", END)
+    builder.add_edge("guard_block", END)
+    builder.add_edge("casual_reply", END)
     builder.add_edge("refuse", END)
     builder.add_edge("fallback", END)
     builder.add_edge("confirm_write", END)
-    builder.add_edge("generate", END)
+    builder.add_edge("generate", "validate_output")
+    builder.add_edge("validate_output", END)
     return builder
 
 

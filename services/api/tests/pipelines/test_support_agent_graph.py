@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
+from unittest.mock import MagicMock
+
 import pytest
 
 from agent import graph as graph_mod
 from agent.state import initial_state
 from knowledge.bootstrap import ensure_repo_root_on_path
+from tests.pipelines.agent_trace_assertions import (
+    assert_guardrail_prefix,
+    assert_no_validate_output,
+    assert_validate_after_generate,
+    trace_nodes,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -39,7 +47,7 @@ def test_graph_compiles_with_sqlite_checkpointer(tmp_path):
 
 
 def _trace_nodes(state: dict) -> list[str]:
-    return [event["node"] for event in state.get("trace_events", [])]
+    return trace_nodes(state)
 
 
 def test_invoke_gold_tier_retrieve_before_generate(monkeypatch: pytest.MonkeyPatch):
@@ -70,10 +78,51 @@ def test_invoke_gold_tier_retrieve_before_generate(monkeypatch: pytest.MonkeyPat
     assert state["intent"] == "rag"
     assert "50" in state["answer"]
     nodes = _trace_nodes(state)
+    assert_guardrail_prefix(nodes)
     assert nodes.index("classify") < nodes.index("retrieve") < nodes.index("generate")
+    assert_validate_after_generate(nodes)
     assert "lookup_incident" not in nodes
     assert "refuse" not in nodes
     assert state["chunks"] == chunks
+
+
+def test_invoke_generation_provider_error_returns_fallback(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    ensure_repo_root_on_path()
+    from data.pipelines import rag as rag_mod
+    from openai import PermissionDeniedError
+
+    chunks = [
+        {
+            "company": "brasaland",
+            "source_document": "brasaland-loyalty-program.en.md",
+            "section": "Gold tier",
+            "language": "en",
+            "chunk_index": 0,
+            "text": "Gold requires 50+ points.",
+            "score": 0.55,
+        }
+    ]
+    monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
+
+    def _raise_provider_block(*_a, **_k):
+        raise PermissionDeniedError(
+            "Request blocked: prompt injection patterns detected",
+            response=MagicMock(request=MagicMock()),
+            body=None,
+        )
+
+    monkeypatch.setattr(rag_mod, "generate_answer", _raise_provider_block)
+
+    state = graph_mod.invoke_support_agent("How many points for Gold tier?")
+
+    assert state["route"] == "fallback"
+    assert state["fallback_reason"] == "generation_provider_error"
+    assert "answer service" in state["answer"].lower()
+    nodes = _trace_nodes(state)
+    assert "generate" in nodes
+    assert_validate_after_generate(nodes)
 
 
 def test_invoke_whitespace_skips_retrieve(monkeypatch: pytest.MonkeyPatch):
@@ -94,6 +143,7 @@ def test_invoke_whitespace_skips_retrieve(monkeypatch: pytest.MonkeyPatch):
     assert retrieve_called is False
     assert state["route"] == "error"
     nodes = _trace_nodes(state)
+    assert "guard_input" not in nodes
     assert "retrieve" not in nodes
     assert "classify" not in nodes
     assert "intake" in nodes
@@ -120,9 +170,11 @@ def test_invoke_empty_retrieval_refuses_without_generate(
     assert generate_called is False
     assert state["route"] == "refuse"
     nodes = _trace_nodes(state)
+    assert_guardrail_prefix(nodes)
     assert nodes.index("classify") < nodes.index("retrieve")
     assert "refuse" in nodes
     assert "generate" not in nodes
+    assert_no_validate_output(nodes)
     assert "don't have enough information" in state["answer"].lower()
 
 
@@ -201,9 +253,11 @@ def test_invoke_show_all_incidents_skips_retrieve(monkeypatch: pytest.MonkeyPatc
 
     assert state["intent"] == "incident"
     nodes = _trace_nodes(state)
+    assert_guardrail_prefix(nodes)
     assert "lookup_incident" in nodes
     assert "retrieve" not in nodes
     assert state["route"] == "generate"
+    assert_validate_after_generate(nodes)
 
 
 def test_resolve_ops_misroute_hint_for_incident_phrasing():
@@ -227,6 +281,11 @@ def test_initial_state_seeds_required_keys():
     assert state["chunks"] == []
     assert state["trace_events"] == []
     assert state["intent"] == "rag"
+    assert state["redirect_required"] is False
+    assert state["failure_type"] is None
+    assert state["guardrail_reason"] is None
+    assert state["personal_use_score"] is None
+    assert state["fallback_reason"] is None
     assert state["incident_id"] is None
     assert state["incident_filters"] == {}
     assert state["incident_action"] == "list"
@@ -300,9 +359,11 @@ def test_invoke_incident_with_rows_generates(monkeypatch: pytest.MonkeyPatch):
     )
 
     nodes = _trace_nodes(state)
+    assert_guardrail_prefix(nodes)
     assert state["route"] == "generate"
     assert "lookup_incident" in nodes
     assert "retrieve" not in nodes
+    assert_validate_after_generate(nodes)
     assert state["sources_used"] == ["incidents_api"]
     assert "Oven fault" in state["answer"]
 
@@ -359,11 +420,13 @@ def test_invoke_both_path_uses_generate_support_answer(monkeypatch: pytest.Monke
     )
 
     nodes = _trace_nodes(state)
+    assert_guardrail_prefix(nodes)
     assert state["intent"] == "both"
     assert support_called is True
     assert "lookup_incident" in nodes
     assert "retrieve" in nodes
     assert "generate" in nodes
+    assert_validate_after_generate(nodes)
     assert state["route"] == "generate"
     assert "Combined" in state["answer"]
 
@@ -400,5 +463,7 @@ def test_graph_nodes_never_call_monolithic_query(monkeypatch: pytest.MonkeyPatch
 
     assert query_called is False
     assert state["route"] == "generate"
-    assert "classify" in _trace_nodes(state)
-    assert len(state["trace_events"]) >= 4
+    nodes = _trace_nodes(state)
+    assert_guardrail_prefix(nodes)
+    assert_validate_after_generate(nodes)
+    assert len(state["trace_events"]) >= 6

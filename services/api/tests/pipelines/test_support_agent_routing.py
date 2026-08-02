@@ -6,6 +6,12 @@ import pytest
 
 from agent import graph as graph_mod
 from knowledge.bootstrap import ensure_repo_root_on_path
+from tests.pipelines.agent_trace_assertions import (
+    assert_guardrail_prefix,
+    assert_no_validate_output,
+    assert_validate_after_generate,
+    trace_nodes,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -40,7 +46,7 @@ def _incidents_envelope(rows: list[dict], *, ok: bool = True, reason: str | None
 
 
 def _trace_nodes(state: dict) -> list[str]:
-    return [event["node"] for event in state.get("trace_events", [])]
+    return trace_nodes(state)
 
 
 def test_routing_eval_incident_path_skips_retrieve(monkeypatch: pytest.MonkeyPatch):
@@ -100,9 +106,11 @@ def test_routing_eval_incident_path_skips_retrieve(monkeypatch: pytest.MonkeyPat
 
     nodes = _trace_nodes(state)
     assert retrieve_called is False
+    assert_guardrail_prefix(nodes)
     assert state["intent"] == "incident"
     assert state["route"] == "generate"
     assert nodes.index("classify") < nodes.index("lookup_incident") < nodes.index("generate")
+    assert_validate_after_generate(nodes)
     assert "retrieve" not in nodes
     assert "refuse" not in nodes
     assert state["sources_used"] == ["incidents_api"]
@@ -145,9 +153,11 @@ def test_routing_eval_rag_path_never_calls_tool_http(monkeypatch: pytest.MonkeyP
 
     nodes = _trace_nodes(state)
     assert mcp_called is False
+    assert_guardrail_prefix(nodes)
     assert state["intent"] == "rag"
     assert state["route"] == "generate"
     assert nodes.index("classify") < nodes.index("retrieve") < nodes.index("generate")
+    assert_validate_after_generate(nodes)
     assert "lookup_incident" not in nodes
     assert "lookup_inventory_stock" not in nodes
     assert "fallback" not in nodes
@@ -185,9 +195,11 @@ def test_routing_eval_incident_unavailable_uses_fallback(monkeypatch: pytest.Mon
     state = graph_mod.invoke_support_agent("List open incidents at Miami Doral")
 
     nodes = _trace_nodes(state)
+    assert_guardrail_prefix(nodes)
     assert state["intent"] == "incident"
     assert state["route"] == "fallback"
     assert nodes.index("classify") < nodes.index("lookup_incident") < nodes.index("fallback")
+    assert_no_validate_output(nodes)
     assert "retrieve" not in nodes
     assert "generate" not in nodes
     assert retrieve_called is False
@@ -231,9 +243,11 @@ def test_routing_eval_incident_write_uses_template_confirmation(
     )
 
     nodes = _trace_nodes(state)
+    assert_guardrail_prefix(nodes)
     assert state["intent"] == "incident_write"
     assert state["route"] == "confirm_write"
     assert nodes.index("classify") < nodes.index("mutate_incident") < nodes.index("confirm_write")
+    assert_no_validate_output(nodes)
     assert "generate" not in nodes
     assert generate_called is False
     assert "Incident #101 created successfully" in state["answer"]
@@ -289,9 +303,11 @@ def test_routing_eval_incident_summary_skips_retrieve(monkeypatch: pytest.Monkey
 
     nodes = _trace_nodes(state)
     assert retrieve_called is False
+    assert_guardrail_prefix(nodes)
     assert state["intent"] == "incident"
     assert state["route"] == "generate"
     assert "lookup_incident" in nodes
+    assert_validate_after_generate(nodes)
     assert "3 open incidents" in state["answer"]
 
 
@@ -343,9 +359,11 @@ def test_routing_eval_inventory_path_skips_retrieve(monkeypatch: pytest.MonkeyPa
 
     nodes = _trace_nodes(state)
     assert retrieve_called is False
+    assert_guardrail_prefix(nodes)
     assert state["intent"] == "inventory"
     assert state["route"] == "generate"
     assert nodes.index("classify") < nodes.index("lookup_inventory_stock") < nodes.index("generate")
+    assert_validate_after_generate(nodes)
     assert "retrieve" not in nodes
     assert "lookup_incident" not in nodes
     assert state["sources_used"] == ["inventory_api"]
@@ -369,9 +387,11 @@ def test_routing_eval_inventory_write_blocks_without_http(
 
     nodes = _trace_nodes(state)
     assert fetch_called is False
+    assert_guardrail_prefix(nodes)
     assert state["intent"] == "inventory_write"
     assert state["route"] == "fallback"
     assert "inventory_write_block" in nodes
+    assert_no_validate_output(nodes)
     assert "lookup_inventory_stock" not in nodes
     assert "only read inventory" in state["answer"].lower()
 

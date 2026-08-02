@@ -26,6 +26,11 @@ class AgentState(TypedDict):
     write_status: str | None
     sources_used: list[str]
     tool_results: list[dict[str, Any]]
+    redirect_required: bool
+    failure_type: str | None
+    guardrail_reason: str | None
+    personal_use_score: float | None
+    fallback_reason: str | None
 
 
 def initial_state(question: str) -> AgentState:
@@ -47,4 +52,9 @@ def initial_state(question: str) -> AgentState:
         write_status=None,
         sources_used=[],
         tool_results=[],
+        redirect_required=False,
+        failure_type=None,
+        guardrail_reason=None,
+        personal_use_score=None,
+        fallback_reason=None,
     )

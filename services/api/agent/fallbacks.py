@@ -78,6 +78,17 @@ BOTH_TOOL_AND_RAG_EMPTY = (
     "Knowledge separately in the backoffice."
 )
 
+EMPTY_CONTEXT_AFTER_SANITIZE = (
+    "I couldn't use the retrieved knowledge or operational data safely after "
+    "filtering untrusted content. Please try again with a narrower question, "
+    "or check Incidents, Inventory, or Knowledge in the backoffice."
+)
+
+GENERATION_PROVIDER_ERROR = (
+    "I couldn't reach the answer service right now. Please try again shortly, "
+    "or check Incidents, Inventory, or Knowledge in the backoffice."
+)
+
 STUB_NOT_IMPLEMENTED = (
     "Live incident lookup is not wired yet on this build. Retry after the "
     "tool integration phase, or use the Incidents manager in the backoffice."
@@ -110,6 +121,12 @@ def resolve_ops_misroute_hint(question: str) -> str | None:
 
 def resolve_fallback_message(state: dict[str, Any]) -> tuple[str, str]:
     """Pick user-facing fallback copy from graph state. Returns (message, reason)."""
+    fallback_reason = state.get("fallback_reason")
+    if fallback_reason == "empty_context_after_sanitize":
+        return EMPTY_CONTEXT_AFTER_SANITIZE, fallback_reason
+    if fallback_reason == "generation_provider_error":
+        return GENERATION_PROVIDER_ERROR, fallback_reason
+
     intent = state.get("intent", "rag")
     tool_results = state.get("tool_results") or []
     tool = tool_results[-1] if tool_results else {}

@@ -4,19 +4,21 @@ from __future__ import annotations
 
 from typing import Any
 
-from data.pipelines.rag import SYSTEM_PROMPT, _generation_settings, _load_env, generation_client
+from data.pipelines.rag import _generation_settings, _load_env, generation_client
+from agent.guardrails.prompts import (
+    SUPPORT_SYSTEM_PROMPT,
+    build_support_user_prompt,
+    support_system_prompt,
+)
+from agent.guardrails.sanitize import (
+    is_sanitized_rag_context,
+    sanitize_rag_context,
+    sanitize_tool_context_block,
+    sanitize_tool_envelope,
+)
 from packages.shared.restaurant_locations import format_location_label
 
 MAX_TOOL_ROWS = 10
-
-SUPPORT_SYSTEM_PROMPT = """You are a Brasaland Support Agent helping backoffice operations staff.
-Use live operational data for current incidents, inventory, and stock facts.
-When operational data includes filters or a location scope, state that scope in your first sentence.
-Use knowledge base sections for policies, loyalty, allergens, and procedures.
-If a source is missing or insufficient, say so clearly — do not invent incident IDs, stock levels, or policies.
-Keep USD and COP amounts exactly as written in the context; do not convert currencies.
-Answer in English, clearly and professionally.
-Do not mention tools, HTTP APIs, vector search, chunks, or that you are an AI."""
 
 
 def _scope_header_for_envelope(envelope: dict[str, Any]) -> str:
@@ -117,7 +119,8 @@ def build_tool_context(tool_results: list[dict[str, Any]] | None) -> str:
     if not tool_results:
         return ""
     parts: list[str] = []
-    for envelope in tool_results:
+    for raw_envelope in tool_results:
+        envelope = sanitize_tool_envelope(raw_envelope)
         if not envelope.get("ok"):
             continue
         scope_header = _scope_header_for_envelope(envelope)
@@ -145,7 +148,10 @@ def build_tool_context(tool_results: list[dict[str, Any]] | None) -> str:
             parts.append(cap_note)
         if truncated_note:
             parts.append(str(truncated_note))
-    return "\n\n".join(parts).strip()
+    formatted = "\n\n".join(parts).strip()
+    if not formatted:
+        return ""
+    return sanitize_tool_context_block(formatted)
 
 
 def build_combined_context(
@@ -161,8 +167,11 @@ def build_combined_context(
     tool_block = build_tool_context(tool_results)
     if tool_block:
         parts.append(tool_block)
-    if rag_context and rag_context.strip():
-        parts.append(f"## Knowledge base\n{rag_context.strip()}")
+    rag_block = rag_context.strip()
+    if rag_block and not is_sanitized_rag_context(rag_block):
+        rag_block = sanitize_rag_context(rag_block)
+    if rag_block:
+        parts.append(f"## Knowledge base\n{rag_block}")
     return "\n\n".join(parts).strip()
 
 
@@ -187,11 +196,9 @@ def generate_support_answer(
 
     _load_env()
     cleaned_question = question.strip()
-    user_prompt = (
-        f"Context:\n{context}\n\n"
-        f"Support question:\n{cleaned_question}\n\n"
-        "Write the answer using operational data for live facts and the knowledge base "
-        "for policies and procedures. State clearly when information is missing."
+    user_prompt = build_support_user_prompt(
+        question=cleaned_question,
+        context=context,
     )
 
     _, _, model_id = _generation_settings()
@@ -199,7 +206,7 @@ def generate_support_answer(
     response = client.chat.completions.create(
         model=model_id,
         messages=[
-            {"role": "system", "content": SUPPORT_SYSTEM_PROMPT},
+            {"role": "system", "content": support_system_prompt()},
             {"role": "user", "content": user_prompt},
         ],
         temperature=0.2,
@@ -211,5 +218,7 @@ def generate_support_answer(
 
 
 def knowledge_system_prompt_for_tests() -> str:
-    """Knowledge API system prompt (P1) — for tests comparing prompt separation."""
-    return SYSTEM_PROMPT
+    """Knowledge API system prompt — for tests comparing prompt separation."""
+    from data.pipelines.prompt_security import knowledge_system_prompt
+
+    return knowledge_system_prompt()

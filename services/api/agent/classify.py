@@ -272,6 +272,30 @@ def looks_like_live_ops_question(question: str) -> bool:
     return False
 
 
+def has_brasaland_domain_signals(question: str) -> bool:
+    """Tier 0 allowlist — Brasaland ops, KB, procedure, or write phrasing (P25-L11b)."""
+    text = (question or "").strip()
+    if not text:
+        return False
+
+    lower = text.lower()
+    if "brasaland" in lower or "brasa points" in lower:
+        return True
+
+    matched: list[str] = []
+    if _has_kb_signals(text, matched):
+        return True
+    if looks_like_live_ops_question(text):
+        return True
+    if has_procedure_phrasing(text):
+        return True
+    if _has_inventory_write_signals(text, matched):
+        return True
+    if _CREATE_RE.search(text) or _UPDATE_RE.search(text) or _UPDATE_TO_RE.search(text):
+        return True
+    return False
+
+
 def _contains_phrase(text: str, phrase: str) -> bool:
     if " " in phrase:
         return phrase in text
