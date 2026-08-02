@@ -11,6 +11,7 @@ from tests.pipelines.agent_trace_assertions import (
     assert_guardrail_prefix,
     assert_no_validate_output,
     assert_validate_after_generate,
+    mock_structured_generation,
     trace_nodes,
 )
 
@@ -40,6 +41,8 @@ def test_initial_state_includes_guardrail_fields():
     assert state["guardrail_reason"] is None
     assert state["personal_use_score"] is None
     assert state["fallback_reason"] is None
+    assert state["memory_context"] == ""
+    assert state["pending_proposal"] is None
 
 
 def test_rag_happy_path_trace_includes_guardrails(monkeypatch: pytest.MonkeyPatch):
@@ -55,10 +58,9 @@ def test_rag_happy_path_trace_includes_guardrails(monkeypatch: pytest.MonkeyPatc
         }
     ]
     monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
-    monkeypatch.setattr(
-        rag_mod,
-        "generate_answer",
-        lambda _q, _ctx: "Gold tier requires 50 or more loyalty points.",
+    mock_structured_generation(
+        monkeypatch,
+        rag_answer="Gold tier requires 50 or more loyalty points.",
     )
 
     state = graph_mod.invoke_support_agent("How many points for Gold tier?")

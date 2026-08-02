@@ -31,6 +31,14 @@ class AgentState(TypedDict):
     guardrail_reason: str | None
     personal_use_score: float | None
     fallback_reason: str | None
+    # MEM-092 (context-26 P26-L20)
+    memory_context: str
+    pending_proposal: dict[str, Any] | None
+    pending_proposal_at: str | None
+    memory_proposal_candidate: dict[str, Any] | None
+    last_memory_outcome: str | None
+    memory_next: str | None
+    memory_notice: str | None
 
 
 def initial_state(question: str) -> AgentState:
@@ -57,4 +65,11 @@ def initial_state(question: str) -> AgentState:
         guardrail_reason=None,
         personal_use_score=None,
         fallback_reason=None,
+        memory_context="",
+        pending_proposal=None,
+        pending_proposal_at=None,
+        memory_proposal_candidate=None,
+        last_memory_outcome=None,
+        memory_next=None,
+        memory_notice=None,
     )

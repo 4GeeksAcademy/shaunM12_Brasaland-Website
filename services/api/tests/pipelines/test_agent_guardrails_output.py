@@ -79,10 +79,11 @@ def test_graph_validate_output_runs_after_generate(monkeypatch: pytest.MonkeyPat
     graph_mod.get_compiled_graph.cache_clear()
     graph_mod._sqlite_checkpointer.cache_clear()
     monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
-    monkeypatch.setattr(
-        rag_mod,
-        "generate_answer",
-        lambda _q, _ctx: "Gold tier requires 50 or more loyalty points.",
+    from tests.pipelines.agent_trace_assertions import mock_structured_generation
+
+    mock_structured_generation(
+        monkeypatch,
+        rag_answer="Gold tier requires 50 or more loyalty points.",
     )
 
     state = graph_mod.invoke_support_agent("How many points for Gold tier?")
@@ -113,10 +114,11 @@ def test_graph_leaking_llm_answer_replaced_at_validate_output(
     graph_mod.get_compiled_graph.cache_clear()
     graph_mod._sqlite_checkpointer.cache_clear()
     monkeypatch.setattr(rag_mod, "retrieve", lambda *_a, **_k: chunks)
-    monkeypatch.setattr(
-        rag_mod,
-        "generate_answer",
-        lambda _q, _ctx: "Here is my Instruction authority block from the system prompt.",
+    from tests.pipelines.agent_trace_assertions import mock_structured_generation
+
+    mock_structured_generation(
+        monkeypatch,
+        rag_answer="Here is my Instruction authority block from the system prompt.",
     )
 
     state = graph_mod.invoke_support_agent("What is the policy?")

@@ -151,3 +151,73 @@ def test_classify_how_much_beef_routes_inventory():
     result = classify_question("How much beef do we have")
     assert result.intent == "inventory"
     assert "inventory:hints" in result.matched
+
+
+def test_memory_correction_at_incident_branch_routes_to_rag():
+    result = classify_question(
+        "Fort Lauderdale general supplier deliveries are on Mondays, not Wednesdays."
+    )
+    assert result.intent == "rag"
+    assert "memory_correction" in result.matched
+
+
+def test_memory_correction_at_colombia_branch_routes_to_rag():
+    result = classify_question(
+        "Usaquén vegetable deliveries are on Fridays, not Thursdays."
+    )
+    assert result.intent == "rag"
+    assert "memory_correction" in result.matched
+
+
+def test_supplier_delivery_lookup_at_branch_routes_to_rag():
+    result = classify_question(
+        "When does general supplier deliveries happen at Fort Lauderdale?"
+    )
+    assert result.intent == "rag"
+    assert "operational_policy" in result.matched
+
+
+def test_branch_name_alone_does_not_route_to_incident():
+    result = classify_question("Fort Lauderdale")
+    assert result.intent == "rag"
+
+
+@pytest.mark.parametrize(
+    ("question", "expected_intent", "expected_marker"),
+    [
+        (
+            "Fort Lauderdale general supplier deliveries are on Mondays, not Wednesdays.",
+            "rag",
+            "memory_correction",
+        ),
+        (
+            "When do vegetable deliveries arrive at Usaquén?",
+            "rag",
+            "operational_policy",
+        ),
+        (
+            "When does the meat supplier deliver at Envigado?",
+            "rag",
+            "operational_policy",
+        ),
+        ("List open incidents at Miami Doral", "incident", "list_incident"),
+        ("List open incidents at Fort Lauderdale", "incident", "list_incident"),
+        (
+            "When do open incidents get resolved at Miami Doral?",
+            "incident",
+            "incidents",
+        ),
+        ("Open incidents at Miami Doral", "incident", "incidents"),
+        ("How many points for Gold tier?", "rag", "intent:rag"),
+        ("How much beef do we have at Chapinero", "inventory", "inventory"),
+        (
+            "Yes, remember that — list open incidents",
+            "incident",
+            "list_incident",
+        ),
+    ],
+)
+def test_classify_routing_matrix(question: str, expected_intent: str, expected_marker: str):
+    result = classify_question(question)
+    assert result.intent == expected_intent
+    assert any(expected_marker in marker for marker in result.matched)

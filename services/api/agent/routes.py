@@ -26,7 +26,7 @@ router = APIRouter(tags=["agent"])
 def agent_query(
     body: AgentQueryRequest,
     request: Request,
-    _: UserResponse = Depends(get_current_user),
+    current_user: UserResponse = Depends(get_current_user),
 ) -> AgentQueryResponse:
     """Run the compiled LangGraph and return the final answer string only."""
     question = body.question.strip()
@@ -39,7 +39,12 @@ def agent_query(
     try:
         ensure_repo_root_on_path()
         auth_header = request.headers.get("Authorization")
-        state = invoke_support_agent(question, auth_header=auth_header)
+        state = invoke_support_agent(
+            question,
+            thread_id=body.thread_id,
+            auth_header=auth_header,
+            user_id=current_user.id,
+        )
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

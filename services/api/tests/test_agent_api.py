@@ -114,7 +114,7 @@ def test_agent_guardrails_summary_after_query_block(agent_client, monkeypatch):
         lambda: None,
     )
 
-    def _blocked_invoke(question: str, *, thread_id=None, auth_header=None):
+    def _blocked_invoke(question: str, *, thread_id=None, auth_header=None, user_id=None):
         from agent.guardrails.observability import record_guardrail_event
 
         record_guardrail_event(
@@ -152,7 +152,7 @@ def test_agent_query_returns_answer_only(agent_client, monkeypatch):
         lambda: None,
     )
 
-    def _fake_invoke(question: str, *, thread_id=None, auth_header=None):
+    def _fake_invoke(question: str, *, thread_id=None, auth_header=None, user_id=None):
         assert "Gold" in question
         return {
             "question": question,
@@ -187,7 +187,7 @@ def test_agent_query_returns_502_on_graph_failure(agent_client, monkeypatch):
         lambda: None,
     )
 
-    def _boom(_question: str, *, thread_id=None, auth_header=None):
+    def _boom(_question: str, *, thread_id=None, auth_header=None, user_id=None):
         raise RuntimeError("graph exploded")
 
     monkeypatch.setattr("agent.routes.invoke_support_agent", _boom)
@@ -209,7 +209,7 @@ def test_agent_query_forwards_authorization_header(agent_client, monkeypatch):
     )
     captured: dict = {}
 
-    def _fake_invoke(question: str, *, thread_id=None, auth_header=None):
+    def _fake_invoke(question: str, *, thread_id=None, auth_header=None, user_id=None):
         captured["auth_header"] = auth_header
         return {
             "question": question,
