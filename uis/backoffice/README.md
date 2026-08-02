@@ -39,7 +39,7 @@ Internal Next.js + TypeScript ops app (incidents, suppliers, inventory, reportin
 | `/reset-password` | Complete password reset (`?token=`) |
 | `/verify-email` | Email verification (`?token=`) |
 
-Pages that call the API need FastAPI on **`http://127.0.0.1:8000`**. For **Run pipeline** on `/reporting`, also start Redis and the Celery worker ([services/api/README.md](../../services/api/README.md#celery-worker-dev-55)). For `/knowledge` and `/support`, also run Qdrant (see root `.env.example`).
+Pages that call the API need FastAPI on **`http://127.0.0.1:8000`**. For **Run pipeline** on `/reporting`, also start Redis and the Celery worker ([services/api/README.md](../../services/api/README.md#celery-worker-dev-55)). For `/knowledge` and `/support`, also run Qdrant (see root `.env.example`). **`/support` incident queries** additionally require the MCP company-tools server on **`http://127.0.0.1:8765`** — see [mcps/brasaland-company-tools/README.md](../../mcps/brasaland-company-tools/README.md).
 
 ## Development
 
@@ -57,7 +57,13 @@ docker compose up -d redis
 cd services/api && uv run celery -A celery_app worker --loglevel=info
 ```
 
-**Terminal 3 — backoffice:**
+**Terminal 3 — MCP server (for `/support` incident queries):**
+
+```bash
+npm run mcp:dev    # from repo root → http://127.0.0.1:8765
+```
+
+**Terminal 4 — backoffice:**
 
 ```bash
 cp ../../.env.example ../../.env   # once

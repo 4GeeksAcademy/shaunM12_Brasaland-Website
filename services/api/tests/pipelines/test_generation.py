@@ -34,6 +34,7 @@ def test_build_combined_context_tool_only():
     ]
     context = build_combined_context(tool_results=tool_results)
     assert "## Live operational data (incidents)" in context
+    assert "scope=incidents" in context
     assert "Incident #1" in context
     assert "Knowledge base" not in context
 
@@ -60,6 +61,7 @@ def test_build_combined_context_inventory_tool():
         ]
     )
     assert "## Live operational data (inventory)" in context
+    assert "scope=inventory" in context
     assert "BRS-BEEF-001" in context
     assert "current_stock=50.0" in context
 

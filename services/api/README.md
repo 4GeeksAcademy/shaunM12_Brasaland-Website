@@ -50,6 +50,9 @@ cp ../../.env.example ../../.env
 | `PASSWORD_RESET_EXPIRES_MINUTES`, `RESET_REQUESTS_PER_HOUR` | Reset token / rate limits |
 | `QDRANT_URL`, `QDRANT_COLLECTION`, `EMBEDDING_*`, `GENERATION_*` | Knowledge RAG (context-21); see root `.env.example` |
 | `AGENT_CHECKPOINT_DB_PATH` | Support Agent LangGraph SQLite checkpointer (default `data/agent/checkpoints.db`) |
+| `AGENT_MCP_SERVER_URL` | MCP company-tools URL for incident ops (default `http://127.0.0.1:8765`; context-24) |
+| `AGENT_DEFAULT_LOCATION_ID` | Default inventory location when omitted in stock questions (default `1`) |
+| `MCPAUTH_REGISTRATION_SECRET` | Required for MCP server + agent token minting — see root `.env.example` |
 
 API keys come from the environment only — never commit them.
 

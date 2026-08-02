@@ -30,6 +30,7 @@ Historical milestone notes: [memory-bank/historical-reference/context-index.md](
 ├── agents/           Agent patterns and tools
 ├── skills/           Reusable agent skills
 ├── packages/shared/  Shared Python validation helpers
+├── mcps/             MCP servers (company-tools — incidents + inventory)
 └── memory-bank/      Working notes and historical context files
 ```
 
@@ -51,6 +52,15 @@ npm run api:dev
 # Backoffice (http://localhost:3000) — second terminal
 cd uis/backoffice && npm install && npm run dev
 ```
+
+**Support agent incident queries** also need the MCP company-tools server (Context 24):
+
+```bash
+# Terminal 3 — MCP server (http://127.0.0.1:8765)
+npm run mcp:dev
+```
+
+Set `MCPAUTH_REGISTRATION_SECRET` in `.env` (from [getmcpauth.dev/dashboard](https://getmcpauth.dev/dashboard)). See [mcps/brasaland-company-tools/README.md](./mcps/brasaland-company-tools/README.md).
 
 Public site: `cd uis/website && npm install && npm run dev`  
 Docker Compose: see `docker-compose.yml` (`backend`, `ui`, `nightly-worker`, `redis`, `celery-worker`, `flower`).
@@ -81,6 +91,7 @@ Set `REDIS_URL` in `.env` (see `.env.example`). Nightly export remains a differe
 | Area | README | What you’ll find there |
 | ---- | ------ | ---------------------- |
 | API | [services/api/README.md](./services/api/README.md) | Setup, env, auth, seeds, endpoints, Celery, tests |
+| MCP company-tools | [mcps/brasaland-company-tools/README.md](./mcps/brasaland-company-tools/README.md) | OAuth MCP server, Playground, agent incident bridge |
 | Public website | [uis/website/README.md](./uis/website/README.md) | Next.js corporate site |
 | Backoffice | [uis/backoffice/README.md](./uis/backoffice/README.md) | Ops UI, proxies, env |
 | Scripts | [scripts/README.md](./scripts/README.md) | Analyzer, nightly export/scheduler; Celery ≠ nightly |

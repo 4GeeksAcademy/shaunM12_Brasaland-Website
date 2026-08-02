@@ -30,6 +30,8 @@
     "api:telemetry-seed": "sh -c 'cd services/api && uv run python -m seeds.telemetry'",
     "api:nightly-export": "sh -c 'cd services/api && uv run python ../../scripts/nightly_export.py'",
     "api:test": "sh -c 'cd services/api && uv run pytest -q'",
+    "mcp:dev": "sh -c 'cd mcps/brasaland-company-tools && uv sync && uv run brasaland-company-tools'",
+    "mcp:test": "sh -c 'cd mcps/brasaland-company-tools && uv run pytest tests/ -q'",
     "diagrams:render": "node scripts/render-mermaid-diagrams.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
