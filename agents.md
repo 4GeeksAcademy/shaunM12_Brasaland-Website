@@ -1,48 +1,137 @@
-# Agent Operating Protocol
+# Agent Operating Protocol (v2 — token-scoped)
 
-## Required session startup reads
+> **Supersedes** v1 mandatory startup reads and bulk `.agents/rules/` loading.
+> Legacy v1 archived at `agents.legacy.md`. Legacy rules remain at `.agents/rules/` — use `.agents/rules/LEGACY_INDEX.md` on demand only.
 
-At the start of every coding session, the agent must read these files before proposing changes:
+## Precedence (highest wins)
 
-1. `memory-bank/projectbrief.md`
-2. `memory-bank/techContext.md`
-3. `memory-bank/progress.md`
-4. `CONTEXT.md`
+1. Developer prompt (scope, @mentions)
+2. This file (`agents.md` v2)
+3. Live code and `.github/workflows/ci.yml`
+4. Conditional reads: `techContext.md`, `CONTEXT.md`, named historical-reference files
+5. Legacy `.agents/rules/*.md` (triggered via LEGACY_INDEX only)
+6. Archived milestone docs in `memory-bank/historical-reference/`
 
-Do not read files under `memory-bank/historical-reference/` as part of startup. Those documents capture point-in-time context that may have since changed and can conflict with current work. The developer will explicitly tell the agent which historical-reference file (if any) is relevant to the task at hand.
+On conflict: follow higher tier; flag discrepancy to developer. Never edit protected paths to resolve doc drift.
 
-## Repository rules (.agents/rules)
+---
 
-Before proposing or making any change, the agent must read and comply with the rule files in `.agents/rules/`. Use the priority tiers from `.agents/rules/DEVELOPMENT_RULES.md`:
+## Default behavior (every task)
 
-- **P0 (blocking):** Canonical Path Consistency, Deployment Rewrite Validity, Test Import Path Safety.
-- **P1 (must pass before commit):** Full-Scope Typecheck Coverage, Environment-First API Base URL.
-- **P2 (advisory / hardening):** Verification Gate, Centralized Validation Contract, Accessibility Baseline Preservation, Runtime Dependency Stability, Change Scope and Diff Hygiene.
+- Work from the developer's prompt scope first. If scope is missing, ask once — do not explore the repo.
+- Read ONLY: files named in the prompt, files you must edit, and imports directly required by those edits.
+- Do NOT read `memory-bank/historical-reference/`, `CONTEXT.md`, `memory-bank/*`, or `.agents/rules/` unless a trigger below applies or the developer @mentions them.
+- Do NOT grep repo-wide. Search within the scoped directory only.
+- Do NOT spawn broad exploration subagents unless the developer asks for an audit or architecture review.
+- Responses: cite line ranges; do not paste whole files.
+- When in doubt whether **technical** conventions apply (paths, proxies, env, camelCase/snake_case, package boundaries), read `memory-bank/techContext.md` once before editing.
 
-Precedence: if a rule conflicts with current sources (`CONTEXT.md` and the `memory-bank/` startup reads), the current sources win — flag the discrepancy to the developer instead of silently following the rule.
+---
 
-## Mandatory pre-commit workflow
-
-Before any commit is created, complete these steps in order:
-
-1. Re-read scope and acceptance criteria from the active milestone context file.
-2. Run static checks and tests for affected apps/packages.
-3. Confirm user-facing flows changed in this task still work end-to-end.
-4. Update memory-bank progress/historical notes to reflect what changed.
-5. Prepare a concise change summary with risk notes and rollback hints.
-
-## Protected paths (require explicit developer confirmation)
-
-The agent must not modify the following paths unless the developer explicitly confirms:
+## Protected paths (never modify without explicit developer confirmation)
 
 - `memory-bank/historical-reference/**`
 - `data/raw/**`
 - `workflows/**`
 - `vercel.json`
-- `.agents/**`
+- `.agents/**` (except when developer explicitly requests a rules/protocol update)
 
-> Note: P0 rules (Deployment Rewrite Validity, Canonical Path Consistency) may require edits to `vercel.json`. This is permitted with explicit developer confirmation, consistent with the protected-paths policy above.
+---
 
-## Alignment requirement
+## Context triggers
 
-All implementation and documentation decisions must stay aligned with the current Brasaland data/process constraints captured in `CONTEXT.md` and the `memory-bank/` files listed under "Required session startup reads". Historical-reference documents are not authoritative by default — the agent should consult a `memory-bank/historical-reference/` file only when the developer explicitly designates it for the current task, and current sources take precedence on any conflict.
+### `memory-bank/techContext.md`
+
+Read when ANY apply. Otherwise skip.
+
+**Must read (skim full file):**
+
+- First backend, backoffice, website, or cross-app work in the session
+- Task spans more than one area: `services/api/`, `uis/backoffice/`, `uis/website/`, `src/`, `mcps/`
+- Developer says "new feature", "refactor", or scope is unclear
+
+**Must read (targeted sections only):**
+
+| Task touches… | Sections in techContext.md |
+|---------------|----------------------------|
+| Backoffice pages, API clients, query params | Tech Stack → Frontend; Architectural Decisions → URL parameter conventions; Shared FastAPI service |
+| `next.config.mjs`, `/api/*` proxy, auth cookies | Architectural Decisions → Shared FastAPI service, Canonical Directory Structure |
+| `services/api/` routers, Pydantic, seeds, pytest | Tech Stack → Backend/API (Python); Domain module layout |
+| Shared TS in `src/` | Tech Stack → Business logic (TypeScript); Canonical Directory Structure |
+| Local dev / run commands | Local development commands |
+| Tests (root or backoffice) | Tech Stack → Tooling; Local development commands |
+
+**Also trigger when editing routing/proxy:** `memory-bank/historical-reference/context-22-route-conventions.md` (developer-named or routing task).
+
+**Skip when:** single-file change with explicit path, no API/routing/env/proxy, pure copy/CSS/text — unless developer @mentions techContext.
+
+**Session rule:** do not re-read techContext.md in the same session unless scope expands to a new row above.
+
+---
+
+### `CONTEXT.md`
+
+Read **relevant sections only** when task involves business/domain rules, Brasaland operations, Brasa Points, location-specific logic, or user-facing copy tied to domain constraints. Skip for pure technical refactors.
+
+---
+
+### `memory-bank/projectbrief.md` / `memory-bank/progress.md`
+
+- **projectbrief.md:** only for onboarding-style tasks or when developer asks for project overview.
+- **progress.md:** read before updating; update **only before commit** when the task materially changed project state (developer must ask for commit).
+
+---
+
+### Named milestone / feature specs
+
+Read **one** developer-named file under `memory-bank/historical-reference/` — never bulk-read the directory.
+
+Examples: `context-22-route-conventions.md` (routing), `context-24-mcp-company-tools.md` (MCP), developer-specified milestone ticket.
+
+---
+
+## Legacy rules (on demand)
+
+Do NOT read all of `.agents/rules/`. Open **one** file when task matches `.agents/rules/LEGACY_INDEX.md`.
+
+Quick reference:
+
+| Task touches… | Legacy rule |
+|---------------|-------------|
+| Paths, imports, directory renames | `canonical-path-consistency.md`, `test-import-path-safety.md` |
+| `vercel.json`, deploy rewrites | `deployment-rewrite-validity.md` |
+| API base URL / env vars | `environment-first-api-base-url.md` |
+| Forms / validation | `centralized-validation-contract.md` |
+| UI / a11y | `accessibility-baseline-preservation.md` |
+| Large refactors | `change-scope-and-diff-hygiene.md` |
+
+CI-owned (agent rarely needs): `full-scope-typecheck-coverage.md`, `mandatory-verification-gate.md`.
+
+---
+
+## Verification (quality without full-suite cost)
+
+| When | Run |
+|------|-----|
+| During edits | Linter/diagnostics on changed files only |
+| Before commit (developer asked) | Tests + typecheck for **one affected package** |
+| Developer says "full CI" / "verify all" | Match `.github/workflows/ci.yml` |
+
+**Package map:**
+
+- Root TS/tests → `npm run typecheck`, `npm test`
+- Backoffice → `cd uis/backoffice && npm run typecheck` / `npm test`
+- Website → `cd uis/website && npm run typecheck`
+- API → `npm run api:test`
+
+Do NOT re-run the same passing check in the same session unless code changed again.
+
+---
+
+## Before commit only (developer must ask for commit)
+
+1. Scoped verification (table above)
+2. One-paragraph change summary with risks
+3. Update `memory-bank/progress.md` only if project state materially changed
+
+Do NOT re-read milestone context files unless commit is for active milestone work.
