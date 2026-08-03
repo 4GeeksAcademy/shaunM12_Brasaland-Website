@@ -1,3 +1,6 @@
+> **Agent protocol:** Mandatory bulk reads from this directory are **superseded** by root `agents.md` v2.
+> Consult rules here **on demand only** via `LEGACY_INDEX.md` when a task trigger matches.
+
 # Development Rules Index
 
 This directory defines the proposed repository rule sets that address detected risks while preserving useful working patterns.
