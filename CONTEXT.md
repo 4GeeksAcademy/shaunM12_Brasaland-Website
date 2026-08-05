@@ -144,6 +144,7 @@ Support agent and knowledge-base answers draw from **`docs/company-knowledge-bas
 | Question | Read first |
 | --- | --- |
 | Company identity, departments, domain facts | **CONTEXT.md** (this file) |
+| AI agent protocol (Cursor), protected paths, triggers | [`agents.md`](../agents.md) |
 | Stack, routes, env vars, local commands | [`memory-bank/techContext.md`](memory-bank/techContext.md) |
 | Milestone 1 website / Brasa Points form | [`context-1-milestone-1.md`](memory-bank/historical-reference/context-1-milestone-1.md) |
 | Named milestone or feature | Developer-named `context-{n}-*.md` file |
@@ -158,5 +159,5 @@ Support agent and knowledge-base answers draw from **`docs/company-knowledge-bas
 
 - **Milestone 1 landing sections, form table, error messages, Schema.org** → `context-1-milestone-1.md`
 - **FastAPI mounts, backoffice proxies, camelCase/snake_case** → `techContext.md` + `context-22-route-conventions.md`
-- **Engineering rules and CI gates** → `.agents/rules/`
+- **Engineering rules and CI gates** → [`agents.md`](../agents.md) + [`.agents/rules/LEGACY_INDEX.md`](../.agents/rules/LEGACY_INDEX.md)
 - **Session progress and changelog** → `memory-bank/progress.md`
