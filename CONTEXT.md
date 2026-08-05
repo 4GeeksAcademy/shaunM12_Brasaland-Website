@@ -1,227 +1,162 @@
 # CONTEXT.md — Brasaland
 
-## Milestone 1: Your Company's Public Website
-
-_Estas instrucciones están [disponibles en español](./CONTEXT-brasaland.es.md)._
-
-> This document describes your company and the specific situation you're building this milestone for. Read it completely before writing any code. Everything you build must reflect this context.
+> **Single source of truth** for company identity, operating context, and cross-cutting domain facts across this monorepo. Milestone-specific build specs live under [`memory-bank/historical-reference/`](memory-bank/historical-reference/context-index.md).
 
 ---
 
-## Your company
+## Purpose
 
-**Brasaland** is a grilled food restaurant chain founded in 2008 in Medellín, Colombia. What began as a single family-run location has grown into a chain of 14 company-owned restaurants operating in Colombia and the United States (Florida). The company employs approximately 115 people between kitchen and floor staff, operations management, and the corporate team headquartered in Medellín with a commercial office in Miami. Annual revenue sits around 6 million dollars. The brand is built on three pillars: consistent product quality across every location, a warm and reliable customer experience, and speed of service.
+**Brasaland** is the fictional company scenario for the **4Geeks Academy AI Engineering** transversal project. **Brasaland Digital** is the internal transformation team modernizing operations across Colombia and the United States.
 
----
-
-## Your department and the problem you must solve
-
-You work in **Brasaland Digital**, the internal team created by CEO Mariana Restrepo to lead the company's digital transformation, and you report directly to CTO Nicolás Park. Brasaland's current corporate website is from 2019, doesn't allow online orders, and only shows the menu. It doesn't reflect that the company operates in two countries or properly present the brand experience. Camila Ospina (Marketing Manager) needs a renewed website that professionally presents the brand, shows locations in both countries, and captures information from people interested in joining the digital loyalty program.
+This repository implements the full digital platform: public website, backoffice, FastAPI services, data pipelines, RAG, LangGraph agents, and MCP tooling. Root `CONTEXT.md` describes the company and domain constants that apply everywhere; individual milestones have their own spec files (see [Document map](#document-map)).
 
 ---
 
-## Your stakeholder
+## Company identity
 
-**Camila Ospina**, Marketing Manager
+**Brasaland** is a grilled food restaurant chain founded in **2008** in Medellín, Colombia. What began as a single family-run location is now **14 company-owned restaurants** in Colombia and the United States (Florida and surrounding markets). The company employs approximately **115 people** and generates around **6 million USD** in annual revenue.
 
-> Hi,
->
-> We need to relaunch our corporate website. It should present Brasaland as what we are: a serious grilled food restaurant chain with presence in Colombia and the United States. I want a landing page that explains our value proposition, shows our locations in both countries, and presents our new digital loyalty program "Brasa Points." I also need a page with a form so people can register for the loyalty program. We currently use physical stamp cards that get lost and generate no data. I want to capture: name, email, phone, country, city, favorite location, dietary preferences, and how they found us. The site must be responsive, accessible, and SEO optimized. Multilingual support (Spanish and English) is optional but highly recommended; start with one base language. Use Tailwind and make sure the validations work perfectly.
+**Brand pillars:**
 
----
+- Consistent product quality in every location
+- Warm, reliable customer experience
+- Speed of service without sacrificing quality
 
-## Language scope
+**Leadership:**
 
-- Multilingual support is **optional but highly recommended** given Brasaland's operations in Colombia and the United States.
-- You must choose one **base language** for the full website and form experience.
-- If you implement a second language, treat it as an enhancement (do not reduce quality/completeness in the base language).
-
-## Landing page content
-
-Your landing page must include the following sections, in this order:
-
-### Header
-
-- Logo or name "Brasaland"
-- Language selector (ES | EN) if you implement a second language
-- Navigation: Home | Locations | Menu | Brasa Points | Contact
-
-### Hero
-
-- **Headline:** "The taste of the grill, in every bite"
-- **Subheadline:** "Since 2008 serving the best grilled meats in Colombia and the United States. 14 locations, one passion for quality and flavor."
-- **Call to action:** Button "Join Brasa Points" linking to the form
-
-### Our Story (paragraph + image)
-
-Founded in Medellín in 2008, Brasaland began as a family dream: sharing the authentic taste of grilled meat with consistent quality and warm service. Today we are 14 restaurants in two countries, but we maintain the same recipe for success: fresh products, traditional techniques, and passion for every dish we serve.
-
-### What Makes Us Unique (3 columns)
-
-1. **Consistent Quality**
-   - Same recipes and standards in all locations
-   - Fresh ingredients selected daily
-2. **Warm Experience**
-   - Friendly and attentive service
-   - Family atmosphere on every visit
-
-3. **Speed**
-   - Your food ready in minutes
-   - Without sacrificing flavor or quality
-
-### Our Locations (2 columns)
-
-- **Colombia**
-  - 10 restaurants in Medellín, Bogotá and Cali
-  - Hours: Mon-Sun 11:00 AM - 10:00 PM
-
-- **United States (Florida)**
-  - 4 restaurants in Miami and Orlando
-  - Hours: Mon-Sun 11:00 AM - 10:00 PM
-
-### Brasa Points (featured section)
-
-#### Earn points with every visit
-
-- Accumulate 1 point for every $10,000 COP or $5 USD
-- Redeem your points for discounts and free dishes
-- Exclusive offers for members
-- 100% digital registration - no more paper cards!
-
-### Contact
-
-- Email: <hello@brasaland.com>
-- Colombia: +57 4 123 4567
-- Florida: +1 305 123 4567
-
-### Footer
-
-- © 2025 Brasaland. All rights reserved.
-- Instagram | Facebook
+- **CEO:** Mariana Restrepo (Medellín headquarters)
+- **CTO:** Nicolás Park — leads Brasaland Digital
+- **Commercial office:** Miami
 
 ---
 
-## Brasa Points registration form fields
+## Operating context and current problems
 
-Your form must capture the following information:
+Brasaland remains profitable, but many critical processes are still manual (spreadsheets, email, WhatsApp, disconnected systems). This creates visibility gaps and slower decision-making across two countries.
 
-| Field                                  | Type     | Validation                                                          | Required |
-| -------------------------------------- | -------- | ------------------------------------------------------------------- | -------- |
-| **Full name**                          | text     | Minimum 2 words                                                     | Yes      |
-| **Email**                              | email    | Valid email format                                                  | Yes      |
-| **Phone**                              | tel      | Format: +[country code] [number]                                    | Yes      |
-| **Country**                            | select   | Colombia / United States                                            | Yes      |
-| **City**                               | select   | Medellín / Bogotá / Cali / Miami / Orlando (per country)            | Yes      |
-| **Favorite Brasaland location**        | select   | List of 14 restaurants per country and city                         | No       |
-| **Dietary preferences**                | checkbox | No restrictions / Vegetarian / Gluten-free / Other                  | No       |
-| **How did you find us?**               | select   | Social media / Recommendation / Walked by / Internet search / Other | Yes      |
-| **Date of birth**                      | date     | Must be 18 or older                                                 | Yes      |
-| **I accept program terms**             | checkbox | Must be checked to submit                                           | Yes      |
-| **I want to receive offers via email** | checkbox | Optional, unchecked by default                                      | No       |
+### Restaurant operations
 
----
+**Lead:** Felipe Guerrero
 
-## Specific validations
+- Locations operate with limited real-time visibility
+- Ingredient ordering is mostly manual
+- Reporting is fragmented and delayed
 
-1. **Full name:** Must contain at least first and last name
-2. **Email:** Must be valid format (contain @ and domain)
-3. **Phone:** Must start with + followed by country code (+57 for Colombia, +1 for USA)
-4. **City:** City options must change dynamically based on selected country
-5. **Favorite location:** Options must filter based on selected country and city
-6. **Date of birth:** User must be 18 or older (validate date)
-7. **Program terms:** Checkbox must be checked to submit
+### Procurement and suppliers
 
----
+**Lead:** Lucia Fernandez
 
-## Dependent field logic
+- Around 20 suppliers across both markets
+- Negotiation and tracking rely on email and spreadsheets
+- No consolidated purchasing intelligence
 
-**Country → City:**
+### Marketing and digital experience
 
-- If selecting "Colombia": show Medellín, Bogotá, Cali
-- If selecting "United States": show Miami, Orlando
+**Lead:** Camila Ospina
 
-**Country + City → Favorite location:**
+- Website was outdated and lacked modern conversion flows (addressed in Milestone 1)
+- Loyalty program was physical-card based and generated little data (Brasa Points in Milestone 1)
+- Minimal customer-level insight
 
-- Colombia - Medellín: Brasaland El Poblado, Brasaland Laureles, Brasaland Envigado, Brasaland Sabaneta
-- Colombia - Bogotá: Brasaland Usaquén, Brasaland Chapinero, Brasaland Zona Rosa
-- Colombia - Cali: Brasaland Granada, Brasaland Ciudad Jardín, Brasaland Unicentro
-- USA - Miami: Brasaland Brickell, Brasaland Coral Gables
-- USA - Orlando: Brasaland Downtown, Brasaland International Drive
+### People and culture
 
----
+**Lead:** Ashley Turner
 
-## Expected error messages
+- HR processes are mostly manual
+- Two-country labor context increases operational complexity
 
-When a field doesn't meet validation, display these specific messages:
+### Training and quality standards
 
-- **Full name:** "Enter your full name (first and last name)"
-- **Email:** "Enter a valid email (example: <name@email.com>)"
-- **Phone:** "Phone must include country code (example: +57 300 123 4567 or +1 305 123 4567)"
-- **Country:** "Select your country"
-- **City:** "Select your city"
-- **How did you find us:** "Tell us how you found Brasaland"
-- **Date of birth:** "You must be 18 or older to register for Brasa Points"
-- **Program terms:** "You must accept the Brasa Points program terms to continue"
+**Lead:** Jake Morrison
+
+- Training material distribution is hard to maintain
+- Update communication is slow across locations and countries
+
+### Technology
+
+**Lead:** CTO Nicolás Park
+
+- Shared FastAPI platform, backoffice, pipelines, RAG, and agents (this monorepo)
+- Unified internal API and growing telemetry integration
+
+### Executive direction
+
+**Lead:** CEO Mariana Restrepo
+
+- Strategic decisions were delayed by fragmented reporting
+- Centralized, near real-time business view is an ongoing goal (telemetry, reporting, forecasting)
 
 ---
 
-## Success message
+## Digital platform (this repository)
 
-When the form validates correctly (simulate submission), display:
+| Area | Path | Spec pointer |
+| --- | --- | --- |
+| Public site + Brasa Points | `uis/website/` | [`context-1-milestone-1.md`](memory-bank/historical-reference/context-1-milestone-1.md) |
+| Shared TypeScript business logic | `src/` | [`context-2-milestone-2.md`](memory-bank/historical-reference/context-2-milestone-2.md) |
+| Backoffice ops UI | `uis/backoffice/` | contexts 3, 5, 12, and related |
+| FastAPI service | `services/api/` | contexts 6–8, 11, 13, 15–18, 21, 23 |
+| Shared Python helpers | `packages/shared/` | location IDs, cross-service constants |
+| Data pipelines / forecasting | `data/` | contexts 16, 19–20 |
+| RAG / knowledge assistant | `/knowledge` | [`context-21-rag-knowledge-base.md`](memory-bank/historical-reference/context-21-rag-knowledge-base.md) |
+| Support agent | `/support`, `/agent` | contexts 23, 25, 26 |
+| MCP company tools | `mcps/` | [`context-24-mcp-company-tools.md`](memory-bank/historical-reference/context-24-mcp-company-tools.md) |
 
-> **Welcome to Brasa Points!**
->
-> Your registration was successful. You will receive a confirmation email in the next few minutes with your account details and how to start earning points.
->
-> You can now enjoy your benefits at any of our 14 locations!
+Full index: [`memory-bank/historical-reference/context-index.md`](memory-bank/historical-reference/context-index.md)
 
 ---
 
-## Specific restriction
+## Cross-cutting domain constants
 
-The Brasa Points program is designed for **customers 18 or older who want to earn points with their visits**. It is not a reservation or online ordering form. The site must include a visible message that says: "Want to place an order? Call your favorite location or visit us directly. Online ordering coming soon!"
+### Restaurant locations (authoritative)
+
+**14 locations, IDs 1–14.** Use these sources — not ad-hoc lists:
+
+| Layer | Source |
+| --- | --- |
+| Python (API, inventory, agent) | `packages/shared/restaurant_locations.py` |
+| Website form and filters | `uis/website/lib/restaurant-locations.ts` |
+
+IDs 1–7 are Colombia; 8–14 are United States. City and name strings in code supersede course marketing copy in milestone specs when they differ.
+
+### Brasa Points (loyalty program)
+
+- For **customers aged 18+** who earn points from restaurant visits
+- **Not** online ordering or reservations
+- Points rule: 1 point per **$10,000 COP** or **$5 USD** spent
+- Form fields, validations, and UX copy: [`context-1-milestone-1.md`](memory-bank/historical-reference/context-1-milestone-1.md)
+
+### Contact and markets
+
+- **Email:** hello@brasaland.com
+- **Colombia phone:** +57 4 123 4567
+- **Florida phone:** +1 305 123 4567
+- **Countries of operation:** Colombia (CO), United States (US)
+
+### Agent and RAG company knowledge
+
+Support agent and knowledge-base answers draw from **`docs/company-knowledge-base/`** and RAG corpus per context-21 — not Milestone 1 marketing landing copy.
 
 ---
 
-## Required Schema.org markup
+## Document map
 
-Implement the following Schema.org markup on your landing page:
+| Question | Read first |
+| --- | --- |
+| Company identity, departments, domain facts | **CONTEXT.md** (this file) |
+| Stack, routes, env vars, local commands | [`memory-bank/techContext.md`](memory-bank/techContext.md) |
+| Milestone 1 website / Brasa Points form | [`context-1-milestone-1.md`](memory-bank/historical-reference/context-1-milestone-1.md) |
+| Named milestone or feature | Developer-named `context-{n}-*.md` file |
+| Route/proxy conventions | [`context-22-route-conventions.md`](memory-bank/historical-reference/context-22-route-conventions.md) |
+| Implementation status | [`memory-bank/progress.md`](memory-bank/progress.md) |
 
-If you deliver only one language, set `availableLanguage` to just that base language.
+**Precedence:** live code wins over docs on conflict; flag drift to the developer. Historical-reference files are milestone specs — consult the one relevant to your task, not the whole directory.
 
-```json
-{
-  "@context": "https://schema.org",
-  "@type": "Restaurant",
-  "name": "Brasaland",
-  "description": "Grilled food restaurant chain in Colombia and the United States",
-  "url": "https://brasaland.com",
-  "foundingDate": "2008",
-  "servesCuisine": "Grilled food, Colombian cuisine",
-  "priceRange": "$$",
-  "address": [
-    {
-      "@type": "PostalAddress",
-      "addressCountry": "CO",
-      "addressLocality": "Medellín",
-      "addressRegion": "Antioquia"
-    },
-    {
-      "@type": "PostalAddress",
-      "addressCountry": "US",
-      "addressLocality": "Miami",
-      "addressRegion": "FL"
-    }
-  ],
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "telephone": "+57-4-123-4567",
-    "contactType": "customer service",
-    "availableLanguage": ["Spanish", "English"]
-  },
-  "sameAs": [
-    "https://instagram.com/brasaland",
-    "https://facebook.com/brasaland"
-  ]
-}
-```
+---
+
+## What belongs elsewhere
+
+- **Milestone 1 landing sections, form table, error messages, Schema.org** → `context-1-milestone-1.md`
+- **FastAPI mounts, backoffice proxies, camelCase/snake_case** → `techContext.md` + `context-22-route-conventions.md`
+- **Engineering rules and CI gates** → `.agents/rules/`
+- **Session progress and changelog** → `memory-bank/progress.md`

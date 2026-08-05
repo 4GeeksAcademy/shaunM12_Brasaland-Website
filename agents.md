@@ -9,7 +9,9 @@ At the start of every coding session, the agent must read these files before pro
 3. `memory-bank/progress.md`
 4. `CONTEXT.md`
 
-Do not read files under `memory-bank/historical-reference/` as part of startup. Those documents capture point-in-time context that may have since changed and can conflict with current work. The developer will explicitly tell the agent which historical-reference file (if any) is relevant to the task at hand.
+Do not read files under `memory-bank/historical-reference/` as part of startup, except when the task clearly involves a named milestone spec. Those documents capture milestone requirements; live code and `CONTEXT.md` take precedence on conflict. The developer will explicitly tell the agent which historical-reference file (if any) is relevant when it is not obvious from the task.
+
+**Milestone 1 trigger:** tasks touching the public website, Brasa Points registration form, landing copy, or M1 validations → read `memory-bank/historical-reference/context-1-milestone-1.md` (not the full M1 spec in root `CONTEXT.md` — that file is repo-wide company context only).
 
 ## Repository rules (.agents/rules)
 

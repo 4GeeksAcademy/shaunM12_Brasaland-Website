@@ -14,7 +14,8 @@ Brasaland transversal project for the **4Geeks Academy AI Engineering** program:
 Build deliverables for Brasaland company scenarios across course milestones (Web, Programming, Backend, Telemetry, RAG, Agents, Workflows, Real-time).
 
 Business context: [CONTEXT.md](./CONTEXT.md)  
-Historical milestone notes: [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
+Milestone 1 spec (website + Brasa Points): [context-1-milestone-1.md](./memory-bank/historical-reference/context-1-milestone-1.md)  
+All milestone specs: [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
 
 ---
 

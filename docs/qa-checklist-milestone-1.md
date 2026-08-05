@@ -43,7 +43,7 @@
 - [ ] Form controls remain readable and tappable on small screens.
 
 ## 6. Form Fields and Validation
-- [ ] All required fields from `CONTEXT.md` are present.
+- [ ] All required fields from `memory-bank/historical-reference/context-1-milestone-1.md` are present.
 - [ ] Input types are correct (`email`, `tel`, `date`, `select`, `checkbox`).
 - [ ] Real-time validation runs on input/blur/change.
 - [ ] Required English error messages match context text.

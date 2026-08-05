@@ -4,7 +4,7 @@ Ordered index of historical reference context documents.
 
 ## Context Files
 
-- `context-1-milestone-1.md` — Milestone 1
+- `context-1-milestone-1.md` — **Canonical Milestone 1 spec** (public website + Brasa Points form; root `CONTEXT.md` is repo-wide company context only)
 - `context-2-milestone-2.md` — Milestone 2
 - `context-3-milestone-3.md` — Milestone 3
 - `context-4-milestone-4.md` — Milestone 4
