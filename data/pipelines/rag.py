@@ -1,8 +1,11 @@
-"""Brasaland RAG retrieval + generation — Phase 2 (context-21).
+"""Brasaland RAG retrieval + generation — Phase 2 (context-21); Phase 0 split (context-23).
 
 Public functions:
   - ``retrieve(query, *, k, min_score)`` — embed query, search Qdrant, threshold filter
-  - ``query(question)`` — retrieve → salesperson prompt → generation LLM → answer str
+  - ``assemble_context(chunks)`` — format chunk payloads for the generation prompt
+  - ``refusal_message()`` — honest refusal when retrieval is empty
+  - ``generate_answer(question, context)`` — generation LLM only (no retrieve)
+  - ``query(question)`` — thin wrapper: retrieve → generate_answer (Knowledge API)
 
 Does not return raw Qdrant objects to callers of ``query()``.
 """
@@ -22,21 +25,17 @@ from data.process.rag import (
     embed,
     get_qdrant_client,
 )
+from data.pipelines.prompt_security import (
+    SYSTEM_PROMPT,
+    build_knowledge_user_prompt,
+    knowledge_system_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
 DEFAULT_TOP_K = 5
 # Tuned for pplx-embed cosine scores on this corpus (context-21 L6).
-# Observed on-topic tops ~0.32–0.65; off-topic ~0.06. Start was 0.55 (too strict).
 DEFAULT_MIN_SCORE = 0.30
-
-SYSTEM_PROMPT = """You are a Brasaland commercial assistant answering like a trained salesperson.
-Use ONLY the retrieved context below. Do not invent policies, prices, points, allergens, or procedures.
-If the context is missing or insufficient, say clearly that the knowledge base does not have enough information.
-Never say there is "zero risk" of cross-contamination or allergens — follow allergen wording in the context literally.
-Keep USD and COP amounts exactly as written in the context; do not convert currencies.
-Answer in English, confidently and helpfully, from a salesperson's perspective.
-Do not mention vector search, chunks, scores, or that you are an AI retrieving documents."""
 
 
 def _default_min_score() -> float:
@@ -69,8 +68,8 @@ def _generation_settings() -> tuple[str, str, str]:
     if not base_url or not model_id:
         raise RuntimeError(
             "GENERATION_BASE_URL (or EMBEDDING_BASE_URL) and GENERATION_MODEL_ID "
-            "must be set for query(). Use a chat/completion model — not the "
-            "embeddings model."
+            "must be set for generate_answer() / query(). Use a chat/completion "
+            "model — not the embeddings model."
         )
 
     embedding_id = os.getenv("EMBEDDING_MODEL_ID", "").strip()
@@ -152,7 +151,8 @@ def retrieve(
     return results
 
 
-def _assemble_context(chunks: list[dict[str, Any]]) -> str:
+def assemble_context(chunks: list[dict[str, Any]]) -> str:
+    """Format retrieved chunk payloads for ``generate_answer()`` / graph generate node."""
     blocks: list[str] = []
     for i, ch in enumerate(chunks, start=1):
         source = ch.get("source_document") or "unknown"
@@ -162,19 +162,52 @@ def _assemble_context(chunks: list[dict[str, Any]]) -> str:
     return "\n\n".join(blocks)
 
 
-def _refusal_message() -> str:
+def refusal_message() -> str:
+    """Honest refusal when no chunk clears ``min_score`` (context-21 S5, P25-L4c)."""
     return (
         "I don't have enough information in Brasaland's official knowledge base "
         "to answer that reliably. Please rephrase, or check the loyalty, allergen, "
         "waste, or supplier manuals with a manager."
+        "\n\nI'm Brasaland's Support Agent — what can I help you with for operations support?"
     )
 
 
-def query(question: str) -> str:
-    """Orchestrate retrieve → prompt assembly → generation LLM → answer string.
+def generate_answer(question: str, context: str) -> str:
+    """Generate an answer from pre-retrieved context — does not call ``retrieve()``.
 
-    External consumers (API/UI) should call only this function for answers.
+    Used by the LangGraph generate node (context-23). ``query()`` delegates here
+    after retrieval for backward-compatible Knowledge API behavior.
     """
+    if not question or not question.strip():
+        raise ValueError("generate_answer() requires a non-empty question")
+    if not context or not context.strip():
+        raise ValueError("generate_answer() requires non-empty context")
+
+    _load_env()
+    cleaned_question = question.strip()
+    user_prompt = build_knowledge_user_prompt(
+        question=cleaned_question,
+        context=context,
+    )
+
+    _, _, model_id = _generation_settings()
+    client = generation_client()
+    response = client.chat.completions.create(
+        model=model_id,
+        messages=[
+            {"role": "system", "content": knowledge_system_prompt()},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.2,
+    )
+    answer = (response.choices[0].message.content or "").strip()
+    if not answer:
+        raise RuntimeError("Generation model returned an empty answer")
+    return answer
+
+
+def query(question: str) -> str:
+    """Retrieve → ``generate_answer()`` — backward-compatible Knowledge API entry point."""
     if not question or not question.strip():
         raise ValueError("query() requires a non-empty question")
 
@@ -187,26 +220,6 @@ def query(question: str) -> str:
 
     if not chunks:
         logger.info("query() empty retrieval — returning honest refusal")
-        return _refusal_message()
+        return refusal_message()
 
-    context = _assemble_context(chunks)
-    user_prompt = (
-        f"Retrieved context:\n{context}\n\n"
-        f"Customer / manager question:\n{question.strip()}\n\n"
-        "Write the answer using only the retrieved context."
-    )
-
-    _, _, model_id = _generation_settings()
-    client = generation_client()
-    response = client.chat.completions.create(
-        model=model_id,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_prompt},
-        ],
-        temperature=0.2,
-    )
-    answer = (response.choices[0].message.content or "").strip()
-    if not answer:
-        raise RuntimeError("Generation model returned an empty answer")
-    return answer
+    return generate_answer(question, assemble_context(chunks))

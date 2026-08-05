@@ -35,6 +35,15 @@ data/raw/*.csv
 !data/eval/.gitkeep
 !data/raw/.gitkeep
 
+# Support Agent LangGraph checkpoint DB (runtime — context-23 P1; never commit)
+data/agent/*
+!data/agent/.gitkeep
+
+# Local API TinyDB stores (users, auth, suppliers — PII / session data)
+services/api/data/*.json
+services/api/data/*.bak*
+!services/api/data/.gitkeep
+
 # Test coverage artifacts
 coverage/
 **/coverage/

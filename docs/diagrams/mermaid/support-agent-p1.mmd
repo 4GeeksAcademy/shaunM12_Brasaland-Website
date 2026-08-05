@@ -1,0 +1,9 @@
+flowchart TD
+    START --> intake["intake / validate question"]
+    intake -->|empty question| error_end["error node"]
+    intake -->|valid| retrieve["retrieve node — retrieve()"]
+    retrieve -->|chunks empty| refuse["refusal node — refusal_message()"]
+    retrieve -->|chunks present| generate["generate node — generate_answer()"]
+    error_end --> END
+    refuse --> END
+    generate --> END

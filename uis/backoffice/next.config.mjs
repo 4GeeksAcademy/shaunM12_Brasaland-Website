@@ -52,6 +52,10 @@ const nextConfig = {
         destination: `${apiOrigin}/knowledge/:path*`,
       },
       {
+        source: "/api/agent/:path*",
+        destination: `${apiOrigin}/agent/:path*`,
+      },
+      {
         source: "/api/telemetry/:path*",
         destination: `${apiOrigin}/telemetry/:path*`,
       },

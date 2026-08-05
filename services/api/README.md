@@ -1,6 +1,6 @@
 # Brasaland API
 
-FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralized incidents, telemetry, reporting, knowledge (RAG), and async tasks.
+FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralized incidents, telemetry, reporting, knowledge (RAG), support agent (LangGraph), and async tasks.
 
 > Parent overview: [../../README.md](../../README.md) · Backoffice proxy map: [../../memory-bank/historical-reference/context-22-route-conventions.md](../../memory-bank/historical-reference/context-22-route-conventions.md)
 
@@ -15,6 +15,7 @@ FastAPI service for Brasaland backoffice: auth, suppliers, inventory, centralize
 | `telemetry/` | Event capture, storage, on-demand report |
 | `reporting/` | Weekly KPI APIs + pipeline trigger (enqueues Celery; see DEV-55) |
 | `knowledge/` | RAG query + reindex (`POST /knowledge/query`, `POST /knowledge/reindex`) |
+| `agent/` | LangGraph support agent (`POST /agent/query`; SQLite checkpoint — context-23; MEM-092 memory in `agent/memory/`) |
 | `celery_app.py` | Celery app (Redis broker + result backend) + async pipeline task |
 | `job_runner/` | Nightly job status (`reporting.job_runs`) — used by `scripts/nightly_export.py` |
 | `seeds/` | Demo/bootstrap loaders (suppliers, inventory, incidents, telemetry) |
@@ -48,6 +49,11 @@ cp ../../.env.example ../../.env
 | `EMAIL_FROM`, `RESEND_API_KEY`, `SENDGRID_API_KEY` | Mail sender config |
 | `PASSWORD_RESET_EXPIRES_MINUTES`, `RESET_REQUESTS_PER_HOUR` | Reset token / rate limits |
 | `QDRANT_URL`, `QDRANT_COLLECTION`, `EMBEDDING_*`, `GENERATION_*` | Knowledge RAG (context-21); see root `.env.example` |
+| `AGENT_CHECKPOINT_DB_PATH` | Support Agent LangGraph SQLite checkpointer (default `data/agent/checkpoints.db`) |
+| `AGENT_MCP_SERVER_URL` | MCP company-tools URL for incident ops (default `http://127.0.0.1:8765`; context-24) |
+| `AGENT_DEFAULT_LOCATION_ID` | Default inventory location when omitted in stock questions (default `1`) |
+| `AGENT_MEMORY_*` | Agent memory caps, TTLs, proposal rate limit, injection max (MEM-092; see root `.env.example`) |
+| `MCPAUTH_REGISTRATION_SECRET` | Required for MCP server + agent token minting — see root `.env.example` |
 
 API keys come from the environment only — never commit them.
 
@@ -112,7 +118,7 @@ Nightly CSV export + pipeline trigger is **outside** this process and **outside*
 
 ## Authentication
 
-JWT bearer on supplier, incident, inventory, reporting, knowledge, and most user routes. Open: `GET /api/health` and public auth routes.
+JWT bearer on supplier, incident, inventory, reporting, knowledge, agent, and most user routes. Open: `GET /api/health` and public auth routes.
 
 | Method | Path | Notes |
 | ------ | ---- | ----- |
@@ -134,6 +140,23 @@ JWT bearer on supplier, incident, inventory, reporting, knowledge, and most user
 | Telemetry | `/telemetry` | Ingest + report |
 | Reporting | `/reporting` | Weekly location KPIs; `POST /reporting/pipeline-runs` (202 + `task_id` via Celery) |
 | Knowledge | `/knowledge` | `POST /knowledge/query`, `POST /knowledge/reindex` (Qdrant + LLM env required) |
+| Support Agent | `/agent` | `POST /agent/query` — LangGraph + optional `thread_id`; user-approved memory (MEM-092); same RAG env as Knowledge |
+
+### Agent memory module (`agent/memory/`)
+
+Postgres-backed episodic store with audit log. Graph nodes: `resolve_memory_proposal`, `read_memory`, `memory_ack` / `memory_reject`. Design: [docs/agent/memory-design.md](../../docs/agent/memory-design.md).
+
+| File | Role |
+| ---- | ---- |
+| `store.py` | `read_memory()`, `write_memory()`, `log_proposal()` |
+| `proposal.py`, `patterns_proposal.py` | Rule-first approve/reject/edit classifier (P26-L9) |
+| `denylist.py`, `keys.py`, `schemas.py` | Write gates and allowlists |
+| `proposal_inference.py` | Infer proposal when LLM omits JSON |
+| `correction_intent.py`, `location_hint.py` | Correction detection and location scoping |
+| `models.py` | SQLModel tables (`agent_memory_entries`, `agent_memory_audit_log`) |
+
+**Tests:** `uv run pytest tests/pipelines/test_agent_memory*.py tests/test_agent_api.py -q`
+
 | Tasks | `/tasks` | `GET /tasks/{task_id}` — Celery status (`pending` / `started` / `success` / `failure`) |
 | Health | `/api/health` | Liveness |
 
@@ -172,7 +195,7 @@ Open the notebook and select kernel **Brasaland Forecasting (Python 3.12)**.
 cd services/api && uv run jupyter notebook ../../notebooks/sales_forecasting.ipynb
 ```
 
-Holdout metrics (2024–2025 test window) include **MAPE** (~6% avg. forecast error) alongside MSE, PSI, Gini, and K2 — see `data/forecasting/evaluate.py` and V4 in the notebook.
+Holdout metrics (2024–2025 test window) include **MAPE** (~6% avg. forecast error) alongside MSE, **PSI (train→holdout drift)**, Gini, and **K2 (D'Agostino on residuals)** — see `data/forecasting/evaluate.py` and V4 in the notebook.
 
 Tests:
 

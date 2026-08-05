@@ -28,8 +28,8 @@ CAPTIONS = {
     "v1": "Shows whether monthly forecasts match actual sales and how wide the model's uncertainty is.",
     "v2": "The model was fit only on the training period; holdout months were unseen during training.",
     "v3": "Positive bars = underprediction; negative = overprediction.",
-    "v4": "Low MSE alone does not guarantee a good model; PSI, Gini, and K2 catch drift, ranking, and range-level bias.",
-    "v5": "Supports PSI and K2: mismatched bar heights indicate systematic bias in certain revenue ranges.",
+    "v4": "Low MSE alone is not enough: PSI flags train→holdout target drift, K2 (D'Agostino) flags residual shape, Gini flags ranking quality.",
+    "v5": "Supplementary forecast-mix view (actual vs predicted bins). Mismatched bars show calibration bias; PSI/K2 in V4 use Finance definitions.",
     "v6": "Shows which inputs (e.g. last month's revenue, seasonality) matter most.",
     "v7": "Validates whether the model captures recurring monthly effects (e.g. year-end peaks).",
     "v8": "A clear trend in residuals suggests the model under- or over-predicts at certain revenue levels.",
@@ -65,7 +65,11 @@ def build_visual_context(frame: pd.DataFrame | None = None) -> ForecastVisualCon
     raw = load_sales() if frame is None else frame
     artifacts, matrices = train_sales_model(raw)
     y_pred, y_low, y_high = predict_with_uncertainty(artifacts.model, matrices.x_test)
-    metrics = evaluate_forecast(matrices.y_test, y_pred)
+    metrics = evaluate_forecast(
+        matrices.y_test,
+        y_pred,
+        y_train=matrices.y_train,
+    )
     return ForecastVisualContext(
         artifacts=artifacts,
         matrices=matrices,
@@ -195,9 +199,17 @@ def metrics_table_markdown(metrics: ForecastMetrics) -> str:
             f"${rmse:,.0f}",
             "Typical monthly error scale in USD (√MSE); complements MAPE.",
         ),
-        ("PSI", f"{metrics.psi:.4f}", "Distribution drift between actual and predicted revenue."),
+        (
+            "PSI",
+            f"{metrics.psi:.4f}",
+            "Target drift: training vs holdout revenue distribution (lower = more stable).",
+        ),
         ("Gini", f"{metrics.gini:.4f}", "Ranking quality of predictions vs actuals (1.0 = perfect)."),
-        ("K2", f"{metrics.k2:,.2f}", "Chi-square on binned distributions; closer to 0 is better."),
+        (
+            "K2",
+            f"{metrics.k2:.2f}",
+            "D'Agostino-Pearson K² on holdout residuals; lower = more random error shape.",
+        ),
     ]
     lines = [
         "### Model Evaluation on Holdout Period (2024–2025)",

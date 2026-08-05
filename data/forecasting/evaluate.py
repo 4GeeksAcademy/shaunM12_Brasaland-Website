@@ -5,10 +5,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
+from scipy.stats import normaltest
 from sklearn.metrics import mean_squared_error
 
 DEFAULT_BIN_COUNT = 10
 EPSILON = 1e-6
+# D'Agostino-Pearson K² critical region (~p<0.05, df=2) for residual normality checks.
+K2_RESIDUAL_ALERT_THRESHOLD = 6.0
 
 
 @dataclass(frozen=True)
@@ -67,47 +70,69 @@ def normalized_gini(y_true: np.ndarray, y_pred: np.ndarray) -> float:
     return float(model_gini / perfect_gini)
 
 
+def _bin_breakpoints(reference: np.ndarray, *, n_bins: int) -> np.ndarray:
+    return np.unique(np.quantile(reference, np.linspace(0.0, 1.0, n_bins + 1)))
+
+
 def psi_score(
-    y_true: np.ndarray,
-    y_pred: np.ndarray,
+    y_reference: np.ndarray,
+    y_comparison: np.ndarray,
     *,
     n_bins: int = DEFAULT_BIN_COUNT,
 ) -> float:
     """
-    Population Stability Index on test actual vs test predicted (binned).
+    Population Stability Index: target distribution shift (reference → comparison).
 
-    Lower values indicate closer distributional match.
+    Finance use: compare **training-period revenue** (reference) to **holdout revenue**
+    (comparison). Bin edges come from the reference sample only.
     """
-    y_true = np.asarray(y_true, dtype=float)
-    y_pred = np.asarray(y_pred, dtype=float)
-    breakpoints = np.unique(np.quantile(y_true, np.linspace(0.0, 1.0, n_bins + 1)))
+    y_ref = np.asarray(y_reference, dtype=float)
+    y_cmp = np.asarray(y_comparison, dtype=float)
+    breakpoints = _bin_breakpoints(y_ref, n_bins=n_bins)
     if len(breakpoints) < 2:
         return 0.0
 
-    actual_counts, _ = np.histogram(y_true, bins=breakpoints)
-    pred_counts, _ = np.histogram(y_pred, bins=breakpoints)
-    actual_pct = actual_counts / len(y_true)
-    pred_pct = pred_counts / len(y_pred)
+    ref_counts, _ = np.histogram(y_ref, bins=breakpoints)
+    cmp_counts, _ = np.histogram(y_cmp, bins=breakpoints)
+    ref_pct = ref_counts / len(y_ref)
+    cmp_pct = cmp_counts / len(y_cmp)
 
-    actual_pct = np.clip(actual_pct, EPSILON, None)
-    pred_pct = np.clip(pred_pct, EPSILON, None)
-    return float(np.sum((actual_pct - pred_pct) * np.log(actual_pct / pred_pct)))
+    ref_pct = np.clip(ref_pct, EPSILON, None)
+    cmp_pct = np.clip(cmp_pct, EPSILON, None)
+    return float(np.sum((cmp_pct - ref_pct) * np.log(cmp_pct / ref_pct)))
 
 
-def k2_score(
+def k2_score(y_true: np.ndarray, y_pred: np.ndarray) -> float:
+    """
+    D'Agostino-Pearson K² on holdout residuals (actual − predicted).
+
+    Lower values suggest errors look closer to random noise; elevated values suggest
+    systematic error shape (skew, heavy tails) — see V8 residual plot.
+    """
+    residuals = np.asarray(y_true, dtype=float) - np.asarray(y_pred, dtype=float)
+    if len(residuals) < 8:
+        return 0.0
+    if float(np.std(residuals)) < EPSILON:
+        return 0.0
+
+    stat, _p_value = normaltest(residuals)
+    return float(stat)
+
+
+def forecast_mix_chi2_score(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     *,
     n_bins: int = DEFAULT_BIN_COUNT,
 ) -> float:
     """
-    Chi-square-style score on binned actual vs predicted proportions.
+    Supplementary chi-square on binned holdout actual vs predicted revenue mix.
 
-    K2 → 0 indicates good distributional fit; large K2 suggests structural bias.
+    Supports V5 (forecast calibration visual). Not the Finance K² residual test.
     """
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
-    breakpoints = np.unique(np.quantile(y_true, np.linspace(0.0, 1.0, n_bins + 1)))
+    breakpoints = _bin_breakpoints(y_true, n_bins=n_bins)
     if len(breakpoints) < 2:
         return 0.0
 
@@ -120,14 +145,20 @@ def k2_score(
     return float(chi2)
 
 
-def evaluate_forecast(y_true: np.ndarray, y_pred: np.ndarray) -> ForecastMetrics:
+def evaluate_forecast(
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    y_train: np.ndarray,
+) -> ForecastMetrics:
     """Compute MSE, MAPE, PSI, normalized Gini, and K2 on the holdout set."""
     y_true = np.asarray(y_true, dtype=float)
     y_pred = np.asarray(y_pred, dtype=float)
+    y_train = np.asarray(y_train, dtype=float)
     return ForecastMetrics(
         mse=float(mean_squared_error(y_true, y_pred)),
         mape_pct=mean_absolute_percentage_error(y_true, y_pred),
-        psi=psi_score(y_true, y_pred),
+        psi=psi_score(y_train, y_true),
         gini=normalized_gini(y_true, y_pred),
         k2=k2_score(y_true, y_pred),
     )

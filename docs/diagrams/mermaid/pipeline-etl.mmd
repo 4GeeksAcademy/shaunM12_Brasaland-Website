@@ -1,0 +1,20 @@
+flowchart LR
+    subgraph Extract
+        TE[telemetry_events]
+    end
+    subgraph Transform
+        T1[transform_purchase_cost]
+        T2[transform_waste_cost]
+        T3[transform_waste_ratio]
+        T4[transform_stockout_frequency]
+        T5[transform_price_alert_frequency]
+    end
+    subgraph Load
+        W[weekly_location_performance]
+        R[pipeline_runs]
+    end
+    TE --> extract_telemetry_events
+    extract_telemetry_events --> T1 & T2 & T4 & T5
+    T1 & T2 --> T3
+    T1 & T2 & T3 & T4 & T5 --> load_weekly_location_performance --> W
+    load_weekly_location_performance --> record_pipeline_run --> R
