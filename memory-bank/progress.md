@@ -19,7 +19,7 @@
 - **Documentation:**
   - Business, technical, and ruleset documentation is up to date and accessible in `memory-bank`.
 - **Agent Governance:**
-  - Root `agents.md` now exists with required startup memory reads, pre-commit workflow steps, and protected path rules.
+  - Root `agents.md` (v2 token-scoped) defines context triggers, legacy rules on demand via `.agents/rules/LEGACY_INDEX.md`, pre-commit workflow, and protected path rules.
 - **Milestone 2 Visibility in Backoffice:**
   - Backoffice dashboard now renders a visible shared-business-logic snapshot alongside live API KPI cards.
 - **Milestone 09 Supplier Directory (context-6):**

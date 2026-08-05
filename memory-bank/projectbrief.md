@@ -1,7 +1,8 @@
 # Project Brief
 
 ## Business Description
-Brasaland is a hospitality company with headquarters in Medellin and a commercial/operations office in Miami. The company operates restaurants in multiple countries and is led by CEO Mariana Restrepo. Brasaland Digital is the internal transformation team responsible for modernizing operations and digital presence.
+
+See [`CONTEXT.md`](../CONTEXT.md) for the authoritative company identity, operating context, and cross-cutting domain constants. Summary: Brasaland is a hospitality company with headquarters in Medellín and a commercial/operations office in Miami, operating 14 restaurants in Colombia and the United States, led by CEO Mariana Restrepo. Brasaland Digital is the internal transformation team responsible for modernizing operations and digital presence.
 
 ## Project Objectives
 - Launch a renewed, professional website that reflects the full Brasaland brand experience and operations in multiple countries.

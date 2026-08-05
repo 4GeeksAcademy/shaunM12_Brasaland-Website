@@ -8,7 +8,9 @@ Brasaland transversal project for the **4Geeks Academy AI Engineering** program:
 > Spanish instructions: [README.es.md](./README.es.md)
 
 Business context: [CONTEXT.md](./CONTEXT.md)  
-Historical specs (all milestones): [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
+Agent protocol (Cursor/AI): [agents.md](./agents.md)  
+Milestone 1 spec (website + Brasa Points): [context-1-milestone-1.md](./memory-bank/historical-reference/context-1-milestone-1.md)  
+All milestone specs: [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
 
 ---
 
@@ -176,6 +178,7 @@ Detail: [services/api/README.md](./services/api/README.md).
 
 | Doc | Topic |
 | --- | ----- |
+| [agents.md](./agents.md) | Agent operating protocol (context triggers, protected paths, pre-commit) |
 | [docs/rag/rag-design.md](./docs/rag/rag-design.md) | RAG architecture, indexing, retrieval |
 | [docs/agent/memory-design.md](./docs/agent/memory-design.md) | Agent memory Q1–Q5, denylist, lifecycle |
 | [docs/agent/memory-evidence.md](./docs/agent/memory-evidence.md) | Evidence cycles A–D |

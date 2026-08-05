@@ -14,7 +14,9 @@ Proyecto transversal Brasaland del programa **Ingeniería de IA — 4Geeks Acade
 Construir entregables del escenario Brasaland a lo largo de los hitos del curso (Web, Programación, Backend, Telemetría, RAG, Agentes, Workflows, Tiempo real).
 
 Contexto de negocio: [CONTEXT.md](./CONTEXT.md)  
-Notas históricas por hito: [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
+Protocolo de agentes (Cursor/IA): [agents.md](./agents.md)  
+Especificación hito 1 (sitio web + Brasa Points): [context-1-milestone-1.md](./memory-bank/historical-reference/context-1-milestone-1.md)  
+Todas las especificaciones por hito: [memory-bank/historical-reference/context-index.md](./memory-bank/historical-reference/context-index.md)
 
 ---
 
