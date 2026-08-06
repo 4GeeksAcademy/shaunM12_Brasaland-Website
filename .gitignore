@@ -39,6 +39,14 @@ data/raw/*.csv
 data/agent/*
 !data/agent/.gitkeep
 
+# RFP runtime uploads (context-27 Part 1; never commit)
+data/raw/intakes/*
+!data/raw/intakes/.gitkeep
+
+# RFP LangGraph checkpoint DB (context-27 Part 1; never commit)
+data/rfp/*
+!data/rfp/.gitkeep
+
 # Local API TinyDB stores (users, auth, suppliers — PII / session data)
 services/api/data/*.json
 services/api/data/*.bak*

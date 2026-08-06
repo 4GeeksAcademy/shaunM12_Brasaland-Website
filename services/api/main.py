@@ -29,11 +29,14 @@ from users.routes import router as users_router
 from tasks.routes import router as tasks_router
 from knowledge.routes import router as knowledge_router
 from agent.routes import router as agent_router
+from rfp.routes import router as rfp_router
+from rfp.models import ensure_rfp_schema
 from sqlmodel import SQLModel
 from sqlmodel import Session
 
 import inventory.models  # noqa: F401 — register ORM tables with SQLModel metadata
 import incidents.models  # noqa: F401 — register ORM tables with SQLModel metadata
+import rfp.models  # noqa: F401 — register RFP ORM tables (context-27)
 import telemetry.models  # noqa: F401 — register telemetry ORM tables
 import reporting.models  # noqa: F401 — register reporting ORM tables
 import job_runner.models  # noqa: F401 — register job_runs ORM table
@@ -49,6 +52,7 @@ async def lifespan(_: FastAPI):
             ensure_reporting_schema(session)
             ensure_job_runs_schema(session)
             ensure_task_dead_letters_schema(session)
+            ensure_rfp_schema(session)
         SQLModel.metadata.create_all(get_engine())
         with Session(get_engine()) as session:
             ensure_telemetry_schema(session)
@@ -56,6 +60,7 @@ async def lifespan(_: FastAPI):
             ensure_reporting_schema(session)
             ensure_job_runs_schema(session)
             ensure_task_dead_letters_schema(session)
+            ensure_rfp_schema(session)
         seed_inventory_if_empty()
     yield
 
@@ -88,6 +93,7 @@ app.include_router(reporting_router, prefix="/reporting", dependencies=_protecte
 app.include_router(tasks_router, prefix="/tasks", dependencies=_protected)
 app.include_router(knowledge_router, prefix="/knowledge", dependencies=_protected)
 app.include_router(agent_router, prefix="/agent", dependencies=_protected)
+app.include_router(rfp_router, prefix="/rfp", dependencies=_protected)
 
 
 @app.get("/api/health")

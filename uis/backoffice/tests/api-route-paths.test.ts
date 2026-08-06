@@ -5,6 +5,7 @@ import { listManagerIncidents } from "@/lib/incidents-manager-api";
 import { fetchTaskStatus, taskPath } from "@/lib/tasks-api";
 import { fetchSuppliers } from "@/lib/suppliers-api";
 import { resolveAgentQueryPath } from "@/lib/agent";
+import { getRfpTicket, listRfpTickets, resolveRfpTicketsPath } from "@/lib/rfp";
 import { resolveTelemetryEndpoint } from "@/lib/telemetry";
 
 const { authorizedFetchMock } = vi.hoisted(() => ({
@@ -29,6 +30,7 @@ beforeEach(() => {
   delete process.env.NEXT_PUBLIC_TELEMETRY_ENDPOINT;
   delete process.env.NEXT_PUBLIC_TELEMETRY_API_BASE_URL;
   delete process.env.NEXT_PUBLIC_AGENT_API_BASE_URL;
+  delete process.env.NEXT_PUBLIC_RFP_API_BASE_URL;
   authorizedFetchMock.mockReset();
   authorizedFetchMock.mockImplementation(async () => emptyListResponse());
 });
@@ -118,5 +120,66 @@ describe("domain API route paths", () => {
   it("uses bare FastAPI mounts for direct support agent requests", () => {
     vi.stubEnv("NEXT_PUBLIC_AGENT_API_BASE_URL", "https://api.example.test/");
     expect(resolveAgentQueryPath()).toBe("/agent/query");
+  });
+
+  it("uses browser-facing /api paths for RFP tickets", () => {
+    expect(resolveRfpTicketsPath()).toBe("/api/rfp/tickets");
+  });
+
+  it("uses bare FastAPI mounts for direct RFP requests", () => {
+    vi.stubEnv("NEXT_PUBLIC_RFP_API_BASE_URL", "https://api.example.test/");
+    expect(resolveRfpTicketsPath()).toBe("/rfp/tickets");
+  });
+
+  it("uses browser-facing /api paths for RFP list and detail clients", async () => {
+    authorizedFetchMock.mockImplementation(async (url: string) => {
+      if (url.endsWith("/tickets/ticket-abc")) {
+        return new Response(
+          JSON.stringify({
+            ticket_id: "ticket-abc",
+            status: "discarded",
+            metadata: {},
+            departments_needed: [],
+            requires_ceo_approval: false,
+            created_at: "2026-08-06T00:00:00Z",
+            updated_at: "2026-08-06T00:00:00Z",
+            unmapped_topics: [],
+            conflicts: [],
+            markdown_length: 0,
+            has_markdown: false,
+            sections: [],
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } },
+        );
+      }
+      return emptyListResponse();
+    });
+
+    await listRfpTickets();
+    await getRfpTicket("ticket-abc");
+
+    expect(authorizedFetchMock).toHaveBeenNthCalledWith(1, "/api/rfp/tickets", undefined);
+    expect(authorizedFetchMock).toHaveBeenNthCalledWith(
+      2,
+      "/api/rfp/tickets/ticket-abc",
+      undefined,
+    );
+  });
+
+  it("uses bare FastAPI mounts for direct RFP detail requests", async () => {
+    vi.stubEnv("NEXT_PUBLIC_RFP_API_BASE_URL", "https://api.example.test/");
+    authorizedFetchMock.mockImplementation(async () =>
+      new Response("{}", {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }),
+    );
+
+    await getRfpTicket("ticket-abc");
+
+    expect(authorizedFetchMock).toHaveBeenCalledWith(
+      "https://api.example.test/rfp/tickets/ticket-abc",
+      undefined,
+    );
   });
 });

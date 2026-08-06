@@ -20,6 +20,18 @@ A stub file is present so the name is visible. **Replace it** with the course-pr
 - Holdout evaluation reports MSE, **MAPE**, PSI, Gini, and K2 — see [docs/forecasting/README.md](../docs/forecasting/README.md).
 - Python ML stack lives in `services/api/` — run `cd services/api && uv sync` before the notebook or tests.
 
+## RFP intake uploads (`data/raw/intakes/`)
+
+**Runtime path for UI-uploaded RFP PDFs** (Milestone 9 — context-27):
+
+```text
+data/raw/intakes/{ticket_id}/source.pdf
+```
+
+- Created by the backoffice **RFP** tab upload flow; **gitignored** (see root `.gitignore`).
+- **Seed PDFs** for tests stay in `memory-bank/historical-reference/assets/milestone-9/` — do not copy them here.
+- LangGraph checkpoints remain under `data/rfp/checkpoints.db` (separate from raw intake files).
+
 ## Git
 
 `brasaland_sales.csv` is allowed to be tracked (see root `.gitignore`). Nightly telemetry exports (`telemetry_YYYY-MM-DD.csv`) remain ignored.

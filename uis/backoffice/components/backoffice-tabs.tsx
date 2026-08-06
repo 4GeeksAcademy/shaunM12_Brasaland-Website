@@ -20,6 +20,7 @@ const TABS: BackofficeTab[] = [
   { href: "/inventory", label: "Inventory" },
   { href: "/reporting", label: "Reporting" },
   { href: "/knowledge", label: "Knowledge" },
+  { href: "/rfp", label: "RFP" },
   { href: "/support", label: "Support Agent" },
   { href: "/account/profile", label: "Profile" },
   { href: "/account/users", label: "Users", adminOnly: true },
