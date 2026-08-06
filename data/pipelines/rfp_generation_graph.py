@@ -13,6 +13,7 @@ from langgraph.graph import END
 from langgraph.types import Send
 
 from data.pipelines.rfp_intake import _ensure_repo_root_on_path
+from data.pipelines.rfp_trace import trace_node
 
 _ensure_repo_root_on_path()
 
@@ -26,10 +27,6 @@ from rfp.constants import (  # noqa: E402
 from rfp.state import RfpGraphState  # noqa: E402
 
 logger = logging.getLogger(__name__)
-
-
-def _trace(node: str, **fields: Any) -> list[dict[str, Any]]:
-    return [{"node": node, **fields}]
 
 
 def _load_generation():
@@ -47,7 +44,11 @@ def _draft_start_node(state: RfpGraphState) -> dict[str, Any]:
     departments = list(state.get("departments_needed") or [])
     return {
         "status": STATUS_DRAFTING,
-        "trace_events": _trace("draft_start", department_count=len(departments)),
+        "trace_events": trace_node(
+            "draft_start",
+            input_data={"departments_needed": departments},
+            output_data={"department_count": len(departments)},
+        ),
     }
 
 
@@ -115,22 +116,20 @@ def _generate_eval_dept_node(state: RfpGraphState) -> dict[str, Any]:
         logger.exception("Generation unavailable for dept %s", dept)
         return {
             "department_failures": {dept: str(exc)},
-            "trace_events": _trace(
+            "trace_events": trace_node(
                 "generate_eval_dept",
-                department_id=dept,
-                ok=False,
-                error=str(exc),
+                input_data={"department_id": dept},
+                output_data={"ok": False, "error": str(exc)},
             ),
         }
     except Exception as exc:  # noqa: BLE001
         logger.exception("Department generation failed for %s", dept)
         return {
             "department_failures": {dept: str(exc)},
-            "trace_events": _trace(
+            "trace_events": trace_node(
                 "generate_eval_dept",
-                department_id=dept,
-                ok=False,
-                error=str(exc),
+                input_data={"department_id": dept},
+                output_data={"ok": False, "error": str(exc)},
             ),
         }
 
@@ -138,12 +137,14 @@ def _generate_eval_dept_node(state: RfpGraphState) -> dict[str, Any]:
         "department_drafts": {dept: draft},
         "department_evaluation_results": {dept: evaluation_results},
         "department_draft_statuses": {dept: draft_status},
-        "trace_events": _trace(
+        "trace_events": trace_node(
             "generate_eval_dept",
-            department_id=dept,
-            draft_status=draft_status,
-            overall_passed=evaluation_results.get("latest", {}).get("overall_passed"),
-            iteration=evaluation_results.get("latest", {}).get("iteration"),
+            input_data={"department_id": dept},
+            output_data={
+                "draft_status": draft_status,
+                "overall_passed": evaluation_results.get("latest", {}).get("overall_passed"),
+                "iteration": evaluation_results.get("latest", {}).get("iteration"),
+            },
         ),
     }
 
@@ -157,11 +158,10 @@ def _generation_finalize_node(state: RfpGraphState) -> dict[str, Any]:
             "status": STATUS_FAILED,
             "error_code": ERROR_PIPELINE_ERROR,
             "error_message": first_error,
-            "trace_events": _trace(
+            "trace_events": trace_node(
                 "generation_finalize",
-                ok=False,
-                status=STATUS_FAILED,
-                department_failures=failures,
+                input_data={"department_failures": list(failures.keys())},
+                output_data={"ok": False, "status": STATUS_FAILED, "error": first_error},
             ),
         }
 
@@ -176,28 +176,30 @@ def _generation_finalize_node(state: RfpGraphState) -> dict[str, Any]:
             "status": STATUS_FAILED,
             "error_code": ERROR_PIPELINE_ERROR,
             "error_message": message,
-            "trace_events": _trace(
+            "trace_events": trace_node(
                 "generation_finalize",
-                ok=False,
-                status=STATUS_FAILED,
-                incomplete_departments=incomplete,
+                input_data={"incomplete_departments": incomplete},
+                output_data={"ok": False, "status": STATUS_FAILED, "error": message},
             ),
         }
 
     statuses = state.get("department_draft_statuses") or {}
     return {
         "status": STATUS_WAITING_FOR_APPROVAL,
-        "trace_events": _trace(
+        "trace_events": trace_node(
             "generation_finalize",
-            status=STATUS_WAITING_FOR_APPROVAL,
-            department_statuses=statuses,
+            input_data={"department_count": len(statuses)},
+            output_data={"status": STATUS_WAITING_FOR_APPROVAL, "department_statuses": statuses},
         ),
     }
 
 
-def _route_entry(state: RfpGraphState) -> Literal["convert_pdf", "draft_start"]:
-    if state.get("invoke_mode") == "generation":
+def _route_entry(state: RfpGraphState) -> Literal["convert_pdf", "draft_start", "approval_start"]:
+    mode = state.get("invoke_mode")
+    if mode == "generation":
         return "draft_start"
+    if mode == "approval":
+        return "approval_start"
     return "convert_pdf"
 
 
@@ -220,7 +222,11 @@ def set_entry_router(builder) -> None:
     """Route intake vs generation invoke modes (M9-P2-14)."""
     builder.set_conditional_entry_point(
         _route_entry,
-        {"convert_pdf": "convert_pdf", "draft_start": "draft_start"},
+        {
+            "convert_pdf": "convert_pdf",
+            "draft_start": "draft_start",
+            "approval_start": "approval_start",
+        },
     )
 
 

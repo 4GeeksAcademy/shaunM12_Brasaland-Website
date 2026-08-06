@@ -133,3 +133,78 @@ def test_phase0_dependency_imports():
     import langgraph.checkpoint.sqlite  # noqa: F401
     import markitdown  # noqa: F401
     import readability  # py-readability-metrics  # noqa: F401
+
+
+def test_p3_phase0_final_document_and_approval_fields():
+    """Part 3 Phase 0 — final doc columns + approval metadata on GET detail."""
+    from datetime import datetime, timezone
+
+    from rfp.constants import (
+        APPROVAL_STATUS_APPROVED,
+        STATUS_COMPLETED,
+    )
+    from rfp.repository import update_department_section
+
+    with Session(get_engine()) as session:
+        ticket = create_ticket_analyzing(session)
+        upsert_department_section(
+            session,
+            ticket_id=ticket.ticket_id,
+            department_id=DEPARTMENT_MARKETING,
+            key_aspects=["Brand alignment"],
+        )
+        final_text = "# Brasaland Proposal\n\nApproved sections merged."
+        approved_at = datetime(2026, 8, 6, 12, 0, tzinfo=timezone.utc)
+        update_ticket(
+            session,
+            ticket.ticket_id,
+            status=STATUS_COMPLETED,
+            final_document_markdown=final_text,
+            final_document_generated_at=approved_at,
+            arbitration_exhausted=False,
+        )
+        update_department_section(
+            session,
+            ticket_id=ticket.ticket_id,
+            department_id=DEPARTMENT_MARKETING,
+            approval_status=APPROVAL_STATUS_APPROVED,
+            approver="Camila Ospina",
+            approved_at=approved_at,
+        )
+
+        detail = ticket_detail(session, ticket.ticket_id)
+        assert detail.status == STATUS_COMPLETED
+        assert detail.status_label == "Done"
+        assert detail.has_final_document is True
+        assert detail.final_document_length == len(final_text)
+        assert detail.arbitration_exhausted is False
+
+        marketing = detail.sections[0]
+        assert marketing.approval_status == APPROVAL_STATUS_APPROVED
+        assert marketing.approval_status_label == "Approved"
+        assert marketing.approver == "Camila Ospina"
+        assert marketing.approved_at is not None
+        assert marketing.approved_at.replace(tzinfo=timezone.utc) == approved_at
+
+
+def test_p3_status_constants_and_approval_labels():
+    from rfp.constants import (
+        APPROVAL_STATUS_AWAITING_HUMAN,
+        APPROVAL_STATUS_LABELS,
+        APPROVAL_DECISION_VALUES,
+        CEO_DECISION_VALUES,
+        STATUS_AWAITING_CEO_APPROVAL,
+        STATUS_AWAITING_DEPARTMENT_APPROVAL,
+        STATUS_LABELS,
+        STATUS_VALUES,
+        approval_status_label,
+        status_label,
+    )
+
+    assert STATUS_AWAITING_DEPARTMENT_APPROVAL in STATUS_VALUES
+    assert STATUS_AWAITING_CEO_APPROVAL in STATUS_VALUES
+    assert status_label(STATUS_AWAITING_DEPARTMENT_APPROVAL) == "Awaiting department approval"
+    assert approval_status_label(APPROVAL_STATUS_AWAITING_HUMAN) == "Awaiting human approval"
+    assert APPROVAL_STATUS_AWAITING_HUMAN in APPROVAL_STATUS_LABELS
+    assert "approve" in APPROVAL_DECISION_VALUES
+    assert "reject" in CEO_DECISION_VALUES

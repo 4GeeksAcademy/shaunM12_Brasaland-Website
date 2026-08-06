@@ -11,6 +11,7 @@ from rfp.constants import (
     ERROR_PDF_CONVERSION_FAILED,
     SEED_PDF_FILES,
     STATUS_ANALYZING,
+    STATUS_AWAITING_DEPARTMENT_APPROVAL,
     STATUS_DISCARDED,
     STATUS_DRAFTING,
     STATUS_FAILED,
@@ -304,8 +305,14 @@ def test_post_draft_from_intake_complete_reaches_waiting_for_approval(
     detail_response = client.get(f"/rfp/tickets/{ticket_id}")
     assert detail_response.status_code == 200
     detail = detail_response.json()
-    assert detail["status"] == STATUS_WAITING_FOR_APPROVAL
-    assert detail["status_label"] == "Waiting for approval"
+    assert detail["status"] in (
+        STATUS_WAITING_FOR_APPROVAL,
+        "awaiting_department_approval",
+    )
+    assert detail["status_label"] in (
+        "Waiting for approval",
+        "Awaiting department approval",
+    )
     assert len(detail["sections"]) == 3
     for section in detail["sections"]:
         assert section["draft_content"]
@@ -358,7 +365,10 @@ def test_post_draft_returns_409_after_success(client, monkeypatch, tmp_path):
     second = client.post(f"/rfp/tickets/{ticket_id}/draft")
     assert second.status_code == 409
     payload = second.json()
-    assert payload["detail"]["status"] == STATUS_WAITING_FOR_APPROVAL
+    assert payload["detail"]["status"] in (
+        STATUS_WAITING_FOR_APPROVAL,
+        STATUS_AWAITING_DEPARTMENT_APPROVAL,
+    )
 
 
 @pytestmark_db

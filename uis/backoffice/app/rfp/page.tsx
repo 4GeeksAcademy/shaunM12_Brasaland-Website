@@ -10,9 +10,13 @@ import {
   deleteRfpTicket,
   listRfpTickets,
   RFP_MAX_UPLOAD_BYTES,
+  RFP_STATUS_FILTER_OPTIONS,
   RfpTicketSummary,
+  shouldPollRfpTicketList,
   uploadRfpTicket,
 } from "@/lib/rfp";
+
+const LIST_POLL_INTERVAL_MS = 5000;
 
 function formatStatus(status: string): string {
   return status.replaceAll("_", " ");
@@ -56,25 +60,41 @@ export default function RfpPage(): React.JSX.Element {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState("");
 
-  const refreshList = useCallback(async (): Promise<void> => {
-    setListLoading(true);
+  const refreshList = useCallback(async (): Promise<RfpTicketSummary[]> => {
     setListError(null);
     try {
-      const rows = await listRfpTickets();
+      const rows = await listRfpTickets(
+        statusFilter ? { status: statusFilter } : undefined,
+      );
       setTickets(rows);
+      return rows;
     } catch (caught) {
       setListError(
         caught instanceof Error ? caught.message : "Could not load RFP tickets.",
       );
+      setTickets(null);
+      return [];
     } finally {
       setListLoading(false);
     }
-  }, []);
+  }, [statusFilter]);
 
   useEffect(() => {
+    setListLoading(true);
     void refreshList();
   }, [refreshList]);
+
+  useEffect(() => {
+    if (!tickets || !shouldPollRfpTicketList(tickets)) {
+      return undefined;
+    }
+    const intervalId = window.setInterval(() => {
+      void refreshList();
+    }, LIST_POLL_INTERVAL_MS);
+    return () => window.clearInterval(intervalId);
+  }, [tickets, refreshList]);
 
   const handleUpload = async (file: File | undefined): Promise<void> => {
     if (!file) {
@@ -205,14 +225,36 @@ export default function RfpPage(): React.JSX.Element {
             <h2 className="text-sm font-semibold uppercase tracking-[0.12em] bo-muted">
               Tickets
             </h2>
-            <button
-              type="button"
-              onClick={() => void refreshList()}
-              disabled={listLoading}
-              className="bo-btn-secondary px-3 py-1.5 text-xs normal-case tracking-normal disabled:opacity-50"
-            >
-              Refresh
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <label className="flex items-center gap-2 text-xs bo-muted">
+                <span className="sr-only">Filter by status</span>
+                <select
+                  value={statusFilter}
+                  onChange={(event) => {
+                    setListLoading(true);
+                    setStatusFilter(event.target.value);
+                  }}
+                  className="rounded-lg border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] px-2 py-1.5 text-xs text-[color:var(--bo-fg)]"
+                >
+                  {RFP_STATUS_FILTER_OPTIONS.map((option) => (
+                    <option key={option.value || "all"} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setListLoading(true);
+                  void refreshList();
+                }}
+                disabled={listLoading}
+                className="bo-btn-secondary px-3 py-1.5 text-xs normal-case tracking-normal disabled:opacity-50"
+              >
+                Refresh
+              </button>
+            </div>
           </div>
 
           {listLoading ? <LoadingState label="Loading tickets…" /> : null}
@@ -265,7 +307,7 @@ export default function RfpPage(): React.JSX.Element {
                           {ticket.ticket_id.slice(0, 8)}…
                         </p>
                       </td>
-                      <td className="px-3 py-3 capitalize">
+                      <td className="px-3 py-3">
                         {ticket.status_label || formatStatus(ticket.status)}
                       </td>
                       <td className="px-3 py-3">

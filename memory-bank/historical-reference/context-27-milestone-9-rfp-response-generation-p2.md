@@ -5,7 +5,7 @@
 **Branch:** `milestone-9-agentic-workflow-rfp-generation` (suggested)  
 **Status:** Implemented — **all 27 decisions confirmed (Option A)** — P2 acceptance verified 2026-08-06  
 **Depends on:** [context-27-milestone-9-rfp-intake-routing-p1.md](./context-27-milestone-9-rfp-intake-routing-p1.md) (**§1–§9 + P1 merged**), [context-22-route-conventions.md](./context-22-route-conventions.md), root [`CONTEXT.md`](../../CONTEXT.md) (brand pillars only)  
-**Companion:** [context-27-milestone-9-rfp-intake-routing-p3.md](./context-27-milestone-9-rfp-intake-routing-p3.md) (HITL approval + final document — **not Part 2 scope**)  
+**Companion:** [context-27-milestone-9-rfp-approval-document-p3.md](./context-27-milestone-9-rfp-approval-document-p3.md) (HITL approval + final document — **not Part 2 scope**)  
 **Stakeholders:** Camila Ospina (Marketing — process owner); Brasaland Digital backoffice users
 
 > **Read p1 §1–§9 before this file.** Compliance rule IDs, department IDs, status names, monorepo layout (M9-M1–M9-M4), and cross-part locks are inherited from p1.
@@ -515,7 +515,7 @@ Supporting gates:
 
 ## Part 3 pointer
 
-Read p1 §1–§9, then **[context-27-milestone-9-rfp-intake-routing-p3.md](./context-27-milestone-9-rfp-intake-routing-p3.md)** (when authored).
+Read p1 §1–§9, then **[context-27-milestone-9-rfp-approval-document-p3.md](./context-27-milestone-9-rfp-approval-document-p3.md)** (**14 decisions locked 2026-08-06**).
 
 **Gate:** Part 2 acceptance complete before P3 implementation.
 

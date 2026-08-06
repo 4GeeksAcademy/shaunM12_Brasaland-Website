@@ -101,6 +101,27 @@ def test_generate_key_aspects_worker_marketing_template(monkeypatch: pytest.Monk
     assert any("brand" in aspect.lower() for aspect in aspects)
 
 
+def test_generate_key_aspects_llm_prompt_requires_english(monkeypatch: pytest.MonkeyPatch):
+    from data.pipelines import rfp_intake as pipeline
+
+    captured: dict[str, str] = {}
+
+    def _fake_chat_json(system: str, user: str) -> dict:
+        captured["system"] = system
+        return {"key_aspects": ["Staff training and certification rollout"]}
+
+    monkeypatch.setattr(pipeline, "_generation_available", lambda: True)
+    monkeypatch.setattr(pipeline, "_chat_json", _fake_chat_json)
+
+    aspects = pipeline.generate_key_aspects(
+        "training",
+        {"client_name": "Sunset Bay Resorts, LLC"},
+        "Training modules for brand standards and food safety.",
+    )
+    assert aspects == ["Staff training and certification rollout"]
+    assert "English" in captured["system"]
+
+
 def test_department_owner_mapping_matches_context():
     assert department_owner("marketing") == "Camila Ospina"
     assert department_owner("operations") == "Felipe Guerrero"

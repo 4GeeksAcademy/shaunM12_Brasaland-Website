@@ -50,6 +50,13 @@ def ticket_pdf_dir(ticket_id: str) -> Path:
     return directory
 
 
+def write_final_proposal_mirror(ticket_id: str, markdown: str) -> str:
+    """Write merged proposal beside source PDF (gitignored intake dir)."""
+    path = ticket_pdf_dir(ticket_id) / "final_proposal.md"
+    path.write_text(markdown, encoding="utf-8")
+    return f"data/raw/intakes/{ticket_id}/final_proposal.md"
+
+
 def delete_ticket_files(ticket_id: str) -> None:
     """Remove stored PDF directory for a ticket (best-effort after DB delete)."""
     import shutil

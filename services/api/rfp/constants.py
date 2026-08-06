@@ -13,11 +13,16 @@ STATUS_FAILED = "failed"
 STATUS_DRAFTING = "drafting"
 STATUS_UNDER_EVALUATION = "under_evaluation"
 STATUS_WAITING_FOR_APPROVAL = "waiting_for_approval"
+STATUS_AWAITING_DEPARTMENT_APPROVAL = "awaiting_department_approval"
+STATUS_ARBITRATING = "arbitrating"
+STATUS_AWAITING_CEO_APPROVAL = "awaiting_ceo_approval"
 STATUS_COMPLETED = "completed"
 
 P1_TERMINAL_STATUSES = frozenset(
     {STATUS_INTAKE_COMPLETE, STATUS_DISCARDED, STATUS_FAILED}
 )
+
+P3_TERMINAL_STATUSES = frozenset({STATUS_COMPLETED})
 
 STATUS_VALUES = frozenset(
     {
@@ -28,6 +33,9 @@ STATUS_VALUES = frozenset(
         STATUS_DRAFTING,
         STATUS_UNDER_EVALUATION,
         STATUS_WAITING_FOR_APPROVAL,
+        STATUS_AWAITING_DEPARTMENT_APPROVAL,
+        STATUS_ARBITRATING,
+        STATUS_AWAITING_CEO_APPROVAL,
         STATUS_COMPLETED,
     }
 )
@@ -71,8 +79,53 @@ STATUS_LABELS: dict[str, str] = {
     STATUS_DRAFTING: "Drafting",
     STATUS_UNDER_EVALUATION: "Under evaluation",
     STATUS_WAITING_FOR_APPROVAL: "Waiting for approval",
+    STATUS_AWAITING_DEPARTMENT_APPROVAL: "Awaiting department approval",
+    STATUS_ARBITRATING: "Arbitrating",
+    STATUS_AWAITING_CEO_APPROVAL: "Awaiting CEO approval",
     STATUS_COMPLETED: "Done",
 }
+
+# --- Per-section approval status (Part 3 — M9-P3-15) -------------------------
+
+APPROVAL_STATUS_AWAITING_HUMAN = "awaiting_human"
+APPROVAL_STATUS_APPROVED = "approved"
+APPROVAL_STATUS_REJECTED = "rejected"
+APPROVAL_STATUS_CHANGES_REQUESTED = "changes_requested"
+
+APPROVAL_STATUS_VALUES = frozenset(
+    {
+        APPROVAL_STATUS_AWAITING_HUMAN,
+        APPROVAL_STATUS_APPROVED,
+        APPROVAL_STATUS_REJECTED,
+        APPROVAL_STATUS_CHANGES_REQUESTED,
+    }
+)
+
+APPROVAL_STATUS_LABELS: dict[str, str] = {
+    APPROVAL_STATUS_AWAITING_HUMAN: "Awaiting human approval",
+    APPROVAL_STATUS_APPROVED: "Approved",
+    APPROVAL_STATUS_REJECTED: "Rejected",
+    APPROVAL_STATUS_CHANGES_REQUESTED: "Changes requested",
+}
+
+# Human decisions at dept interrupt (M9-P3-6)
+APPROVAL_DECISION_APPROVE = "approve"
+APPROVAL_DECISION_REJECT = "reject"
+APPROVAL_DECISION_REQUEST_CHANGES = "request_changes"
+
+APPROVAL_DECISION_VALUES = frozenset(
+    {
+        APPROVAL_DECISION_APPROVE,
+        APPROVAL_DECISION_REJECT,
+        APPROVAL_DECISION_REQUEST_CHANGES,
+    }
+)
+
+# CEO gate decisions (M9-P3-11)
+CEO_DECISION_APPROVE = "approve"
+CEO_DECISION_REJECT = "reject"
+
+CEO_DECISION_VALUES = frozenset({CEO_DECISION_APPROVE, CEO_DECISION_REJECT})
 
 # --- Per-section draft status (Part 2 — §draft_status) ------------------------
 
@@ -131,6 +184,15 @@ def draft_status_label(draft_status: str | None) -> str:
     )
 
 
+def approval_status_label(approval_status: str | None) -> str | None:
+    if not approval_status:
+        return None
+    return APPROVAL_STATUS_LABELS.get(
+        approval_status,
+        approval_status.replace("_", " ").title(),
+    )
+
+
 # --- Compliance / business (§5, G4, H8) --------------------------------------
 
 USD_COP_RATE = 4000
@@ -182,7 +244,20 @@ SEED_PDF_FILES = (
 
 __all__ = [
     "ALLOWED_PDF_CONTENT_TYPES",
+    "APPROVAL_DECISION_APPROVE",
+    "APPROVAL_DECISION_REJECT",
+    "APPROVAL_DECISION_REQUEST_CHANGES",
+    "APPROVAL_DECISION_VALUES",
+    "APPROVAL_STATUS_APPROVED",
+    "APPROVAL_STATUS_AWAITING_HUMAN",
+    "APPROVAL_STATUS_CHANGES_REQUESTED",
+    "APPROVAL_STATUS_LABELS",
+    "APPROVAL_STATUS_REJECTED",
+    "APPROVAL_STATUS_VALUES",
     "CEO_APPROVAL_THRESHOLD_USD",
+    "CEO_DECISION_APPROVE",
+    "CEO_DECISION_REJECT",
+    "CEO_DECISION_VALUES",
     "COMPLIANCE_RULE_IDS",
     "DEPARTMENT_IDS",
     "DEPARTMENT_LABELS",
@@ -208,11 +283,15 @@ __all__ = [
     "MIN_RFP_MARKDOWN_CHARS",
     "MAX_UPLOAD_BYTES",
     "P1_TERMINAL_STATUSES",
+    "P3_TERMINAL_STATUSES",
     "RFP_INTAKE_PDF_DIR",
     "RFP_CHECKPOINT_DATA_DIR",
     "RFP_SEED_ASSETS_DIR",
     "SEED_PDF_FILES",
     "STATUS_ANALYZING",
+    "STATUS_ARBITRATING",
+    "STATUS_AWAITING_CEO_APPROVAL",
+    "STATUS_AWAITING_DEPARTMENT_APPROVAL",
     "STATUS_COMPLETED",
     "STATUS_DISCARDED",
     "STATUS_DRAFTING",
@@ -223,6 +302,7 @@ __all__ = [
     "STATUS_VALUES",
     "STATUS_WAITING_FOR_APPROVAL",
     "TERMINAL_DRAFT_STATUSES",
+    "approval_status_label",
     "department_label",
     "department_owner",
     "draft_status_label",

@@ -141,6 +141,35 @@ JWT bearer on supplier, incident, inventory, reporting, knowledge, agent, and mo
 | Reporting | `/reporting` | Weekly location KPIs; `POST /reporting/pipeline-runs` (202 + `task_id` via Celery) |
 | Knowledge | `/knowledge` | `POST /knowledge/query`, `POST /knowledge/reindex` (Qdrant + LLM env required) |
 | Support Agent | `/agent` | `POST /agent/query` — LangGraph + optional `thread_id`; user-approved memory (MEM-092); same RAG env as Knowledge |
+| RFP workflow | `/rfp` | Milestone 9 — PDF intake → draft → approval → final document; see [RFP operator guide](#rfp-workflow-milestone-9) |
+
+### RFP workflow (Milestone 9)
+
+Agentic RFP pipeline: upload PDF, classify/route departments, generate drafts, human approval, CEO gate (when contract &gt; $50k USD/year), deterministic final merge.
+
+**Required env:** `DATABASE_URL`, `GENERATION_BASE_URL`, `GENERATION_API_KEY`, `GENERATION_MODEL_ID`. Optional: `RFP_CHECKPOINT_DB_PATH` (LangGraph SQLite checkpoints), `RFP_GENERATION_USE_RAG=true` (Qdrant enrichment, off by default).
+
+**Seed PDFs:** `assets/milestone-9/` — seed #1 (Sunset Bay, CEO path), #2 (Andes Tech, no CEO), #3 (discarded franchise).
+
+**Smoke / E2E (no HTTP):**
+
+```bash
+cd services/api && uv run python ../../scripts/rfp_intake_smoke.py --seed 2
+cd services/api && uv run python ../../scripts/rfp_e2e_smoke.py --seed 2
+cd services/api && uv run python ../../scripts/rfp_e2e_smoke.py --seed 1   # CEO path
+```
+
+**Key routes:** `POST /rfp/tickets` (upload), `GET /rfp/tickets/{id}`, `POST …/draft`, `POST …/sections/{dept}/decision`, `GET …/trace`, `GET …/final-document`.
+
+**Artifacts:** source PDF and runtime `final_proposal.md` mirror under `data/raw/intakes/{ticket_id}/` (gitignored). Tracked examples: [`docs/rfp/examples/`](../../docs/rfp/examples/README.md).
+
+**Tests:**
+
+```bash
+cd services/api && uv run pytest tests/test_rfp_approval_api.py tests/pipelines/test_rfp_e2e.py -q
+```
+
+Spec: [context-27 P1/P2/P3](../memory-bank/historical-reference/context-27-milestone-9-rfp-intake-routing-p1.md) companions in `memory-bank/historical-reference/`.
 
 ### Agent memory module (`agent/memory/`)
 

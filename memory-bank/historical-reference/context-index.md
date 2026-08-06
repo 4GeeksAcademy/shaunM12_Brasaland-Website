@@ -43,7 +43,7 @@ Ordered index of historical reference context documents.
 - `context-26-milestone-8-agent-memory.md` — MEM-092 agent memory + self-improvement (P26-0–P26-6 complete; Postgres store, propose/confirm/audit, graph integration; evidence in `docs/agent/memory-evidence.md`)
 - `context-27-milestone-9-rfp-intake-routing-p1.md` — **Milestone 9 Part 1 (parent spec):** shared §1–§9 + RFP intake/routing — `/rfp` API + UI, LangGraph, MarkItDown, classifier, OWS, Postgres, locked decisions M9-1–H8
 - `context-27-milestone-9-rfp-response-generation-p2.md` — **Milestone 9 Part 2:** response generation + evaluation — generators, evaluators, loop, `POST .../draft` (**27 decisions confirmed 2026-08-06** — read p1 §1–§9 first)
-- `context-27-milestone-9-rfp-intake-routing-p3.md` — Milestone 9 Part 3: HITL approval + final document (**planned** — read p1 §1–§9 first)
+- `context-27-milestone-9-rfp-approval-document-p3.md` — **Milestone 9 Part 3:** HITL approval + final document — interrupt/resume, arbitration, CEO gate, E2E (**14 decisions locked 2026-08-06** — read p1 §1–§9 + p2 first)
 - Seed PDFs (when added): `assets/milestone-9/CONTEXT-brasaland-request-{1,2,3}.pdf` under `memory-bank/historical-reference/`
 
 ## Numbering Notes
