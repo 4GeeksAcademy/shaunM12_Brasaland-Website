@@ -93,7 +93,7 @@ Root `CONTEXT.md` is repo-wide company context only. Milestone 1 website and Bra
 
 Read **one** developer-named file under `memory-bank/historical-reference/` — never bulk-read the directory.
 
-Examples: `context-1-milestone-1.md` (public website, Brasa Points form, landing copy, M1 validations), `context-22-route-conventions.md` (routing), `context-24-mcp-company-tools.md` (MCP), developer-specified milestone ticket.
+Examples: `context-1-milestone-1.md` (public website, Brasa Points form, landing copy, M1 validations), `context-22-route-conventions.md` (routing), `context-24-mcp-company-tools.md` (MCP), `context-27-milestone-9-rfp-intake-routing-p1.md` (Milestone 9 RFP intake/routing — read p1 before p2/p3 companions), developer-specified milestone ticket.
 
 Full index: `memory-bank/historical-reference/context-index.md`.
 

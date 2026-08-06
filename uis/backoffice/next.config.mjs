@@ -63,6 +63,10 @@ const nextConfig = {
         source: "/api/tasks/:path*",
         destination: `${apiOrigin}/tasks/:path*`,
       },
+      {
+        source: "/api/rfp/:path*",
+        destination: `${apiOrigin}/rfp/:path*`,
+      },
     ];
   },
 };
