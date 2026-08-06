@@ -17,8 +17,10 @@ from rfp.constants import (
     STATUS_FAILED,
     STATUS_INTAKE_COMPLETE,
     STATUS_UNDER_EVALUATION,
+    STATUS_WAITING_FOR_APPROVAL,
     TERMINAL_DRAFT_STATUSES,
 )
+from rfp.approval_service import run_approval_background_task
 from rfp.intake_service import ensure_ticket_markdown
 from rfp.repository import (
     append_trace_event,
@@ -204,6 +206,9 @@ def run_draft_background_task(ticket_id: str) -> None:
             if ticket is None or ticket.status != STATUS_DRAFTING:
                 return
             run_generation_for_ticket(session, ticket_id)
+            ticket = get_ticket(session, ticket_id)
+            if ticket is not None and ticket.status == STATUS_WAITING_FOR_APPROVAL:
+                run_approval_background_task(ticket_id)
     except Exception:  # noqa: BLE001 — persist failed status, never crash worker
         logger.exception("RFP draft background task failed for %s", ticket_id)
         try:

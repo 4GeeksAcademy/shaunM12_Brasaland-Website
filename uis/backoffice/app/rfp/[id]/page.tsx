@@ -9,19 +9,45 @@ import LoadingState from "@/components/ui/LoadingState";
 import {
   countTerminalDraftSections,
   deleteRfpTicket,
+  downloadFinalDocument,
+  getFinalDocument,
   getRfpTicket,
+  getRfpTicketTrace,
+  isApprovalPhase,
   isGenerationInProgress,
+  isSectionAwaitingApproval,
+  isSectionRejected,
+  buildEvaluationSummaryView,
+  regenerateDepartmentSection,
+  RFP_APPROVAL_STATUS_APPROVED,
+  RFP_APPROVAL_STATUS_AWAITING_HUMAN,
+  RFP_APPROVAL_STATUS_CHANGES_REQUESTED,
+  RFP_APPROVAL_STATUS_REJECTED,
+  RFP_APPROVAL_DECISION_APPROVE,
+  RFP_APPROVAL_DECISION_REJECT,
+  RFP_APPROVAL_DECISION_REQUEST_CHANGES,
+  RFP_CEO_DECISION_APPROVE,
+  RFP_CEO_DECISION_REJECT,
   RFP_DRAFT_STATUS_NEEDS_HUMAN_REVIEW,
   RFP_DRAFT_STATUS_PASSED,
   RFP_STATUS_ANALYZING,
+  RFP_STATUS_ARBITRATING,
+  RFP_STATUS_AWAITING_CEO_APPROVAL,
+  RFP_STATUS_AWAITING_DEPARTMENT_APPROVAL,
+  RFP_STATUS_COMPLETED,
   RFP_STATUS_DRAFTING,
   RFP_STATUS_INTAKE_COMPLETE,
   RFP_STATUS_UNDER_EVALUATION,
   RFP_STATUS_WAITING_FOR_APPROVAL,
   RfpSection,
   RfpTicketDetail,
+  RfpTraceEvent,
+  sectionNeedsHumanReviewBanner,
   shouldPollRfpTicketDetail,
+  startApprovalRecovery,
   startRfpDraft,
+  submitCeoDecision,
+  submitDepartmentDecision,
 } from "@/lib/rfp";
 
 const POLL_INTERVAL_MS = 2500;
@@ -44,7 +70,13 @@ function statusBadgeClass(status: string): string {
       return "border-[color:var(--bo-success)]/40 bg-[color:var(--bo-success)]/10 text-[color:var(--bo-success)]";
     case RFP_STATUS_WAITING_FOR_APPROVAL:
       return "border-violet-500/40 bg-violet-500/10 text-violet-700 dark:text-violet-300";
-    case "completed":
+    case RFP_STATUS_AWAITING_DEPARTMENT_APPROVAL:
+      return "border-indigo-500/40 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300";
+    case RFP_STATUS_ARBITRATING:
+      return "border-sky-500/40 bg-sky-500/10 text-sky-700 dark:text-sky-300";
+    case RFP_STATUS_AWAITING_CEO_APPROVAL:
+      return "border-fuchsia-500/40 bg-fuchsia-500/10 text-fuchsia-700 dark:text-fuchsia-300";
+    case RFP_STATUS_COMPLETED:
       return "border-[color:var(--bo-success)]/40 bg-[color:var(--bo-success)]/10 text-[color:var(--bo-success)]";
     case RFP_STATUS_DRAFTING:
     case RFP_STATUS_UNDER_EVALUATION:
@@ -314,10 +346,522 @@ function SectionEvaluationPanel({
   );
 }
 
-function DepartmentSectionCard({
+function approvalStatusBadgeClass(approvalStatus: string | null | undefined): string {
+  switch (approvalStatus) {
+    case RFP_APPROVAL_STATUS_APPROVED:
+      return "border-[color:var(--bo-success)]/40 bg-[color:var(--bo-success)]/10 text-[color:var(--bo-success)]";
+    case RFP_APPROVAL_STATUS_AWAITING_HUMAN:
+      return "border-indigo-500/40 bg-indigo-500/10 text-indigo-700 dark:text-indigo-300";
+    case RFP_APPROVAL_STATUS_REJECTED:
+      return "border-[color:var(--bo-error-fg)]/40 bg-[color:var(--bo-error-fg)]/10 text-[color:var(--bo-error-fg)]";
+    case RFP_APPROVAL_STATUS_CHANGES_REQUESTED:
+      return "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
+    default:
+      return "border-[color:var(--bo-panel-border)] bg-[color:var(--bo-row-bg)] bo-muted";
+  }
+}
+
+function pollingStatusMessage(ticket: RfpTicketDetail, generationInProgress: boolean, draftProgress: { completed: number; total: number }): string {
+  if (ticket.status === RFP_STATUS_ANALYZING) {
+    return "Polling for intake completion…";
+  }
+  if (generationInProgress && draftProgress.total > 0) {
+    return `Generating department drafts (${draftProgress.completed}/${draftProgress.total} complete)…`;
+  }
+  if (ticket.status === RFP_STATUS_DRAFTING) {
+    return "Generating department drafts…";
+  }
+  if (ticket.status === RFP_STATUS_UNDER_EVALUATION) {
+    return "Running evaluations…";
+  }
+  if (ticket.status === RFP_STATUS_WAITING_FOR_APPROVAL) {
+    return "Starting department approval workflow…";
+  }
+  if (ticket.status === RFP_STATUS_AWAITING_DEPARTMENT_APPROVAL) {
+    return "Waiting for department approvals…";
+  }
+  if (ticket.status === RFP_STATUS_ARBITRATING) {
+    return "Resolving cross-department conflicts…";
+  }
+  if (ticket.status === RFP_STATUS_AWAITING_CEO_APPROVAL) {
+    return "Waiting for CEO approval…";
+  }
+  return "Updating…";
+}
+
+function formatTracePayload(payload: Record<string, unknown>): string {
+  const { node: _node, agent, timestamp, ...rest } = payload;
+  const parts: string[] = [];
+  if (typeof agent === "string" && agent) {
+    parts.push(`agent: ${agent}`);
+  }
+  if (typeof timestamp === "string" && timestamp) {
+    parts.push(`at ${timestamp}`);
+  }
+  const restKeys = Object.keys(rest);
+  if (restKeys.length) {
+    parts.push(JSON.stringify(rest));
+  }
+  return parts.join(" · ") || "—";
+}
+
+function ArbitrationResolutionsList({
+  resolutions,
+}: {
+  resolutions: Array<Record<string, unknown>>;
+}): React.JSX.Element {
+  return (
+    <div className="space-y-2">
+      <h3 className="text-xs font-semibold uppercase tracking-[0.12em] bo-muted">
+        Arbitration resolutions
+      </h3>
+      <ul className="space-y-2">
+        {resolutions.map((resolution, index) => (
+          <li
+            key={`${index}-${String(resolution.field ?? resolution.rule_id ?? index)}`}
+            className="rounded-lg border border-sky-500/30 bg-sky-500/5 px-3 py-2 text-sm text-[color:var(--bo-fg)]"
+          >
+            {typeof resolution.field === "string" ? (
+              <span className="font-semibold">{resolution.field}: </span>
+            ) : null}
+            {typeof resolution.resolved_value === "string"
+              ? resolution.resolved_value
+              : JSON.stringify(resolution)}
+            {typeof resolution.winning_department_id === "string" ? (
+              <span className="bo-muted"> · won by {resolution.winning_department_id}</span>
+            ) : null}
+            {typeof resolution.rule_id === "string" ? (
+              <span className="block mt-1 text-xs bo-muted">{resolution.rule_id}</span>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function TraceTimeline({
+  events,
+  loading,
+}: {
+  events: RfpTraceEvent[] | null;
+  loading: boolean;
+}): React.JSX.Element {
+  return (
+    <section className="bo-card-lg space-y-3">
+      <h2 className="text-sm font-semibold uppercase tracking-[0.12em] bo-muted">
+        Workflow trace
+      </h2>
+      <p className="text-sm bo-muted">
+        Durable P1→P2→P3 graph nodes persisted for audit and debugging.
+      </p>
+      {loading ? <LoadingState label="Loading trace…" /> : null}
+      {!loading && events?.length === 0 ? (
+        <p className="text-sm bo-muted">No trace events recorded yet.</p>
+      ) : null}
+      {!loading && events && events.length > 0 ? (
+        <ol className="max-h-96 space-y-2 overflow-y-auto border-l-2 border-[color:var(--bo-panel-border)] pl-4">
+          {events.map((event) => (
+            <li key={event.id} className="relative text-sm">
+              <span className="absolute -left-[1.35rem] top-1.5 h-2 w-2 rounded-full bg-[color:var(--bo-accent)]" />
+              <p className="font-mono text-xs font-semibold text-[color:var(--bo-accent)]">
+                {event.node}
+              </p>
+              <p className="text-xs bo-muted">{formatTimestamp(event.created_at)}</p>
+              <p className="mt-0.5 break-all text-xs bo-muted">
+                {formatTracePayload(event.payload)}
+              </p>
+            </li>
+          ))}
+        </ol>
+      ) : null}
+    </section>
+  );
+}
+
+function FinalDocumentPreview({
+  ticketId,
+  characterCount,
+  onDownload,
+  downloading,
+}: {
+  ticketId: string;
+  characterCount: number;
+  onDownload: () => Promise<void>;
+  downloading: boolean;
+}): React.JSX.Element {
+  const [preview, setPreview] = useState<string | null>(null);
+  const [previewError, setPreviewError] = useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    setPreviewLoading(true);
+    setPreviewError(null);
+    void getFinalDocument(ticketId)
+      .then((doc) => {
+        if (!cancelled) {
+          setPreview(doc.final_document_markdown);
+        }
+      })
+      .catch((caught) => {
+        if (!cancelled) {
+          setPreviewError(
+            caught instanceof Error ? caught.message : "Could not load preview.",
+          );
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setPreviewLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [ticketId]);
+
+  return (
+    <section className="bo-card-lg space-y-3">
+      <h2 className="text-sm font-semibold uppercase tracking-[0.12em] bo-muted">
+        Final proposal
+      </h2>
+      <p className="text-sm bo-muted">
+        All approvals complete ({characterCount.toLocaleString()} characters). A copy is
+        also saved beside the source PDF as{" "}
+        <code className="text-xs">data/raw/intakes/…/final_proposal.md</code>.
+      </p>
+      {previewLoading ? <LoadingState label="Loading preview…" /> : null}
+      {previewError ? (
+        <div className="bo-alert-error text-sm" role="alert">
+          {previewError}
+        </div>
+      ) : null}
+      {preview ? (
+        <div className="max-h-[28rem] overflow-y-auto rounded-lg border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] p-4">
+          <pre className="whitespace-pre-wrap text-sm leading-relaxed text-[color:var(--bo-fg)] font-sans">
+            {preview}
+          </pre>
+        </div>
+      ) : null}
+      <button
+        type="button"
+        disabled={downloading}
+        onClick={() => void onDownload()}
+        className="bo-btn-primary px-4 py-2 text-sm normal-case tracking-normal disabled:opacity-50"
+      >
+        {downloading ? "Downloading…" : "Download final proposal"}
+      </button>
+    </section>
+  );
+}
+
+function DepartmentApprovalPanel({
   section,
+  ticket,
+  disabled,
+  onDecision,
+  onRegenerate,
 }: {
   section: RfpSection;
+  ticket: RfpTicketDetail;
+  disabled: boolean;
+  onDecision: (
+    departmentId: string,
+    decision: string,
+    comment: string,
+  ) => Promise<void>;
+  onRegenerate: (departmentId: string) => Promise<void>;
+}): React.JSX.Element | null {
+  const [comment, setComment] = useState("");
+  const evalSummary = buildEvaluationSummaryView(section.evaluation_results);
+  const clientName =
+    typeof ticket.metadata.client_name === "string"
+      ? ticket.metadata.client_name
+      : null;
+  const serviceType =
+    typeof ticket.metadata.service_type === "string"
+      ? ticket.metadata.service_type
+      : typeof ticket.metadata.scope === "string"
+        ? ticket.metadata.scope
+        : null;
+  const deadline =
+    typeof ticket.metadata.deadline === "string" ? ticket.metadata.deadline : null;
+
+  if (isSectionRejected(section)) {
+    return (
+      <div className="mt-4 space-y-3 rounded-lg border border-[color:var(--bo-error-fg)]/30 bg-[color:var(--bo-error-fg)]/5 p-4">
+        <p className="text-sm text-[color:var(--bo-error-fg)]">
+          This section was rejected
+          {section.approver ? ` by ${section.approver}` : ""}.
+          Regenerate to produce a new draft and re-enter approval.
+        </p>
+        {section.approval_comment ? (
+          <p className="text-sm rounded-lg border border-[color:var(--bo-error-fg)]/20 bg-[color:var(--bo-panel-bg)] px-3 py-2 text-[color:var(--bo-fg)]">
+            <span className="font-semibold">Reason:</span> {section.approval_comment}
+          </p>
+        ) : null}
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => void onRegenerate(section.department_id)}
+          className="bo-btn-primary px-4 py-2 text-sm normal-case tracking-normal disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {disabled ? "Regenerating…" : "Regenerate section"}
+        </button>
+      </div>
+    );
+  }
+
+  if (section.approval_status === RFP_APPROVAL_STATUS_CHANGES_REQUESTED) {
+    return (
+      <div className="mt-4 space-y-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 text-sm bo-muted" role="status">
+        <p>Changes requested — regenerating draft for this department…</p>
+        {section.approval_comment ? (
+          <p className="rounded-lg border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] px-3 py-2 text-[color:var(--bo-fg)]">
+            <span className="font-semibold">Feedback:</span> {section.approval_comment}
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
+  if (!isSectionAwaitingApproval(section)) {
+    if (section.approval_status === RFP_APPROVAL_STATUS_APPROVED) {
+      return (
+        <div className="mt-4 space-y-2 text-sm bo-muted">
+          <p>
+            Approved
+            {section.approver ? ` by ${section.approver}` : ""}
+            {section.approved_at ? ` · ${formatTimestamp(section.approved_at)}` : ""}
+          </p>
+          {section.approval_comment ? (
+            <p className="rounded-lg border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] px-3 py-2 text-[color:var(--bo-fg)]">
+              <span className="font-semibold">Comment:</span> {section.approval_comment}
+            </p>
+          ) : null}
+        </div>
+      );
+    }
+    return null;
+  }
+
+  return (
+    <div className="mt-4 space-y-4 rounded-lg border border-indigo-500/30 bg-indigo-500/5 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-indigo-800 dark:text-indigo-200">
+          Approval required
+        </h4>
+        <span
+          className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] ${approvalStatusBadgeClass(section.approval_status)}`}
+        >
+          {section.approval_status_label ?? "Awaiting human approval"}
+        </span>
+      </div>
+
+      {sectionNeedsHumanReviewBanner(section) ? (
+        <p className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2 text-sm text-amber-800 dark:text-amber-200" role="status">
+          Automated QA did not pass — you may still approve.
+        </p>
+      ) : null}
+
+      <dl className="grid gap-3 text-sm sm:grid-cols-2">
+        {clientName ? (
+          <div>
+            <dt className="text-xs bo-muted">Client</dt>
+            <dd className="mt-0.5 text-[color:var(--bo-fg)]">{clientName}</dd>
+          </div>
+        ) : null}
+        {serviceType ? (
+          <div>
+            <dt className="text-xs bo-muted">Service</dt>
+            <dd className="mt-0.5 text-[color:var(--bo-fg)]">{serviceType}</dd>
+          </div>
+        ) : null}
+        {deadline ? (
+          <div>
+            <dt className="text-xs bo-muted">Deadline</dt>
+            <dd className="mt-0.5 text-[color:var(--bo-fg)]">{deadline}</dd>
+          </div>
+        ) : null}
+        {ticket.requires_ceo_approval ? (
+          <div>
+            <dt className="text-xs bo-muted">CEO gate</dt>
+            <dd className="mt-0.5 text-[color:var(--bo-fg)]">Required after all departments approve</dd>
+          </div>
+        ) : null}
+      </dl>
+
+      {evalSummary ? (
+        <div className="rounded-lg border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] p-3 text-sm">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] bo-muted">
+            Evaluation summary
+          </p>
+          <ul className="mt-2 space-y-1 bo-muted">
+            <li>
+              Readability: {evalSummary.readability_passed ? "Pass" : "Fail"}
+              {" · "}
+              Relevance: {evalSummary.relevance_passed ? "Pass" : "Fail"}
+              {" · "}
+              Compliance: {evalSummary.compliance_passed ? "Pass" : "Fail"}
+            </li>
+            {evalSummary.missing_topics.length ? (
+              <li>Missing topics: {evalSummary.missing_topics.join(", ")}</li>
+            ) : null}
+          </ul>
+        </div>
+      ) : null}
+
+      <label className="block text-sm">
+        <span className="text-xs font-semibold uppercase tracking-[0.12em] bo-muted">
+          Comment (optional — recommended for reject / request changes)
+        </span>
+        <textarea
+          value={comment}
+          disabled={disabled}
+          onChange={(event) => setComment(event.target.value)}
+          rows={3}
+          className="mt-1 w-full rounded-lg border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] px-3 py-2 text-sm text-[color:var(--bo-fg)]"
+          placeholder="Add feedback for the department owner…"
+        />
+      </label>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => void onDecision(section.department_id, RFP_APPROVAL_DECISION_APPROVE, comment)}
+          className="bo-btn-primary px-4 py-2 text-sm normal-case tracking-normal disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Approve
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() =>
+            void onDecision(section.department_id, RFP_APPROVAL_DECISION_REQUEST_CHANGES, comment)
+          }
+          className="rounded-lg border border-amber-500/40 px-4 py-2 text-sm font-semibold text-amber-800 dark:text-amber-200 disabled:opacity-50"
+        >
+          Request changes
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => void onDecision(section.department_id, RFP_APPROVAL_DECISION_REJECT, comment)}
+          className="rounded-lg border border-[color:var(--bo-error-fg)]/40 px-4 py-2 text-sm font-semibold text-[color:var(--bo-error-fg)] disabled:opacity-50"
+        >
+          Reject
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CeoApprovalPanel({
+  ticket,
+  disabled,
+  onDecision,
+}: {
+  ticket: RfpTicketDetail;
+  disabled: boolean;
+  onDecision: (decision: string, comment: string) => Promise<void>;
+}): React.JSX.Element {
+  const [comment, setComment] = useState("");
+  const packet = ticket.ceo_approval_packet;
+  const estimated =
+    typeof ticket.metadata.estimated_contract_value_usd === "number"
+      ? ticket.metadata.estimated_contract_value_usd
+      : packet?.estimated_contract_value_usd ?? null;
+
+  return (
+    <section className="bo-card-lg space-y-4 border border-fuchsia-500/30">
+      <h2 className="text-sm font-semibold uppercase tracking-[0.12em] text-fuchsia-800 dark:text-fuchsia-200">
+        CEO approval (Mariana Restrepo)
+      </h2>
+      <p className="text-sm bo-muted">
+        All department sections are approved and conflicts are resolved. CEO sign-off is
+        required before the final proposal is merged.
+        {estimated != null ? ` Estimated contract value: $${estimated.toLocaleString()} USD/year.` : ""}
+      </p>
+      {packet?.threshold_reason ? (
+        <p className="text-sm rounded-lg border border-fuchsia-500/30 bg-fuchsia-500/5 px-3 py-2 text-fuchsia-900 dark:text-fuchsia-100">
+          {packet.threshold_reason}
+        </p>
+      ) : null}
+      {packet && Object.keys(packet.approved_excerpts).length > 0 ? (
+        <div className="space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-[0.12em] bo-muted">
+            Approved department excerpts
+          </h3>
+          {Object.entries(packet.approved_excerpts).map(([dept, excerpt]) => (
+            <div
+              key={dept}
+              className="rounded-lg border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] p-3"
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.1em] bo-muted">
+                {dept.replaceAll("_", " ")}
+              </p>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-[color:var(--bo-fg)]">
+                {excerpt}
+              </p>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {packet?.arbitration_resolutions?.length ? (
+        <ArbitrationResolutionsList resolutions={packet.arbitration_resolutions} />
+      ) : null}
+      <label className="block text-sm">
+        <span className="text-xs font-semibold uppercase tracking-[0.12em] bo-muted">
+          Comment (optional)
+        </span>
+        <textarea
+          value={comment}
+          disabled={disabled}
+          onChange={(event) => setComment(event.target.value)}
+          rows={2}
+          className="mt-1 w-full rounded-lg border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] px-3 py-2 text-sm"
+        />
+      </label>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => void onDecision(RFP_CEO_DECISION_APPROVE, comment)}
+          className="bo-btn-primary px-4 py-2 text-sm normal-case tracking-normal disabled:opacity-50"
+        >
+          CEO approve
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => void onDecision(RFP_CEO_DECISION_REJECT, comment)}
+          className="rounded-lg border border-[color:var(--bo-error-fg)]/40 px-4 py-2 text-sm font-semibold text-[color:var(--bo-error-fg)] disabled:opacity-50"
+        >
+          CEO reject
+        </button>
+      </div>
+    </section>
+  );
+}
+
+function DepartmentSectionCard({
+  section,
+  ticket,
+  actionDisabled,
+  onDecision,
+  onRegenerate,
+}: {
+  section: RfpSection;
+  ticket: RfpTicketDetail;
+  actionDisabled: boolean;
+  onDecision: (
+    departmentId: string,
+    decision: string,
+    comment: string,
+  ) => Promise<void>;
+  onRegenerate: (departmentId: string) => Promise<void>;
 }): React.JSX.Element {
   const hasDraft = Boolean(section.draft_content?.trim());
 
@@ -335,11 +879,20 @@ function DepartmentSectionCard({
             </span>
           </p>
         </div>
-        <span
-          className={`inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] ${draftStatusBadgeClass(section.draft_status)}`}
-        >
-          {section.draft_status_label || formatStatus(section.draft_status)}
-        </span>
+        <div className="flex flex-wrap items-center gap-2">
+          <span
+            className={`inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] ${draftStatusBadgeClass(section.draft_status)}`}
+          >
+            {section.draft_status_label || formatStatus(section.draft_status)}
+          </span>
+          {section.approval_status ? (
+            <span
+              className={`inline-flex shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold uppercase tracking-[0.08em] ${approvalStatusBadgeClass(section.approval_status)}`}
+            >
+              {section.approval_status_label || formatStatus(section.approval_status)}
+            </span>
+          ) : null}
+        </div>
       </div>
 
       {section.key_aspects.length ? (
@@ -366,6 +919,16 @@ function DepartmentSectionCard({
       ) : null}
 
       <SectionEvaluationPanel evaluationResults={section.evaluation_results} />
+
+      {isApprovalPhase(ticket.status) || section.approval_status ? (
+        <DepartmentApprovalPanel
+          section={section}
+          ticket={ticket}
+          disabled={actionDisabled}
+          onDecision={onDecision}
+          onRegenerate={onRegenerate}
+        />
+      ) : null}
     </article>
   );
 }
@@ -457,6 +1020,13 @@ export default function RfpDetailPage(): React.JSX.Element {
   const [draftError, setDraftError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [approvalError, setApprovalError] = useState<string | null>(null);
+  const [actingDepartmentId, setActingDepartmentId] = useState<string | null>(null);
+  const [ceoSubmitting, setCeoSubmitting] = useState(false);
+  const [downloadingFinal, setDownloadingFinal] = useState(false);
+  const [approvalStarting, setApprovalStarting] = useState(false);
+  const [traceEvents, setTraceEvents] = useState<RfpTraceEvent[] | null>(null);
+  const [traceLoading, setTraceLoading] = useState(false);
 
   const loadTicket = useCallback(async (): Promise<RfpTicketDetail | null> => {
     if (!ticketId) {
@@ -503,6 +1073,25 @@ export default function RfpDetailPage(): React.JSX.Element {
     };
   }, [ticket, loadTicket]);
 
+  const loadTrace = useCallback(async (): Promise<void> => {
+    if (!ticketId) {
+      return;
+    }
+    setTraceLoading(true);
+    try {
+      const events = await getRfpTicketTrace(ticketId);
+      setTraceEvents(events);
+    } catch {
+      setTraceEvents([]);
+    } finally {
+      setTraceLoading(false);
+    }
+  }, [ticketId]);
+
+  useEffect(() => {
+    void loadTrace();
+  }, [loadTrace, ticket?.updated_at]);
+
   const handleStartDraft = async (): Promise<void> => {
     if (!ticketId || !ticket || ticket.status !== RFP_STATUS_INTAKE_COMPLETE) {
       return;
@@ -535,6 +1124,105 @@ export default function RfpDetailPage(): React.JSX.Element {
     ? countTerminalDraftSections(ticket.sections)
     : { completed: 0, total: 0 };
   const generationInProgress = ticket ? isGenerationInProgress(ticket) : false;
+
+  const handleDepartmentDecision = async (
+    departmentId: string,
+    decision: string,
+    comment: string,
+  ): Promise<void> => {
+    if (!ticketId) {
+      return;
+    }
+    setActingDepartmentId(departmentId);
+    setApprovalError(null);
+    try {
+      await submitDepartmentDecision(ticketId, departmentId, {
+        decision,
+        comment: comment.trim() || null,
+      });
+      await loadTicket();
+    } catch (caught) {
+      setApprovalError(
+        caught instanceof Error ? caught.message : "Could not submit decision.",
+      );
+    } finally {
+      setActingDepartmentId(null);
+    }
+  };
+
+  const handleDepartmentRegenerate = async (departmentId: string): Promise<void> => {
+    if (!ticketId) {
+      return;
+    }
+    setActingDepartmentId(departmentId);
+    setApprovalError(null);
+    try {
+      await regenerateDepartmentSection(ticketId, departmentId);
+      await loadTicket();
+    } catch (caught) {
+      setApprovalError(
+        caught instanceof Error ? caught.message : "Could not regenerate section.",
+      );
+    } finally {
+      setActingDepartmentId(null);
+    }
+  };
+
+  const handleCeoDecision = async (decision: string, comment: string): Promise<void> => {
+    if (!ticketId) {
+      return;
+    }
+    setCeoSubmitting(true);
+    setApprovalError(null);
+    try {
+      await submitCeoDecision(ticketId, {
+        decision,
+        comment: comment.trim() || null,
+      });
+      await loadTicket();
+    } catch (caught) {
+      setApprovalError(
+        caught instanceof Error ? caught.message : "Could not submit CEO decision.",
+      );
+    } finally {
+      setCeoSubmitting(false);
+    }
+  };
+
+  const handleDownloadFinal = async (): Promise<void> => {
+    if (!ticketId) {
+      return;
+    }
+    setDownloadingFinal(true);
+    setApprovalError(null);
+    try {
+      await downloadFinalDocument(ticketId);
+    } catch (caught) {
+      setApprovalError(
+        caught instanceof Error ? caught.message : "Could not download final document.",
+      );
+    } finally {
+      setDownloadingFinal(false);
+    }
+  };
+
+  const handleStartApproval = async (): Promise<void> => {
+    if (!ticketId) {
+      return;
+    }
+    setApprovalStarting(true);
+    setApprovalError(null);
+    try {
+      await startApprovalRecovery(ticketId);
+      await loadTicket();
+    } catch (caught) {
+      setApprovalError(
+        caught instanceof Error ? caught.message : "Could not start approval workflow.",
+      );
+    } finally {
+      setApprovalStarting(false);
+    }
+  };
 
   const handleDeleteTicket = async (): Promise<void> => {
     if (!ticketId) {
@@ -582,15 +1270,7 @@ export default function RfpDetailPage(): React.JSX.Element {
               </span>
               {polling ? (
                 <span className="text-xs bo-muted" role="status">
-                  {ticket.status === RFP_STATUS_ANALYZING
-                    ? "Polling for intake completion…"
-                    : generationInProgress && draftProgress.total > 0
-                      ? `Generating department drafts (${draftProgress.completed}/${draftProgress.total} complete)…`
-                      : ticket.status === RFP_STATUS_DRAFTING
-                        ? "Generating department drafts…"
-                        : ticket.status === RFP_STATUS_UNDER_EVALUATION
-                          ? "Running evaluations…"
-                          : "Updating…"}
+                  {pollingStatusMessage(ticket, generationInProgress, draftProgress)}
                 </span>
               ) : null}
               <span className="font-mono text-xs bo-muted">{ticket.ticket_id}</span>
@@ -609,6 +1289,12 @@ export default function RfpDetailPage(): React.JSX.Element {
         {deleteError ? (
           <div className="bo-alert-error" role="alert">
             {deleteError}
+          </div>
+        ) : null}
+
+        {approvalError ? (
+          <div className="bo-alert-error" role="alert">
+            {approvalError}
           </div>
         ) : null}
 
@@ -673,16 +1359,68 @@ export default function RfpDetailPage(): React.JSX.Element {
 
             {ticket.status === RFP_STATUS_WAITING_FOR_APPROVAL &&
             !generationInProgress ? (
-              <section className="bo-card-lg space-y-2">
+              <section className="bo-card-lg space-y-3">
                 <h2 className="text-sm font-semibold uppercase tracking-[0.12em] bo-muted">
-                  Ready for review
+                  Starting approval
                 </h2>
                 <p className="text-sm bo-muted">
-                  All department drafts finished evaluation. Human approval and final
-                  document merge are handled in a later milestone (Part 3).
+                  Drafts are complete. The approval workflow starts automatically — this
+                  page will update when department reviewers can sign off.
+                </p>
+                <button
+                  type="button"
+                  disabled={approvalStarting}
+                  onClick={() => void handleStartApproval()}
+                  className="rounded-lg border border-[color:var(--bo-panel-border)] px-4 py-2 text-sm font-semibold bo-muted disabled:opacity-50"
+                >
+                  {approvalStarting ? "Starting…" : "Start approval (recovery)"}
+                </button>
+              </section>
+            ) : null}
+
+            {ticket.status === RFP_STATUS_AWAITING_DEPARTMENT_APPROVAL ? (
+              <section className="bo-card-lg space-y-2">
+                <h2 className="text-sm font-semibold uppercase tracking-[0.12em] bo-muted">
+                  Department approval
+                </h2>
+                <p className="text-sm bo-muted">
+                  Review each department section below. Approvals run in parallel — you can
+                  approve one department while others are still waiting.
                 </p>
               </section>
             ) : null}
+
+            {ticket.arbitration_exhausted ? (
+              <section className="bo-alert-error" role="alert">
+                Arbitration exhausted after the maximum number of rounds. Resolve conflicts
+                via department request-changes or regenerate before the ticket can complete.
+              </section>
+            ) : null}
+
+            {ticket.status === RFP_STATUS_AWAITING_CEO_APPROVAL ? (
+              <CeoApprovalPanel
+                ticket={ticket}
+                disabled={ceoSubmitting}
+                onDecision={handleCeoDecision}
+              />
+            ) : null}
+
+            {ticket.status === RFP_STATUS_COMPLETED && ticket.has_final_document ? (
+              <FinalDocumentPreview
+                ticketId={ticket.ticket_id}
+                characterCount={ticket.final_document_length}
+                downloading={downloadingFinal}
+                onDownload={handleDownloadFinal}
+              />
+            ) : null}
+
+            {ticket.arbitration_resolutions.length > 0 ? (
+              <section className="bo-card-lg space-y-3">
+                <ArbitrationResolutionsList resolutions={ticket.arbitration_resolutions} />
+              </section>
+            ) : null}
+
+            <TraceTimeline events={traceEvents} loading={traceLoading} />
 
             {ticket.status === "failed" && (ticket.error_message || ticket.error_code) ? (
               <section className="bo-alert-error" role="alert">
@@ -696,6 +1434,14 @@ export default function RfpDetailPage(): React.JSX.Element {
                 Overview
               </h2>
               <dl className="grid gap-4 text-sm md:grid-cols-2">
+                <div>
+                  <dt className="text-xs uppercase tracking-[0.12em] bo-muted">Final document</dt>
+                  <dd className="mt-1 text-[color:var(--bo-fg)]">
+                    {ticket.has_final_document
+                      ? `${ticket.final_document_length.toLocaleString()} characters`
+                      : "Not generated"}
+                  </dd>
+                </div>
                 <div>
                   <dt className="text-xs uppercase tracking-[0.12em] bo-muted">CEO approval</dt>
                   <dd className="mt-1 font-semibold text-[color:var(--bo-fg)]">
@@ -761,6 +1507,10 @@ export default function RfpDetailPage(): React.JSX.Element {
                     <DepartmentSectionCard
                       key={section.department_id}
                       section={section}
+                      ticket={ticket}
+                      actionDisabled={actingDepartmentId === section.department_id}
+                      onDecision={handleDepartmentDecision}
+                      onRegenerate={handleDepartmentRegenerate}
                     />
                   ))}
                 </div>

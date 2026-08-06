@@ -42,6 +42,11 @@ class RfpTicket(SQLModel, table=True):
     discard_reason: str | None = None
     error_message: str | None = None
     error_code: str | None = Field(default=None, max_length=64)
+    final_document_markdown: str | None = None
+    final_document_generated_at: datetime | None = None
+    arbitration_exhausted: bool = Field(default=False)
+    arbitration_resolutions: list[dict[str, Any]] = _json_list_column()
+    ceo_approval_comment: str | None = None
     created_at: datetime = Field(default_factory=_utc_now, index=True)
     updated_at: datetime = Field(default_factory=_utc_now)
 
@@ -67,6 +72,7 @@ class RfpDepartmentSection(SQLModel, table=True):
     approval_status: str | None = Field(default=None, max_length=32)
     approver: str | None = Field(default=None, max_length=128)
     approved_at: datetime | None = None
+    approval_comment: str | None = None
     created_at: datetime = Field(default_factory=_utc_now)
     updated_at: datetime = Field(default_factory=_utc_now)
 
@@ -87,7 +93,7 @@ class RfpTraceEvent(SQLModel, table=True):
 
 
 def ensure_rfp_schema(session: Session) -> None:
-    """Create RFP tables when missing; apply additive column updates (Part 2)."""
+    """Create RFP tables when missing; apply additive column updates (P2/P3)."""
     bind = session.get_bind()
     inspector = inspect(bind)
     if not inspector.has_table("rfp_tickets"):
@@ -108,6 +114,50 @@ def ensure_rfp_schema(session: Session) -> None:
                 "ALTER TABLE rfp_department_sections "
                 "ADD COLUMN IF NOT EXISTS draft_status VARCHAR(32) "
                 f"DEFAULT '{DRAFT_STATUS_PENDING}'"
+            )
+        )
+        session.commit()
+
+    if inspector.has_table("rfp_tickets"):
+        session.connection().execute(
+            text(
+                "ALTER TABLE rfp_tickets "
+                "ADD COLUMN IF NOT EXISTS final_document_markdown TEXT"
+            )
+        )
+        session.connection().execute(
+            text(
+                "ALTER TABLE rfp_tickets "
+                "ADD COLUMN IF NOT EXISTS final_document_generated_at TIMESTAMPTZ"
+            )
+        )
+        session.connection().execute(
+            text(
+                "ALTER TABLE rfp_tickets "
+                "ADD COLUMN IF NOT EXISTS arbitration_exhausted BOOLEAN "
+                "DEFAULT FALSE"
+            )
+        )
+        session.connection().execute(
+            text(
+                "ALTER TABLE rfp_tickets "
+                "ADD COLUMN IF NOT EXISTS arbitration_resolutions JSONB "
+                "DEFAULT '[]'::jsonb"
+            )
+        )
+        session.connection().execute(
+            text(
+                "ALTER TABLE rfp_tickets "
+                "ADD COLUMN IF NOT EXISTS ceo_approval_comment TEXT"
+            )
+        )
+        session.commit()
+
+    if inspector.has_table("rfp_department_sections"):
+        session.connection().execute(
+            text(
+                "ALTER TABLE rfp_department_sections "
+                "ADD COLUMN IF NOT EXISTS approval_comment TEXT"
             )
         )
         session.commit()

@@ -13,6 +13,7 @@ Helper scripts for the monorepo: CLIs, data generation, and background orchestra
 | `nightly_export.py` | DEV-53: export UTC-day telemetry CSV + trigger Milestone 6 pipeline; writes `reporting.job_runs` |
 | `nightly_scheduler.py` | Separate process: wait until 02:00 America/Bogota, then run `nightly_export.py` |
 | `rfp_intake_smoke.py` | Milestone 9 P1: RFP intake smoke / reprocess without HTTP (`--seed 1`, `--pdf`, `--reprocess`) |
+| `rfp_e2e_smoke.py` | Milestone 9 P3: full P1→P2→P3 smoke without HTTP (`--seed 1` CEO path, `--seed 2` no CEO) |
 | `crontab.nightly` | Equivalent crontab for host/supercronic |
 | `analyze.py` | Incident CSV analyzer (Phase 1 CLI) |
 | `build_incidents_csv.py` | Regenerate `data/incidents-brasaland.csv` |

@@ -403,7 +403,8 @@ def generate_key_aspects(
             payload = _chat_json(
                 system=(
                     "Return JSON {\"key_aspects\": [string, ...]} with 2-4 concise routing "
-                    f"bullets for department '{department_id}' on this RFP intake."
+                    f"bullets for department '{department_id}' on this RFP intake. "
+                    "Write every bullet in English regardless of the source document language."
                 ),
                 user=json.dumps({"metadata": metadata, "excerpt": excerpt[:4000]}),
             )

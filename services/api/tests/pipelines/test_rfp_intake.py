@@ -137,6 +137,14 @@ def test_seed1_persists_trace_events_and_readability():
         assert "synthesize" in nodes
         assert len(events) >= 5
 
+        convert_payload = next(
+            dict(event.payload or {}) for event in events if event.node == "convert_pdf"
+        )
+        assert convert_payload.get("agent") == "pdf_converter"
+        assert isinstance(convert_payload.get("input"), dict)
+        assert isinstance(convert_payload.get("output"), dict)
+        assert convert_payload.get("timestamp", "").endswith("Z")
+
 
 def test_convert_pdf_produces_markdown():
     from data.pipelines.rfp_intake import convert_pdf_to_markdown

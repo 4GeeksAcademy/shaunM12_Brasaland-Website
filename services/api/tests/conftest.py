@@ -152,9 +152,10 @@ def _is_rfp_db_test(request: pytest.FixtureRequest) -> bool:
 
 
 def _wait_for_rfp_background_tasks(*, timeout_seconds: float = 120.0) -> None:
-    """Block until intake/draft background workers finish (avoids delete races)."""
+    """Block until intake/draft/approval background workers finish (avoids delete races)."""
     import time
 
+    from rfp.approval_service import _approval_lock, _approval_running
     from rfp.draft_service import _draft_lock, _draft_running
     from rfp.intake_service import _intake_lock, _intake_running
 
@@ -164,7 +165,9 @@ def _wait_for_rfp_background_tasks(*, timeout_seconds: float = 120.0) -> None:
             draft_busy = bool(_draft_running)
         with _intake_lock:
             intake_busy = bool(_intake_running)
-        if not draft_busy and not intake_busy:
+        with _approval_lock:
+            approval_busy = bool(_approval_running)
+        if not draft_busy and not intake_busy and not approval_busy:
             return
         time.sleep(0.05)
 
@@ -188,7 +191,7 @@ def _delete_rfp_tickets_not_in_baseline(baseline_ids: set[str]) -> None:
             try:
                 delete_ticket(session, row.ticket_id)
             except Exception:
-                pass
+                session.rollback()
 
 
 @pytest.fixture(scope="session")
