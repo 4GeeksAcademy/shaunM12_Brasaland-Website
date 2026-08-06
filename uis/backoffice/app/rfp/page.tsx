@@ -7,6 +7,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import ErrorState from "@/components/ui/ErrorState";
 import LoadingState from "@/components/ui/LoadingState";
 import {
+  deleteRfpTicket,
   listRfpTickets,
   RFP_MAX_UPLOAD_BYTES,
   RfpTicketSummary,
@@ -53,6 +54,8 @@ export default function RfpPage(): React.JSX.Element {
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   const refreshList = useCallback(async (): Promise<void> => {
     setListLoading(true);
@@ -97,6 +100,31 @@ export default function RfpPage(): React.JSX.Element {
       );
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDeleteTicket = async (ticket: RfpTicketSummary): Promise<void> => {
+    const label = metadataPreview(ticket.metadata);
+    const confirmed = window.confirm(
+      `Delete RFP ticket for "${label}"?\n\nThis permanently removes the ticket, sections, and stored PDF.`,
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingTicketId(ticket.ticket_id);
+    setDeleteError(null);
+    try {
+      await deleteRfpTicket(ticket.ticket_id);
+      setTickets((current) =>
+        current?.filter((row) => row.ticket_id !== ticket.ticket_id) ?? current,
+      );
+    } catch (caught) {
+      setDeleteError(
+        caught instanceof Error ? caught.message : "Could not delete ticket.",
+      );
+    } finally {
+      setDeletingTicketId(null);
     }
   };
 
@@ -197,6 +225,12 @@ export default function RfpPage(): React.JSX.Element {
             />
           ) : null}
 
+          {deleteError ? (
+            <div className="bo-alert-error" role="alert">
+              {deleteError}
+            </div>
+          ) : null}
+
           {!listLoading && !listError && tickets?.length === 0 ? (
             <p className="text-sm bo-muted">No RFP tickets yet. Upload a PDF to begin.</p>
           ) : null}
@@ -211,6 +245,7 @@ export default function RfpPage(): React.JSX.Element {
                     <th className="px-3 py-2 font-semibold">Departments</th>
                     <th className="px-3 py-2 font-semibold">CEO</th>
                     <th className="px-3 py-2 font-semibold">Created</th>
+                    <th className="px-3 py-2 font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -243,6 +278,16 @@ export default function RfpPage(): React.JSX.Element {
                       </td>
                       <td className="px-3 py-3 whitespace-nowrap">
                         {formatTimestamp(ticket.created_at)}
+                      </td>
+                      <td className="px-3 py-3">
+                        <button
+                          type="button"
+                          disabled={deletingTicketId === ticket.ticket_id}
+                          onClick={() => void handleDeleteTicket(ticket)}
+                          className="rounded-lg border border-[color:var(--bo-error-fg)]/40 px-2.5 py-1 text-xs font-semibold text-[color:var(--bo-error-fg)] disabled:opacity-50"
+                        >
+                          {deletingTicketId === ticket.ticket_id ? "Deleting…" : "Delete"}
+                        </button>
                       </td>
                     </tr>
                   ))}

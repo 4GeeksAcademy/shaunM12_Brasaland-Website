@@ -9,6 +9,7 @@ from __future__ import annotations
 import logging
 import os
 import sqlite3
+from collections.abc import Callable
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -16,6 +17,7 @@ from typing import Any, Literal
 from langgraph.checkpoint.sqlite import SqliteSaver
 from langgraph.graph import END, StateGraph
 
+from data.pipelines.rfp_generation_graph import add_generation_nodes, set_entry_router
 from data.pipelines.rfp_intake import _ensure_repo_root_on_path, repo_root
 
 _ensure_repo_root_on_path()
@@ -195,8 +197,8 @@ def build_graph() -> StateGraph:
     builder.add_node("orchestrate", _orchestrate_node)
     builder.add_node("workers", _workers_node)
     builder.add_node("synthesize", _synthesize_node)
-
-    builder.set_entry_point("convert_pdf")
+    add_generation_nodes(builder)
+    set_entry_router(builder)
     builder.add_conditional_edges(
         "convert_pdf",
         _route_after_convert,
@@ -234,6 +236,7 @@ def invoke_rfp_intake(*, ticket_id: str, pdf_path: str | Path) -> RfpGraphState:
     thread_id = f"rfp:{ticket_id}"
     config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
     input_state = initial_state(ticket_id=ticket_id, pdf_path=str(pdf_path))
+    input_state["invoke_mode"] = "intake"
     try:
         return graph.invoke(input_state, config)
     except Exception as exc:  # noqa: BLE001
@@ -242,6 +245,48 @@ def invoke_rfp_intake(*, ticket_id: str, pdf_path: str | Path) -> RfpGraphState:
         failed["status"] = STATUS_FAILED
         failed["error_code"] = ERROR_PIPELINE_ERROR
         failed["error_message"] = "RFP intake pipeline failed."
+        failed["trace_events"] = _trace("pipeline_error", error=str(exc))
+        return failed
+
+
+def invoke_rfp_generation(
+    state: RfpGraphState,
+    *,
+    on_node_update: Callable[[str, dict[str, Any]], None] | None = None,
+) -> RfpGraphState:
+    """Run P2 generation nodes only (hydrated state — M9-P2-14).
+
+    Uses a generation-specific checkpoint thread so intake state is not merged.
+    When ``on_node_update`` is set, streams node outputs (for incremental Postgres
+    persistence while parallel department branches complete).
+    """
+    graph = get_compiled_graph()
+    ticket_id = state.get("ticket_id") or ""
+    thread_id = f"rfp:{ticket_id}:generation"
+    config: dict[str, Any] = {"configurable": {"thread_id": thread_id}}
+    input_state = dict(state)
+    input_state["invoke_mode"] = "generation"
+    try:
+        if on_node_update is None:
+            return graph.invoke(input_state, config)
+
+        for chunk in graph.stream(input_state, config, stream_mode="updates"):
+            if not isinstance(chunk, dict):
+                continue
+            for node_name, update in chunk.items():
+                if update:
+                    on_node_update(node_name, update)
+
+        snapshot = graph.get_state(config)
+        if snapshot and snapshot.values:
+            return dict(snapshot.values)
+        return input_state
+    except Exception as exc:  # noqa: BLE001
+        logger.exception("RFP generation graph failed for ticket %s", ticket_id)
+        failed = dict(input_state)
+        failed["status"] = STATUS_FAILED
+        failed["error_code"] = ERROR_PIPELINE_ERROR
+        failed["error_message"] = "RFP generation pipeline failed."
         failed["trace_events"] = _trace("pipeline_error", error=str(exc))
         return failed
 
@@ -255,6 +300,7 @@ __all__ = [
     "build_graph",
     "checkpoint_db_path",
     "get_compiled_graph",
+    "invoke_rfp_generation",
     "invoke_rfp_intake",
     "reset_graph_cache",
 ]

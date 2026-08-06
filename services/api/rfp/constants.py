@@ -74,6 +74,39 @@ STATUS_LABELS: dict[str, str] = {
     STATUS_COMPLETED: "Done",
 }
 
+# --- Per-section draft status (Part 2 — §draft_status) ------------------------
+
+DRAFT_STATUS_PENDING = "pending"
+DRAFT_STATUS_DRAFTING = "drafting"
+DRAFT_STATUS_EVALUATING = "evaluating"
+DRAFT_STATUS_PASSED = "passed"
+DRAFT_STATUS_NEEDS_HUMAN_REVIEW = "needs_human_review"
+
+DRAFT_STATUS_VALUES = frozenset(
+    {
+        DRAFT_STATUS_PENDING,
+        DRAFT_STATUS_DRAFTING,
+        DRAFT_STATUS_EVALUATING,
+        DRAFT_STATUS_PASSED,
+        DRAFT_STATUS_NEEDS_HUMAN_REVIEW,
+    }
+)
+
+DRAFT_STATUS_LABELS: dict[str, str] = {
+    DRAFT_STATUS_PENDING: "Pending",
+    DRAFT_STATUS_DRAFTING: "Drafting",
+    DRAFT_STATUS_EVALUATING: "Evaluating",
+    DRAFT_STATUS_PASSED: "Passed",
+    DRAFT_STATUS_NEEDS_HUMAN_REVIEW: "Needs human review",
+}
+
+TERMINAL_DRAFT_STATUSES = frozenset(
+    {DRAFT_STATUS_PASSED, DRAFT_STATUS_NEEDS_HUMAN_REVIEW}
+)
+
+# Minimum stored markdown length — shorter values trigger PDF re-conversion.
+MIN_RFP_MARKDOWN_CHARS = 200
+
 
 def department_owner(department_id: str) -> str:
     return DEPARTMENT_OWNERS.get(department_id, "Unassigned")
@@ -87,6 +120,16 @@ def department_label(department_id: str) -> str:
 
 def status_label(status: str) -> str:
     return STATUS_LABELS.get(status, status.replace("_", " ").title())
+
+
+def draft_status_label(draft_status: str | None) -> str:
+    if not draft_status:
+        return DRAFT_STATUS_LABELS[DRAFT_STATUS_PENDING]
+    return DRAFT_STATUS_LABELS.get(
+        draft_status,
+        draft_status.replace("_", " ").title(),
+    )
+
 
 # --- Compliance / business (§5, G4, H8) --------------------------------------
 
@@ -149,12 +192,20 @@ __all__ = [
     "DEPARTMENT_PROCUREMENT",
     "DEPARTMENT_TRAINING",
     "DISCARD_RULE_MISSING_CORE_FIELDS",
+    "DRAFT_STATUS_DRAFTING",
+    "DRAFT_STATUS_EVALUATING",
+    "DRAFT_STATUS_LABELS",
+    "DRAFT_STATUS_NEEDS_HUMAN_REVIEW",
+    "DRAFT_STATUS_PASSED",
+    "DRAFT_STATUS_PENDING",
+    "DRAFT_STATUS_VALUES",
     "ERROR_LLM_UNAVAILABLE",
     "ERROR_PDF_CONVERSION_FAILED",
     "ERROR_PIPELINE_ERROR",
     "ERROR_STORAGE_ERROR",
     "MAX_ARBITRATION_ITERATIONS",
     "MAX_GENERATOR_EVALUATOR_ITERATIONS",
+    "MIN_RFP_MARKDOWN_CHARS",
     "MAX_UPLOAD_BYTES",
     "P1_TERMINAL_STATUSES",
     "RFP_INTAKE_PDF_DIR",
@@ -171,8 +222,10 @@ __all__ = [
     "STATUS_UNDER_EVALUATION",
     "STATUS_VALUES",
     "STATUS_WAITING_FOR_APPROVAL",
+    "TERMINAL_DRAFT_STATUSES",
     "department_label",
     "department_owner",
+    "draft_status_label",
     "status_label",
     "USD_COP_RATE",
 ]

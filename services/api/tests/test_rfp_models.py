@@ -4,16 +4,18 @@ from __future__ import annotations
 
 import config
 import pytest
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from database import get_engine
 from rfp.constants import (
     DEPARTMENT_MARKETING,
     DEPARTMENT_OPERATIONS,
+    DRAFT_STATUS_EVALUATING,
+    DRAFT_STATUS_PENDING,
     STATUS_ANALYZING,
     STATUS_INTAKE_COMPLETE,
 )
-from rfp.models import ensure_rfp_schema
+from rfp.models import RfpDepartmentSection, ensure_rfp_schema
 from rfp.repository import (
     append_trace_event,
     create_ticket_analyzing,
@@ -92,6 +94,38 @@ def test_upsert_department_sections_and_trace():
         assert detail.has_markdown is True
         assert len(detail.sections) == 2
         assert detail.sections[0].key_aspects
+        assert detail.sections[0].draft_status == DRAFT_STATUS_PENDING
+        assert detail.sections[0].draft_status_label == "Pending"
+
+
+def test_draft_status_column_migration_and_update():
+    """Part 2 Phase 0 — draft_status persisted and returned on GET detail."""
+    with Session(get_engine()) as session:
+        ticket = create_ticket_analyzing(session)
+        section = upsert_department_section(
+            session,
+            ticket_id=ticket.ticket_id,
+            department_id=DEPARTMENT_MARKETING,
+            key_aspects=["Brand alignment"],
+        )
+        assert section.draft_status == DRAFT_STATUS_PENDING
+
+        row = session.exec(
+            select(RfpDepartmentSection).where(
+                RfpDepartmentSection.ticket_id == ticket.ticket_id,
+                RfpDepartmentSection.department_id == DEPARTMENT_MARKETING,
+            )
+        ).one()
+        row.draft_status = DRAFT_STATUS_EVALUATING
+        session.add(row)
+        session.commit()
+
+        detail = ticket_detail(session, ticket.ticket_id)
+        marketing = next(
+            s for s in detail.sections if s.department_id == DEPARTMENT_MARKETING
+        )
+        assert marketing.draft_status == DRAFT_STATUS_EVALUATING
+        assert marketing.draft_status_label == "Evaluating"
 
 
 def test_phase0_dependency_imports():

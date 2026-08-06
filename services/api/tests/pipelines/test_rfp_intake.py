@@ -141,5 +141,8 @@ def test_seed1_persists_trace_events_and_readability():
 def test_convert_pdf_produces_markdown():
     from data.pipelines.rfp_intake import convert_pdf_to_markdown
 
+    from rfp.constants import MIN_RFP_MARKDOWN_CHARS
+
     text = convert_pdf_to_markdown(seed_asset_path(SEED_PDF_FILES[0]))
     assert "Sunset Bay" in text
+    assert len(text) >= MIN_RFP_MARKDOWN_CHARS

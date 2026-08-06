@@ -5,9 +5,11 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import Column, Index, UniqueConstraint, inspect
+from sqlalchemy import Column, Index, UniqueConstraint, inspect, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlmodel import Field, Session, SQLModel
+
+from .constants import DRAFT_STATUS_PENDING
 
 
 def _utc_now() -> datetime:
@@ -56,6 +58,7 @@ class RfpDepartmentSection(SQLModel, table=True):
     ticket_id: str = Field(foreign_key="rfp_tickets.ticket_id", index=True, max_length=36)
     department_id: str = Field(index=True, max_length=32)
     key_aspects: list[str] = _json_list_column()
+    draft_status: str = Field(default=DRAFT_STATUS_PENDING, max_length=32)
     draft_content: str | None = None
     evaluation_results: dict[str, Any] | None = Field(
         default=None,
@@ -84,7 +87,7 @@ class RfpTraceEvent(SQLModel, table=True):
 
 
 def ensure_rfp_schema(session: Session) -> None:
-    """Create RFP tables when missing (additive; no destructive migration)."""
+    """Create RFP tables when missing; apply additive column updates (Part 2)."""
     bind = session.get_bind()
     inspector = inspect(bind)
     if not inspector.has_table("rfp_tickets"):
@@ -96,6 +99,18 @@ def ensure_rfp_schema(session: Session) -> None:
                 RfpTraceEvent.__table__,
             ],
         )
+    else:
+        SQLModel.metadata.create_all(bind)
+
+    if inspector.has_table("rfp_department_sections"):
+        session.connection().execute(
+            text(
+                "ALTER TABLE rfp_department_sections "
+                "ADD COLUMN IF NOT EXISTS draft_status VARCHAR(32) "
+                f"DEFAULT '{DRAFT_STATUS_PENDING}'"
+            )
+        )
+        session.commit()
 
 
 __all__ = [

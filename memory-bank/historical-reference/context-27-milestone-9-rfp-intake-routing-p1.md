@@ -5,7 +5,7 @@
 **Branch:** `milestone-9-agentic-workflow-rfp-intake-routing`  
 **Status:** Spec locked — Part 1 implemented on branch `milestone-9-agentic-workflow-rfp-intake-routing`  
 **Depends on:** [context-22-route-conventions.md](./context-22-route-conventions.md) (routing/proxy/casing), root [`CONTEXT.md`](../../CONTEXT.md) (company identity only)  
-**Companions:** [context-27-milestone-9-rfp-intake-routing-p2.md](./context-27-milestone-9-rfp-intake-routing-p2.md) (generation + evaluation — **not Part 1 scope**), [context-27-milestone-9-rfp-intake-routing-p3.md](./context-27-milestone-9-rfp-intake-routing-p3.md) (HITL approval + final document — **not Part 1 scope**)  
+**Companions:** [context-27-milestone-9-rfp-response-generation-p2.md](./context-27-milestone-9-rfp-response-generation-p2.md) (generation + evaluation — **not Part 1 scope**), [context-27-milestone-9-rfp-intake-routing-p3.md](./context-27-milestone-9-rfp-intake-routing-p3.md) (HITL approval + final document — **not Part 1 scope**)  
 **Stakeholders:** Camila Ospina (Marketing — process owner); Brasaland Digital backoffice users
 
 > **Read this file before Part 1 implementation.** Parts 2 and 3 must read **§1–§9** here before their companion files.
@@ -707,7 +707,7 @@ Supporting gates (also required):
 
 ## Part 2 pointer
 
-Read **§1–§9** above, then **[context-27-milestone-9-rfp-intake-routing-p2.md](./context-27-milestone-9-rfp-intake-routing-p2.md)** (when authored).
+Read **§1–§9** above, then **[context-27-milestone-9-rfp-response-generation-p2.md](./context-27-milestone-9-rfp-response-generation-p2.md)**.
 
 **Gate:** Part 1 acceptance complete before P2 implementation.
 

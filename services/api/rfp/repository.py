@@ -2,19 +2,29 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime, timezone
 from typing import Any
 from uuid import uuid4
 
 from sqlmodel import Session, select
 
-from .constants import STATUS_ANALYZING, department_label, department_owner, status_label
+from .constants import (
+    DRAFT_STATUS_PENDING,
+    STATUS_ANALYZING,
+    department_label,
+    department_owner,
+    draft_status_label,
+    status_label,
+)
 from .models import RfpDepartmentSection, RfpTicket, RfpTraceEvent
 from .schemas import (
     RfpSectionResponse,
     RfpTicketDetailResponse,
     RfpTicketSummaryResponse,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class RfpTicketNotFoundError(LookupError):
@@ -111,9 +121,43 @@ def upsert_department_section(
         ticket_id=ticket_id,
         department_id=department_id,
         key_aspects=key_aspects,
+        draft_status=DRAFT_STATUS_PENDING,
         created_at=_utc_now(),
         updated_at=_utc_now(),
     )
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+    return row
+
+
+def update_department_section(
+    session: Session,
+    *,
+    ticket_id: str,
+    department_id: str,
+    draft_content: str | None = None,
+    evaluation_results: dict[str, Any] | None = None,
+    draft_status: str | None = None,
+) -> RfpDepartmentSection:
+    """Update P2 fields on an existing department section row."""
+    row = session.exec(
+        select(RfpDepartmentSection).where(
+            RfpDepartmentSection.ticket_id == ticket_id,
+            RfpDepartmentSection.department_id == department_id,
+        )
+    ).first()
+    if row is None:
+        raise LookupError(
+            f"RFP section not found: ticket={ticket_id} department={department_id}"
+        )
+    if draft_content is not None:
+        row.draft_content = draft_content
+    if evaluation_results is not None:
+        row.evaluation_results = evaluation_results
+    if draft_status is not None:
+        row.draft_status = draft_status
+    row.updated_at = _utc_now()
     session.add(row)
     session.commit()
     session.refresh(row)
@@ -196,6 +240,8 @@ def _to_detail(row: RfpTicket, sections: list[RfpDepartmentSection]) -> RfpTicke
                 department_label=department_label(section.department_id),
                 department_owner=department_owner(section.department_id),
                 key_aspects=list(section.key_aspects or []),
+                draft_status=section.draft_status or DRAFT_STATUS_PENDING,
+                draft_status_label=draft_status_label(section.draft_status),
                 draft_content=section.draft_content,
                 evaluation_results=section.evaluation_results,
                 approval_status=section.approval_status,
@@ -225,10 +271,36 @@ def list_ticket_summaries(
     return [_to_summary(row) for row in list_tickets(session, status=status, limit=limit, offset=offset)]
 
 
+def delete_ticket(session: Session, ticket_id: str) -> None:
+    """Remove ticket rows and stored intake PDF artifacts."""
+    row = get_ticket(session, ticket_id)
+    if row is None:
+        raise RfpTicketNotFoundError(f"RFP ticket not found: {ticket_id}")
+
+    for event in session.exec(
+        select(RfpTraceEvent).where(RfpTraceEvent.ticket_id == ticket_id)
+    ):
+        session.delete(event)
+    for section in session.exec(
+        select(RfpDepartmentSection).where(RfpDepartmentSection.ticket_id == ticket_id)
+    ):
+        session.delete(section)
+    session.delete(row)
+    session.commit()
+
+    try:
+        from rfp.intake_service import delete_ticket_files
+
+        delete_ticket_files(ticket_id)
+    except Exception:  # noqa: BLE001 — DB delete already committed
+        logger.exception("Could not remove stored PDF files for ticket %s", ticket_id)
+
+
 __all__ = [
     "RfpTicketNotFoundError",
     "append_trace_event",
     "create_ticket_analyzing",
+    "delete_ticket",
     "get_ticket",
     "get_ticket_or_raise",
     "list_sections",
@@ -237,6 +309,7 @@ __all__ = [
     "new_ticket_id",
     "ticket_detail",
     "ticket_summary",
+    "update_department_section",
     "update_ticket",
     "upsert_department_section",
 ]
