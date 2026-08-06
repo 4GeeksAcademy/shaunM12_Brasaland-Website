@@ -50,6 +50,15 @@ def ticket_pdf_dir(ticket_id: str) -> Path:
     return directory
 
 
+def delete_ticket_files(ticket_id: str) -> None:
+    """Remove stored PDF directory for a ticket (best-effort after DB delete)."""
+    import shutil
+
+    directory = RFP_INTAKE_PDF_DIR / ticket_id
+    if directory.exists():
+        shutil.rmtree(directory)
+
+
 def store_uploaded_pdf(ticket_id: str, source: Path) -> tuple[str, str]:
     """Copy PDF to data/raw/intakes/{ticket_id}/source.pdf; return relative path + hash."""
     dest = ticket_pdf_dir(ticket_id) / "source.pdf"
@@ -66,6 +75,41 @@ def resolve_pdf_path(relative_or_absolute: str) -> Path:
 
     candidate = repo_root() / relative_or_absolute
     return candidate.resolve()
+
+
+def ensure_ticket_markdown(session: Session, ticket_id: str) -> str:
+    """Return ticket markdown, re-converting the source PDF when stored text is too short."""
+    from data.pipelines.rfp_intake import convert_pdf_to_markdown
+
+    from rfp.constants import MIN_RFP_MARKDOWN_CHARS
+
+    ticket = get_ticket_or_raise(session, ticket_id)
+    markdown = (ticket.markdown_text or "").strip()
+    if len(markdown) >= MIN_RFP_MARKDOWN_CHARS:
+        return markdown
+    if not ticket.source_pdf_path:
+        return markdown
+
+    try:
+        refreshed = convert_pdf_to_markdown(resolve_pdf_path(ticket.source_pdf_path)).strip()
+    except Exception:
+        logger.warning(
+            "Could not refresh short markdown for ticket %s",
+            ticket_id,
+            exc_info=True,
+        )
+        return markdown
+
+    if len(refreshed) > len(markdown):
+        update_ticket(session, ticket_id, markdown_text=refreshed)
+        logger.info(
+            "Refreshed markdown for ticket %s (%d → %d chars)",
+            ticket_id,
+            len(markdown),
+            len(refreshed),
+        )
+        return refreshed
+    return markdown
 
 
 def persist_graph_state(session: Session, ticket_id: str, state: dict) -> None:
@@ -120,6 +164,7 @@ def run_intake_for_ticket(session: Session, ticket_id: str) -> None:
     pdf_path = resolve_pdf_path(ticket.source_pdf_path)
     state = invoke_rfp_intake(ticket_id=ticket_id, pdf_path=pdf_path)
     persist_graph_state(session, ticket_id, state)
+    ensure_ticket_markdown(session, ticket_id)
 
 
 def run_intake_background_task(ticket_id: str) -> None:
@@ -177,6 +222,8 @@ def seed_asset_path(filename: str) -> Path:
 
 __all__ = [
     "create_ticket_from_pdf",
+    "delete_ticket_files",
+    "ensure_ticket_markdown",
     "persist_graph_state",
     "resolve_pdf_path",
     "run_intake_background_task",

@@ -13,6 +13,8 @@ class RfpSectionResponse(BaseModel):
     department_label: str
     department_owner: str
     key_aspects: list[str] = Field(default_factory=list)
+    draft_status: str
+    draft_status_label: str
     draft_content: str | None = None
     evaluation_results: dict[str, Any] | None = None
     approval_status: str | None = None
@@ -47,7 +49,14 @@ class RfpTicketCreateResponse(BaseModel):
     created_at: datetime
 
 
+class RfpDraftStartResponse(BaseModel):
+    ticket_id: str
+    status: str
+    status_label: str
+
+
 __all__ = [
+    "RfpDraftStartResponse",
     "RfpSectionResponse",
     "RfpTicketCreateResponse",
     "RfpTicketDetailResponse",

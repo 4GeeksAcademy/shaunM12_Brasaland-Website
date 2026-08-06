@@ -32,9 +32,25 @@ def _ensure_repo_root_on_path() -> Path:
     return _REPO_ROOT
 
 
+def _extract_pdf_text_pdfplumber(pdf_path: Path) -> str:
+    """Fallback plain-text extraction when MarkItDown output is too short."""
+    import pdfplumber
+
+    chunks: list[str] = []
+    with pdfplumber.open(str(pdf_path)) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text() or ""
+            if page_text.strip():
+                chunks.append(page_text.strip())
+    return "\n\n".join(chunks).strip()
+
+
 def convert_pdf_to_markdown(pdf_path: Path) -> str:
-    """Convert a PDF file to Markdown using MarkItDown."""
+    """Convert a PDF file to Markdown using MarkItDown, with pdfplumber fallback."""
     from markitdown import MarkItDown
+
+    _ensure_repo_root_on_path()
+    from rfp.constants import MIN_RFP_MARKDOWN_CHARS
 
     if not pdf_path.is_file():
         raise FileNotFoundError(f"PDF not found: {pdf_path}")
@@ -42,6 +58,16 @@ def convert_pdf_to_markdown(pdf_path: Path) -> str:
     converter = MarkItDown()
     result = converter.convert(str(pdf_path))
     text = (result.text_content or "").strip()
+    if len(text) < MIN_RFP_MARKDOWN_CHARS:
+        fallback = _extract_pdf_text_pdfplumber(pdf_path)
+        if len(fallback) > len(text):
+            logger.info(
+                "MarkItDown output short (%d chars) for %s — using pdfplumber fallback (%d chars)",
+                len(text),
+                pdf_path.name,
+                len(fallback),
+            )
+            text = fallback
     if not text:
         raise ValueError("PDF conversion produced empty text")
     return text
@@ -93,8 +119,65 @@ def _generation_available() -> bool:
     )
 
 
-def _chat_json(system: str, user: str) -> dict[str, Any]:
+def _strip_json_fences(content: str) -> str:
+    text = content.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json|markdown|md)?\s*", "", text, flags=re.IGNORECASE)
+        text = re.sub(r"\s*```$", "", text)
+    return text.strip()
+
+
+def _parse_json_object(content: str) -> dict[str, Any]:
+    text = _strip_json_fences(content)
+    if not text:
+        return {}
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as first_exc:
+        start = text.find("{")
+        end = text.rfind("}")
+        if start >= 0 and end > start:
+            try:
+                return json.loads(text[start : end + 1])
+            except json.JSONDecodeError:
+                pass
+        raise first_exc
+
+
+def _chat_json(system: str, user: str, *, retries: int = 1) -> dict[str, Any]:
     """Call generation LLM and parse a JSON object response."""
+    _ensure_repo_root_on_path()
+    from data.pipelines.rag import generation_client
+
+    model_id = os.getenv("GENERATION_MODEL_ID", "").strip()
+    client = generation_client()
+    last_exc: json.JSONDecodeError | None = None
+    for attempt in range(retries + 1):
+        response = client.chat.completions.create(
+            model=model_id,
+            messages=[
+                {"role": "system", "content": system},
+                {"role": "user", "content": user},
+            ],
+            temperature=0.1,
+            response_format={"type": "json_object"},
+        )
+        content = (response.choices[0].message.content or "").strip()
+        try:
+            return _parse_json_object(content)
+        except json.JSONDecodeError as exc:
+            last_exc = exc
+            if attempt < retries:
+                logger.warning("LLM JSON parse failed (attempt %s), retrying: %s", attempt + 1, exc)
+                continue
+            raise
+    if last_exc is not None:
+        raise last_exc
+    return {}
+
+
+def _chat_text(system: str, user: str) -> str:
+    """Call generation LLM and return plain text (for long markdown drafts)."""
     _ensure_repo_root_on_path()
     from data.pipelines.rag import generation_client
 
@@ -106,11 +189,9 @@ def _chat_json(system: str, user: str) -> dict[str, Any]:
             {"role": "system", "content": system},
             {"role": "user", "content": user},
         ],
-        temperature=0.1,
-        response_format={"type": "json_object"},
+        temperature=0.2,
     )
-    content = (response.choices[0].message.content or "").strip()
-    return json.loads(content) if content else {}
+    return _strip_json_fences((response.choices[0].message.content or "").strip())
 
 
 @dataclass

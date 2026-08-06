@@ -144,3 +144,80 @@ def auth_client(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     database._db = None
     database._users_db = None
     database._auth_db = None
+
+
+def _is_rfp_db_test(request: pytest.FixtureRequest) -> bool:
+    module_name = getattr(request.module, "__name__", "") or ""
+    return "rfp" in module_name.lower()
+
+
+def _wait_for_rfp_background_tasks(*, timeout_seconds: float = 120.0) -> None:
+    """Block until intake/draft background workers finish (avoids delete races)."""
+    import time
+
+    from rfp.draft_service import _draft_lock, _draft_running
+    from rfp.intake_service import _intake_lock, _intake_running
+
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        with _draft_lock:
+            draft_busy = bool(_draft_running)
+        with _intake_lock:
+            intake_busy = bool(_intake_running)
+        if not draft_busy and not intake_busy:
+            return
+        time.sleep(0.05)
+
+
+def _delete_rfp_tickets_not_in_baseline(baseline_ids: set[str]) -> None:
+    import config
+
+    if not config.DATABASE_URL:
+        return
+
+    from database import get_engine
+    from rfp.repository import delete_ticket, list_tickets
+    from sqlmodel import Session
+
+    _wait_for_rfp_background_tasks()
+
+    with Session(get_engine()) as session:
+        for row in list_tickets(session, limit=1000):
+            if row.ticket_id in baseline_ids:
+                continue
+            try:
+                delete_ticket(session, row.ticket_id)
+            except Exception:
+                pass
+
+
+@pytest.fixture(scope="session")
+def _rfp_ticket_cleanup_session():
+    """Snapshot RFP tickets at session start; delete test-created rows at session end."""
+    import config
+
+    if not config.DATABASE_URL:
+        yield set()
+        return
+
+    from database import get_engine
+    from rfp.repository import list_tickets
+    from sqlmodel import Session
+
+    with Session(get_engine()) as session:
+        baseline_ids = {row.ticket_id for row in list_tickets(session, limit=1000)}
+
+    yield baseline_ids
+
+    _delete_rfp_tickets_not_in_baseline(baseline_ids)
+
+
+@pytest.fixture(autouse=True)
+def _rfp_ticket_cleanup_autouse(request: pytest.FixtureRequest, _rfp_ticket_cleanup_session):
+    """Ensure session cleanup fixture is active for RFP DB test modules."""
+    if not _is_rfp_db_test(request):
+        yield
+        return
+    _wait_for_rfp_background_tasks()
+    yield
+    _wait_for_rfp_background_tasks()

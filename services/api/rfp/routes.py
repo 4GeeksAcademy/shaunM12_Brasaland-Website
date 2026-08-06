@@ -25,18 +25,25 @@ from users.models import UserResponse
 from .constants import (
     ALLOWED_PDF_CONTENT_TYPES,
     MAX_UPLOAD_BYTES,
+    STATUS_DRAFTING,
     STATUS_FAILED,
+    STATUS_INTAKE_COMPLETE,
     STATUS_VALUES,
+    status_label,
 )
+from .draft_service import DraftNotAllowedError, prepare_draft_start, run_draft_background_task
 from .intake_service import run_intake_background_task, store_uploaded_pdf
 from .repository import (
     RfpTicketNotFoundError,
     create_ticket_analyzing,
+    delete_ticket,
+    get_ticket_or_raise,
     list_ticket_summaries,
     ticket_detail,
     update_ticket,
 )
 from .schemas import (
+    RfpDraftStartResponse,
     RfpTicketCreateResponse,
     RfpTicketDetailResponse,
     RfpTicketSummaryResponse,
@@ -185,3 +192,68 @@ def get_rfp_ticket(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="RFP ticket not found.",
         ) from exc
+
+
+@router.delete(
+    "/tickets/{ticket_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_rfp_ticket(
+    ticket_id: str,
+    session: Session = Depends(get_db),
+    _: UserResponse = Depends(get_current_user),
+) -> None:
+    """Delete one RFP ticket and its sections, trace events, and stored PDF."""
+    if not config.DATABASE_URL:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="RFP intake requires DATABASE_URL.",
+        )
+    try:
+        delete_ticket(session, ticket_id)
+    except RfpTicketNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="RFP ticket not found.",
+        ) from exc
+
+
+@router.post(
+    "/tickets/{ticket_id}/draft",
+    response_model=RfpDraftStartResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def start_rfp_draft(
+    ticket_id: str,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_db),
+    _: UserResponse = Depends(get_current_user),
+) -> RfpDraftStartResponse:
+    """Start Part 2 draft generation from ``intake_complete`` (async — poll GET)."""
+    _require_rfp_dependencies()
+    try:
+        get_ticket_or_raise(session, ticket_id)
+    except RfpTicketNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="RFP ticket not found.",
+        ) from exc
+
+    try:
+        prepare_draft_start(session, ticket_id)
+    except DraftNotAllowedError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "message": str(exc),
+                "status": exc.current_status,
+                "status_label": status_label(exc.current_status),
+            },
+        ) from exc
+
+    background_tasks.add_task(run_draft_background_task, ticket_id)
+    return RfpDraftStartResponse(
+        ticket_id=ticket_id,
+        status=STATUS_DRAFTING,
+        status_label=status_label(STATUS_DRAFTING),
+    )
