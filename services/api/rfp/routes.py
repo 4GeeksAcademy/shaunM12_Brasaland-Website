@@ -16,9 +16,11 @@ from fastapi import (
     File,
     HTTPException,
     Query,
+    Request,
     UploadFile,
     status,
 )
+from fastapi.responses import StreamingResponse
 from sqlmodel import Session
 from users.models import UserResponse
 
@@ -47,6 +49,7 @@ from .constants import (
 )
 from .draft_service import DraftNotAllowedError, prepare_draft_start, run_draft_background_task
 from .intake_service import run_intake_background_task, store_uploaded_pdf
+from .sse import publish_rfp_ticket_created, stream_rfp_events
 from .repository import (
     RfpSectionNotFoundError,
     RfpTicketNotFoundError,
@@ -167,12 +170,23 @@ async def create_rfp_ticket(
         if tmp_path is not None:
             tmp_path.unlink(missing_ok=True)
 
+    session.refresh(ticket)
+    publish_rfp_ticket_created(ticket)
     background_tasks.add_task(run_intake_background_task, ticket.ticket_id)
     return RfpTicketCreateResponse(
         ticket_id=ticket.ticket_id,
         status=ticket.status,
         created_at=ticket.created_at,
     )
+
+
+@router.get("/events/stream")
+async def rfp_events_stream(
+    request: Request,
+    _: UserResponse = Depends(get_current_user),
+) -> StreamingResponse:
+    """Server-sent events for new RFP ticket registrations (context-28 P1)."""
+    return stream_rfp_events(request)
 
 
 @router.get("/tickets", response_model=list[RfpTicketSummaryResponse])

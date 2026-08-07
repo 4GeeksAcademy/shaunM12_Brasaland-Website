@@ -6,6 +6,7 @@ import { fetchTaskStatus, taskPath } from "@/lib/tasks-api";
 import { fetchSuppliers } from "@/lib/suppliers-api";
 import { resolveAgentQueryPath } from "@/lib/agent";
 import { getRfpTicket, listRfpTickets, resolveRfpTicketsPath } from "@/lib/rfp";
+import { resolveRfpEventsStreamPath } from "@/lib/rfp-sse";
 import { resolveTelemetryEndpoint } from "@/lib/telemetry";
 
 const { authorizedFetchMock } = vi.hoisted(() => ({
@@ -124,11 +125,13 @@ describe("domain API route paths", () => {
 
   it("uses browser-facing /api paths for RFP tickets", () => {
     expect(resolveRfpTicketsPath()).toBe("/api/rfp/tickets");
+    expect(resolveRfpEventsStreamPath()).toBe("/api/rfp/events/stream");
   });
 
   it("uses bare FastAPI mounts for direct RFP requests", () => {
     vi.stubEnv("NEXT_PUBLIC_RFP_API_BASE_URL", "https://api.example.test/");
     expect(resolveRfpTicketsPath()).toBe("/rfp/tickets");
+    expect(resolveRfpEventsStreamPath()).toBe("/rfp/events/stream");
   });
 
   it("uses browser-facing /api paths for RFP list and detail clients", async () => {

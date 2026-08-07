@@ -15,8 +15,15 @@ import {
   shouldPollRfpTicketList,
   uploadRfpTicket,
 } from "@/lib/rfp";
+import {
+  connectRfpTicketStream,
+  rfpTicketSummaryFromCreatedEvent,
+  type RfpSseConnectionState,
+} from "@/lib/rfp-sse";
 
 const LIST_POLL_INTERVAL_MS = 5000;
+const ARRIVAL_HIGHLIGHT_MS = 8000;
+const ARRIVAL_BANNER_MS = 12_000;
 
 function formatStatus(status: string): string {
   return status.replaceAll("_", " ");
@@ -47,9 +54,25 @@ function metadataPreview(metadata: Record<string, unknown>): string {
   return typeof first === "string" ? first : keys[0];
 }
 
+function newTicketRowClassName(isHighlighted: boolean): string {
+  if (!isHighlighted) {
+    return "border-b border-[color:var(--bo-panel-border)]/60 transition-colors";
+  }
+  return [
+    "border-b border-[color:var(--bo-panel-border)]/60 transition-colors",
+    "bg-[color:var(--bo-accent-soft)]",
+    "shadow-[inset_4px_0_0_0_var(--bo-accent)]",
+    "ring-1 ring-inset ring-[color:var(--bo-accent)]/35",
+  ].join(" ");
+}
+
 export default function RfpPage(): React.JSX.Element {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
+  const knownTicketIdsRef = useRef(new Set<string>());
+  const announcedTicketIdsRef = useRef(new Set<string>());
+  const initialListLoadedRef = useRef(false);
+  const statusFilterRef = useRef("");
 
   const [tickets, setTickets] = useState<RfpTicketSummary[] | null>(null);
   const [listLoading, setListLoading] = useState(true);
@@ -61,25 +84,107 @@ export default function RfpPage(): React.JSX.Element {
   const [deletingTicketId, setDeletingTicketId] = useState<string | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
+  const [sseConnectionState, setSseConnectionState] =
+    useState<RfpSseConnectionState>("connecting");
+  const [highlightedTicketIds, setHighlightedTicketIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [arrivalBanner, setArrivalBanner] = useState<{
+    ticketId: string;
+    label: string;
+  } | null>(null);
 
-  const refreshList = useCallback(async (): Promise<RfpTicketSummary[]> => {
-    setListError(null);
-    try {
-      const rows = await listRfpTickets(
-        statusFilter ? { status: statusFilter } : undefined,
+  statusFilterRef.current = statusFilter;
+
+  const rememberTicketIds = useCallback((rows: RfpTicketSummary[]) => {
+    for (const row of rows) {
+      knownTicketIdsRef.current.add(row.ticket_id);
+    }
+  }, []);
+
+  const announceNewTicket = useCallback(
+    (summary: RfpTicketSummary, options?: { skipListInsert?: boolean }) => {
+      const ticketId = summary.ticket_id;
+      if (announcedTicketIdsRef.current.has(ticketId)) {
+        return;
+      }
+
+      announcedTicketIdsRef.current.add(ticketId);
+      knownTicketIdsRef.current.add(ticketId);
+
+      const label = metadataPreview(summary.metadata);
+      setArrivalBanner({ ticketId, label });
+      setHighlightedTicketIds((current) => new Set(current).add(ticketId));
+
+      if (options?.skipListInsert) {
+        return;
+      }
+
+      setTickets((current) => {
+        const filter = statusFilterRef.current;
+        if (filter && summary.status !== filter) {
+          return current;
+        }
+        if (!current) {
+          return [summary];
+        }
+        if (current.some((row) => row.ticket_id === ticketId)) {
+          return current;
+        }
+        return [summary, ...current];
+      });
+    },
+    [],
+  );
+
+  const applyTicketList = useCallback(
+    (rows: RfpTicketSummary[]) => {
+      if (!initialListLoadedRef.current) {
+        setTickets(rows);
+        rememberTicketIds(rows);
+        initialListLoadedRef.current = true;
+        return;
+      }
+
+      const newcomers = rows.filter(
+        (row) => !knownTicketIdsRef.current.has(row.ticket_id),
       );
       setTickets(rows);
-      return rows;
-    } catch (caught) {
-      setListError(
-        caught instanceof Error ? caught.message : "Could not load RFP tickets.",
-      );
-      setTickets(null);
-      return [];
-    } finally {
-      setListLoading(false);
-    }
-  }, [statusFilter]);
+      rememberTicketIds(rows);
+      for (const row of newcomers) {
+        announceNewTicket(row, { skipListInsert: true });
+      }
+    },
+    [announceNewTicket, rememberTicketIds],
+  );
+
+  const refreshList = useCallback(
+    async (options?: { silent?: boolean }): Promise<RfpTicketSummary[]> => {
+      if (!options?.silent) {
+        setListError(null);
+      }
+      try {
+        const rows = await listRfpTickets(
+          statusFilter ? { status: statusFilter } : undefined,
+        );
+        applyTicketList(rows);
+        return rows;
+      } catch (caught) {
+        if (!options?.silent) {
+          setListError(
+            caught instanceof Error ? caught.message : "Could not load RFP tickets.",
+          );
+          setTickets(null);
+        }
+        return [];
+      } finally {
+        if (!options?.silent) {
+          setListLoading(false);
+        }
+      }
+    },
+    [applyTicketList, statusFilter],
+  );
 
   useEffect(() => {
     setListLoading(true);
@@ -91,10 +196,41 @@ export default function RfpPage(): React.JSX.Element {
       return undefined;
     }
     const intervalId = window.setInterval(() => {
-      void refreshList();
+      void refreshList({ silent: true });
     }, LIST_POLL_INTERVAL_MS);
     return () => window.clearInterval(intervalId);
   }, [tickets, refreshList]);
+
+  useEffect(() => {
+    const disconnect = connectRfpTicketStream({
+      onStateChange: setSseConnectionState,
+      onRecover: () => refreshList({ silent: true }),
+      onTicketCreated: (event) => {
+        announceNewTicket(rfpTicketSummaryFromCreatedEvent(event));
+      },
+    });
+    return disconnect;
+  }, [announceNewTicket, refreshList]);
+
+  useEffect(() => {
+    if (highlightedTicketIds.size === 0) {
+      return undefined;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setHighlightedTicketIds(new Set());
+    }, ARRIVAL_HIGHLIGHT_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [highlightedTicketIds]);
+
+  useEffect(() => {
+    if (!arrivalBanner) {
+      return undefined;
+    }
+    const timeoutId = window.setTimeout(() => {
+      setArrivalBanner(null);
+    }, ARRIVAL_BANNER_MS);
+    return () => window.clearTimeout(timeoutId);
+  }, [arrivalBanner]);
 
   const handleUpload = async (file: File | undefined): Promise<void> => {
     if (!file) {
@@ -136,6 +272,8 @@ export default function RfpPage(): React.JSX.Element {
     setDeleteError(null);
     try {
       await deleteRfpTicket(ticket.ticket_id);
+      knownTicketIdsRef.current.delete(ticket.ticket_id);
+      announcedTicketIdsRef.current.delete(ticket.ticket_id);
       setTickets((current) =>
         current?.filter((row) => row.ticket_id !== ticket.ticket_id) ?? current,
       );
@@ -226,6 +364,26 @@ export default function RfpPage(): React.JSX.Element {
               Tickets
             </h2>
             <div className="flex flex-wrap items-center gap-2">
+              {sseConnectionState === "live" ? (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--bo-accent)]/40 bg-[color:var(--bo-accent-soft)] px-2.5 py-1 text-xs font-semibold text-[color:var(--bo-accent)]"
+                  aria-live="polite"
+                >
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-[color:var(--bo-accent)]"
+                    aria-hidden
+                  />
+                  Live
+                </span>
+              ) : sseConnectionState === "reconnecting" ||
+                sseConnectionState === "connecting" ? (
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-row-bg)] px-2.5 py-1 text-xs font-semibold bo-muted"
+                  aria-live="polite"
+                >
+                  Reconnecting…
+                </span>
+              ) : null}
               <label className="flex items-center gap-2 text-xs bo-muted">
                 <span className="sr-only">Filter by status</span>
                 <select
@@ -273,6 +431,30 @@ export default function RfpPage(): React.JSX.Element {
             </div>
           ) : null}
 
+          {arrivalBanner ? (
+            <div
+              className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[color:var(--bo-accent)]/40 bg-[color:var(--bo-accent-soft)] px-4 py-3 text-sm text-[color:var(--bo-heading)]"
+              role="status"
+            >
+              <p>
+                <span className="font-semibold">New RFP ticket — needs processing:</span>{" "}
+                <Link
+                  href={`/rfp/${arrivalBanner.ticketId}`}
+                  className="font-semibold text-[color:var(--bo-accent)] hover:underline"
+                >
+                  {arrivalBanner.label}
+                </Link>
+              </p>
+              <button
+                type="button"
+                onClick={() => setArrivalBanner(null)}
+                className="bo-btn-secondary px-2.5 py-1 text-xs normal-case tracking-normal"
+              >
+                Dismiss
+              </button>
+            </div>
+          ) : null}
+
           {!listLoading && !listError && tickets?.length === 0 ? (
             <p className="text-sm bo-muted">No RFP tickets yet. Upload a PDF to begin.</p>
           ) : null}
@@ -294,7 +476,9 @@ export default function RfpPage(): React.JSX.Element {
                   {tickets.map((ticket) => (
                     <tr
                       key={ticket.ticket_id}
-                      className="border-b border-[color:var(--bo-panel-border)]/60"
+                      className={newTicketRowClassName(
+                        highlightedTicketIds.has(ticket.ticket_id),
+                      )}
                     >
                       <td className="px-3 py-3">
                         <Link
