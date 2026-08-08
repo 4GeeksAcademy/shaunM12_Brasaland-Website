@@ -5,7 +5,7 @@
 **Branch:** `milestone-10-real-time-systems-sse-p1`  
 **Status:** Spec locked — ready for implementation  
 **Depends on:** [context-27-milestone-9-rfp-intake-routing-p1.md](./context-27-milestone-9-rfp-intake-routing-p1.md) (RFP entities, `/rfp` API, `/rfp` UI), [context-22-route-conventions.md](./context-22-route-conventions.md) (routing/proxy/casing), root [`CONTEXT.md`](../../CONTEXT.md) (company identity only)  
-**Companion (Part 2 — separate branch):** Context 28 Part 2 — WebSocket chat streaming for Support Agent (**not Part 1 scope**)  
+**Companion (Part 2 — separate branch):** [context-28-milestone-10-real-time-systems-websocket-chat-streaming-p2.md](./context-28-milestone-10-real-time-systems-websocket-chat-streaming-p2.md) — WebSocket chat streaming for Support Agent (**not Part 1 scope**)  
 **Stakeholders:** Camila Ospina (Marketing — process owner); Brasaland Digital backoffice users
 
 > **Read this file before Part 1 implementation.** Part 2 is a separate branch and must not be mixed into this PR.
