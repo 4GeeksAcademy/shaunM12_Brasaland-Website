@@ -204,7 +204,9 @@ export default function RfpPage(): React.JSX.Element {
   useEffect(() => {
     const disconnect = connectRfpTicketStream({
       onStateChange: setSseConnectionState,
-      onRecover: () => refreshList({ silent: true }),
+      onRecover: async () => {
+        await refreshList({ silent: true });
+      },
       onTicketCreated: (event) => {
         announceNewTicket(rfpTicketSummaryFromCreatedEvent(event));
       },
