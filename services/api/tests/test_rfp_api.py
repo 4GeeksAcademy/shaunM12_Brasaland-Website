@@ -41,6 +41,7 @@ def _stub_generation_env(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_rfp_routes_require_auth(anon_client):
     assert anon_client.get("/rfp/tickets").status_code == 401
     assert anon_client.get("/rfp/tickets/fake-id").status_code == 401
+    assert anon_client.get("/rfp/events/stream").status_code == 401
     assert anon_client.post("/rfp/tickets").status_code == 401
 
 

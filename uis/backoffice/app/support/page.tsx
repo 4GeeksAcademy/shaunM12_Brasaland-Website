@@ -1,15 +1,56 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { askSupportAgent, resetSupportThreadId } from "@/lib/agent";
+import { resetSupportSessionId } from "@/lib/agent";
+import { SUPPORT_SESSION_STORAGE_KEY } from "@/lib/agent-chat-session";
+import {
+  getSupportSessionId,
+  isAssistantStreaming,
+  type AgentChatConnectionState,
+  type SupportChatMessage,
+  supportTurnsFromMessages,
+} from "@/lib/agent-chat-ws";
 import {
   MEMORY_APPROVE_PHRASE,
   clearedMemoryMessage,
   getMemoryCoachingState,
   isBareAssent,
-  type SupportTurn,
 } from "@/lib/support-memory-coaching";
+import { useSupportChatWs } from "@/lib/use-support-chat-ws";
+
+function connectionStatusLabel(
+  state: AgentChatConnectionState,
+  sessionReady: boolean,
+): string {
+  if (!sessionReady) {
+    return "Preparing session…";
+  }
+  switch (state) {
+    case "live":
+      return "Live";
+    case "connecting":
+      return "Connecting…";
+    case "reconnecting":
+      return "Reconnecting…";
+    case "stopped":
+      return "Disconnected";
+    default:
+      return "Connecting…";
+  }
+}
+
+function connectionStatusClass(state: AgentChatConnectionState, sessionReady: boolean): string {
+  const base =
+    "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold";
+  if (!sessionReady || state === "connecting" || state === "reconnecting") {
+    return `${base} border-[color:var(--bo-panel-border)] bg-[color:var(--bo-row-bg)] bo-muted`;
+  }
+  if (state === "live") {
+    return `${base} border-[color:var(--bo-accent)]/40 bg-[color:var(--bo-accent-soft)] text-[color:var(--bo-accent)]`;
+  }
+  return `${base} border-[color:var(--bo-panel-border)] bg-[color:var(--bo-row-bg)] bo-muted`;
+}
 
 const EXAMPLE_QUESTIONS = [
   "Show me all incidents",
@@ -28,24 +69,68 @@ const SUPPORT_TIPS = [
   "Memory corrections: send the correction first, then reply in a separate message (e.g. \"Yes, please remember that\").",
 ];
 
+function assistantBubbleClass(status: SupportChatMessage["status"]): string {
+  const base =
+    "whitespace-pre-wrap rounded-lg border px-3 py-2 text-sm leading-relaxed text-[color:var(--bo-fg)]";
+  if (status === "interrupted") {
+    return `${base} border-[color:var(--bo-accent)]/50 bg-[color:var(--bo-accent-soft)]/40`;
+  }
+  return `${base} border-[color:var(--bo-panel-border)] bg-[color:var(--bo-answer-bg)]`;
+}
+
 export default function SupportPage(): React.JSX.Element {
+  // Storage is unavailable during SSR — hydrate the id after mount.
+  const [sessionId, setSessionId] = useState("");
+  useEffect(() => {
+    setSessionId(getSupportSessionId());
+  }, []);
+
+  const {
+    connectionState: wsConnectionState,
+    canSend: chatCanSend,
+    messages,
+    streaming,
+    pendingTurn,
+    askError,
+    setAskError,
+    setMessages,
+    sendChatMessage,
+    resetChatUi,
+  } = useSupportChatWs(sessionId);
+
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key !== SUPPORT_SESSION_STORAGE_KEY || !event.newValue) {
+        return;
+      }
+      setSessionId(event.newValue);
+      resetChatUi();
+      setQuestion("");
+      setCopyFeedback("");
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [resetChatUi]);
+
   const [question, setQuestion] = useState("");
-  const [turns, setTurns] = useState<SupportTurn[]>([]);
-  const [asking, setAsking] = useState(false);
-  const [askError, setAskError] = useState("");
   const [tipsOpen, setTipsOpen] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState("");
 
-  const inConversation = turns.length > 0;
+  const inConversation = messages.length > 0;
+  const turns = useMemo(() => supportTurnsFromMessages(messages), [messages]);
   const memoryCoaching = useMemo(() => getMemoryCoachingState(turns), [turns]);
   const showBareAssentWarning =
     memoryCoaching?.kind === "awaiting_approval" && isBareAssent(question);
+  const busy = streaming || pendingTurn;
+  const submitEnabled = chatCanSend && (!busy || streaming);
+  const sessionReady = Boolean(sessionId);
+  const connectionLabel = connectionStatusLabel(wsConnectionState, sessionReady);
 
   const handleNewConversation = () => {
-    resetSupportThreadId();
+    const nextSessionId = resetSupportSessionId();
+    setSessionId(nextSessionId);
     setQuestion("");
-    setTurns([]);
-    setAskError("");
+    resetChatUi();
     setCopyFeedback("");
   };
 
@@ -74,7 +159,7 @@ export default function SupportPage(): React.JSX.Element {
     setCopyFeedback("");
   };
 
-  const handleAsk = async (event: FormEvent) => {
+  const handleAsk = (event: FormEvent) => {
     event.preventDefault();
     const trimmed = question.trim();
     if (!trimmed) {
@@ -82,37 +167,50 @@ export default function SupportPage(): React.JSX.Element {
       return;
     }
 
-    setAsking(true);
-    setAskError("");
-    setCopyFeedback("");
-    try {
-      const result = await askSupportAgent(trimmed);
-      if (!result.answer?.trim()) {
-        setAskError("The API returned an empty answer. Try again.");
-        return;
-      }
-      setTurns((previous) => [
-        ...previous,
-        { question: trimmed, answer: result.answer },
-      ]);
-      setQuestion("");
-    } catch (caught) {
-      setAskError(caught instanceof Error ? caught.message : String(caught));
-    } finally {
-      setAsking(false);
+    const interrupt = isAssistantStreaming(messages);
+    if (!sendChatMessage(trimmed, interrupt)) {
+      return;
     }
+    setQuestion("");
   };
 
   return (
     <main className="bo-page">
       <div className="bo-container-narrow space-y-6">
         <header className="bo-header">
-          <p className="bo-eyebrow">Brasaland Support Agent</p>
-          <h1 className="bo-title">Ask the traceable support agent</h1>
-          <p className="bo-lead max-w-2xl">
-            Live incidents and inventory stock via MCP and direct APIs, plus knowledge-base
-            policies. Answers run through a LangGraph workflow with server-side tracing.
-          </p>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="bo-eyebrow">Brasaland Support Agent</p>
+              <h1 className="bo-title">Ask the traceable support agent</h1>
+              <p className="bo-lead max-w-2xl">
+                Live incidents and inventory stock via MCP and direct APIs, plus knowledge-base
+                policies. Answers run through a LangGraph workflow with server-side tracing.
+              </p>
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <span
+                className={connectionStatusClass(wsConnectionState, sessionReady)}
+                aria-live="polite"
+              >
+                {wsConnectionState === "live" ? (
+                  <span
+                    className="h-1.5 w-1.5 rounded-full bg-[color:var(--bo-accent)]"
+                    aria-hidden
+                  />
+                ) : null}
+                {connectionLabel}
+              </span>
+              {sessionReady ? (
+                <p className="max-w-xs text-right font-mono text-[10px] leading-snug bo-muted">
+                  Session{" "}
+                  <span title={sessionId}>{sessionId.slice(0, 8)}…</span>
+                  {" · "}
+                  {messages.length} message{messages.length === 1 ? "" : "s"}
+                  {chatCanSend ? " · ready" : " · not ready"}
+                </p>
+              ) : null}
+            </div>
+          </div>
         </header>
 
         <section className="bo-header">
@@ -129,6 +227,10 @@ export default function SupportPage(): React.JSX.Element {
               {SUPPORT_TIPS.map((tip) => (
                 <li key={tip}>{tip}</li>
               ))}
+              <li>
+                Two-tab test: duplicate this tab (same Session id in the header), wait for{" "}
+                <strong>Live</strong>, then ask in one tab — the other should show the same answer.
+              </li>
             </ul>
           ) : null}
 
@@ -137,7 +239,7 @@ export default function SupportPage(): React.JSX.Element {
               <button
                 key={example}
                 type="button"
-                disabled={asking}
+                disabled={busy}
                 className="rounded-full border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] px-3 py-1.5 text-xs font-medium text-[color:var(--bo-fg)] transition hover:border-[color:var(--bo-accent)] hover:text-[color:var(--bo-accent)] disabled:opacity-50"
                 onClick={() => {
                   setQuestion(example);
@@ -149,28 +251,27 @@ export default function SupportPage(): React.JSX.Element {
             ))}
           </div>
 
-          {turns.length > 0 ? (
-            <div className="mt-6 space-y-4" aria-live="polite">
-              {turns.map((turn, index) => (
+          {messages.length > 0 ? (
+            <div className="mt-6 space-y-3" aria-live="polite">
+              {messages.map((message) => (
                 <article
-                  key={`${index}-${turn.question.slice(0, 24)}`}
-                  className="space-y-3 rounded-xl border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] p-4"
+                  key={message.message_id}
+                  className="rounded-xl border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] p-4"
                 >
-                  <div className="space-y-1">
-                    <h2 className="text-xs font-semibold uppercase tracking-[0.12em] bo-muted">
-                      You asked
-                    </h2>
-                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-[color:var(--bo-fg)]">
-                      {turn.question}
-                    </p>
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-xs font-semibold uppercase tracking-[0.12em] bo-muted">
-                      Answer
-                    </h3>
-                    <div className="whitespace-pre-wrap rounded-lg border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-answer-bg)] px-3 py-2 text-sm leading-relaxed text-[color:var(--bo-fg)]">
-                      {turn.answer}
-                    </div>
+                  <h2 className="text-xs font-semibold uppercase tracking-[0.12em] bo-muted">
+                    {message.role === "user" ? "You asked" : "Answer"}
+                    {message.status === "interrupted" ? " (interrupted)" : null}
+                    {message.status === "streaming" ? " (streaming…)" : null}
+                  </h2>
+                  <div
+                    className={
+                      message.role === "user"
+                        ? "mt-2 whitespace-pre-wrap text-sm leading-relaxed text-[color:var(--bo-fg)]"
+                        : `mt-2 ${assistantBubbleClass(message.status)}`
+                    }
+                    aria-live={message.status === "streaming" ? "polite" : undefined}
+                  >
+                    {message.content || (message.status === "streaming" ? "…" : "")}
                   </div>
                 </article>
               ))}
@@ -192,7 +293,7 @@ export default function SupportPage(): React.JSX.Element {
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
                   type="button"
-                  disabled={asking}
+                  disabled={busy}
                   className="rounded-full border border-[color:var(--bo-accent)] bg-[color:var(--bo-panel-bg)] px-3 py-1.5 text-xs font-medium text-[color:var(--bo-accent)] transition hover:bg-[color:var(--bo-answer-bg)] disabled:opacity-50"
                   onClick={handleUseApprovePhrase}
                 >
@@ -200,7 +301,7 @@ export default function SupportPage(): React.JSX.Element {
                 </button>
                 <button
                   type="button"
-                  disabled={asking}
+                  disabled={busy}
                   className="rounded-full border border-[color:var(--bo-panel-border)] bg-[color:var(--bo-panel-bg)] px-3 py-1.5 text-xs font-medium text-[color:var(--bo-fg)] transition hover:border-[color:var(--bo-accent)] hover:text-[color:var(--bo-accent)] disabled:opacity-50"
                   onClick={() => {
                     void handleCopyApprovePhrase();
@@ -224,7 +325,7 @@ export default function SupportPage(): React.JSX.Element {
               {memoryCoaching.correctionToResend ? (
                 <button
                   type="button"
-                  disabled={asking}
+                  disabled={busy}
                   className="bo-btn-secondary mt-3"
                   onClick={handleResendCorrection}
                 >
@@ -251,12 +352,14 @@ export default function SupportPage(): React.JSX.Element {
                 placeholder={
                   memoryCoaching?.kind === "awaiting_approval"
                     ? `Reply with "${MEMORY_APPROVE_PHRASE}" or ask a follow-up after approving`
-                    : inConversation
-                      ? `e.g. "${MEMORY_APPROVE_PHRASE}" or a follow-up question`
-                      : 'e.g. "Show me all incidents" or "Stock for beef at Chapinero"'
+                    : streaming
+                      ? "Type a redirect — this will interrupt the current answer"
+                      : inConversation
+                        ? `e.g. "${MEMORY_APPROVE_PHRASE}" or a follow-up question`
+                        : 'e.g. "Show me all incidents" or "Stock for beef at Chapinero"'
                 }
                 className="bo-textarea"
-                disabled={asking}
+                disabled={busy && !streaming}
               />
             </label>
 
@@ -268,12 +371,20 @@ export default function SupportPage(): React.JSX.Element {
             ) : null}
 
             <div className="flex flex-wrap gap-3">
-              <button type="submit" disabled={asking} className="bo-btn-primary">
-                {asking ? "Asking…" : "Ask"}
+              <button
+                type="submit"
+                disabled={!submitEnabled}
+                className="bo-btn-primary"
+              >
+                {streaming
+                  ? "Interrupt & send"
+                  : pendingTurn
+                    ? "Asking…"
+                    : "Ask"}
               </button>
               <button
                 type="button"
-                disabled={asking}
+                disabled={busy}
                 className="bo-btn-secondary"
                 onClick={handleNewConversation}
               >
@@ -282,7 +393,7 @@ export default function SupportPage(): React.JSX.Element {
             </div>
           </form>
 
-          {asking ? (
+          {pendingTurn && !streaming ? (
             <p className="mt-4 text-sm bo-muted" role="status">
               Running the support graph…
             </p>

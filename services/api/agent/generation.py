@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from typing import Any
 
 from data.pipelines.rag import _generation_settings, _load_env, generation_client
@@ -388,3 +389,73 @@ def knowledge_system_prompt_for_tests() -> str:
     from data.pipelines.prompt_security import knowledge_system_prompt
 
     return knowledge_system_prompt()
+
+
+def chunk_text_for_streaming(text: str) -> list[str]:
+    """Split visible answer text into word-sized stream tokens."""
+    import re
+
+    cleaned = text or ""
+    if not cleaned:
+        return []
+    tokens = re.findall(r"\S+\s*", cleaned)
+    return tokens or [cleaned]
+
+
+def _stream_completion_tokens_sync(*, system_prompt: str, user_prompt: str):
+    """Yield raw LLM deltas with ``stream=True`` (sync iterator for thread offload)."""
+    _load_env()
+    _, _, model_id = _generation_settings()
+    client = generation_client()
+    response = client.chat.completions.create(
+        model=model_id,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        temperature=0.2,
+        stream=True,
+    )
+    for chunk in response:
+        delta = chunk.choices[0].delta.content or ""
+        if delta:
+            yield delta
+
+
+async def iter_llm_completion_tokens(*, question: str, graph_state: dict[str, Any]):
+    """Stream visible answer text when graph returned no final ``answer`` (WS fallback path)."""
+    rag_context = graph_state.get("context_text") or ""
+    tool_results = graph_state.get("tool_results")
+    memory_context = graph_state.get("memory_context") or ""
+    context = build_combined_context(
+        rag_context=rag_context,
+        tool_results=tool_results,
+        memory_context=memory_context,
+    )
+    if not context:
+        for token in chunk_text_for_streaming(
+            "I couldn't find enough context to answer that yet. Try rephrasing your question."
+        ):
+            yield token
+            await asyncio.sleep(0)
+        return
+
+    user_prompt = build_support_user_prompt(
+        question=question.strip(),
+        context=context,
+        memory_context=memory_context,
+        scoped_location_id=_scoped_location_for_question(question),
+    )
+
+    def _produce_tokens():
+        return list(
+            _stream_completion_tokens_sync(
+                system_prompt=support_system_prompt(),
+                user_prompt=user_prompt,
+            )
+        )
+
+    tokens = await asyncio.to_thread(_produce_tokens)
+    for token in tokens:
+        yield token
+        await asyncio.sleep(0)

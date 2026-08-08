@@ -3,7 +3,7 @@
 [![4Geeks Academy](https://img.shields.io/badge/4Geeks-Academy-blue)](https://4geeksacademy.com)
 [![AI Engineering](https://img.shields.io/badge/track-AI%20Engineering-green)](https://4geeksacademy.com/es/programas-de-carrera/ingenieria-ia)
 
-Brasaland transversal project for the **4Geeks Academy AI Engineering** program: FastAPI backend, Next.js public site and backoffice, shared TypeScript utilities, data pipelines, RAG, LangGraph agents, MCP tooling, and operational memory.
+Brasaland transversal project for the **4Geeks Academy AI Engineering** program: FastAPI backend, Next.js public site and backoffice, shared TypeScript utilities, data pipelines, RAG, LangGraph agents, MCP tooling, operational memory, agentic RFP workflows, and real-time transports (SSE + WebSocket).
 
 > Spanish instructions: [README.es.md](./README.es.md)
 
@@ -17,9 +17,9 @@ All milestone specs: [memory-bank/historical-reference/context-index.md](./memor
 ## Repository map
 
 ```text
-├── services/api/       FastAPI — auth, inventory, incidents, telemetry, reporting, knowledge, agent
+├── services/api/       FastAPI — auth, inventory, incidents, RFP, telemetry, reporting, knowledge, agent, chat WS
 ├── uis/website/        Public corporate site + Brasa Points registration (Milestone 1)
-├── uis/backoffice/     Internal ops UI — inventory, incidents, reporting, knowledge, support (Milestones 3–8)
+├── uis/backoffice/     Internal ops UI — inventory, incidents, reporting, knowledge, RFP, support (Milestones 3–10)
 ├── src/                Shared TypeScript business logic (Milestone 2)
 ├── packages/shared/    Shared Python helpers (e.g. restaurant location IDs)
 ├── mcps/               OAuth MCP servers — company-tools for incidents + inventory (Context 24)
@@ -69,6 +69,22 @@ npm run mcp:dev          # http://127.0.0.1:8765 — set MCPAUTH_REGISTRATION_SE
 docker compose up -d qdrant   # or local Qdrant on QDRANT_URL from .env.example
 ```
 
+Support chat connects over **WebSocket** (not REST). The UI shows **Live / Reconnecting…** while streaming `token_chunk` events. The same `session_id` is stored in `localStorage` for multi-tab continuity. `POST /agent/query` remains available for API regression tests.
+
+### Full stack — RFP dashboard (`/rfp`)
+
+Needs **FastAPI**, **Postgres**, and backoffice (Milestone 9). Milestone 10 Part 1 adds **SSE** for new ticket notifications:
+
+```bash
+npm run api:dev
+cd uis/backoffice && npm run dev
+# Open /rfp — Live badge when SSE connected; new tickets arrive without full-table refresh
+```
+
+Optional smoke: `cd services/api && uv run python ../../scripts/rfp_intake_smoke.py --seed 2`
+
+Detail: [services/api/README.md](./services/api/README.md#rfp-workflow-milestone-9)
+
 ### Full stack — Knowledge Assistant (`/knowledge`)
 
 API + Qdrant + backoffice (reindex via API or scripts; see [docs/rag/rag-design.md](./docs/rag/rag-design.md)).
@@ -100,7 +116,8 @@ Docker Compose services: `backend`, `ui`, `redis`, `celery-worker`, `flower`, `n
 | `/data-processing` | Incident file analyzer UI | [context-5](./memory-bank/historical-reference/context-5-incident-file-analyzer.md) |
 | `/candidates/[id]` | HR candidate detail (demo) | Milestone 3–4 |
 | `/knowledge` | RAG knowledge assistant | [context-21](./memory-bank/historical-reference/context-21-rag-knowledge-base.md) |
-| `/support` | LangGraph support agent + memory coaching | [context-23](./memory-bank/historical-reference/context-23-support-agent-langgraph-p1.md)–[26](./memory-bank/historical-reference/context-26-milestone-8-agent-memory.md) |
+| `/rfp`, `/rfp/[id]` | RFP intake, draft, approval, final document + live SSE ticket feed | [context-27 P1–P3](./memory-bank/historical-reference/context-27-milestone-9-rfp-intake-routing-p1.md), SSE [context-28 P1](./memory-bank/historical-reference/context-28-milestone-10-real-time-systems-sse-p1.md) |
+| `/support` | LangGraph support agent — **WebSocket** streaming, interrupt, reconnect, memory coaching | [context-23](./memory-bank/historical-reference/context-23-support-agent-langgraph-p1.md)–[26](./memory-bank/historical-reference/context-26-milestone-8-agent-memory.md), WS [context-28 P2](./memory-bank/historical-reference/context-28-milestone-10-real-time-systems-websocket-chat-streaming-p2.md) |
 
 Route/proxy conventions: [context-22](./memory-bank/historical-reference/context-22-route-conventions.md).
 
@@ -108,7 +125,7 @@ Route/proxy conventions: [context-22](./memory-bank/historical-reference/context
 
 ## Deliverables by milestone
 
-Status reflects work merged into this repo through **Milestone 8**. Milestones **9–10** (workflows, real-time) are the remaining course scope.
+Status reflects work through **Milestone 9** (RFP agentic workflow on `main`) and **Milestone 10** (real-time: RFP SSE + Support WebSocket chat). See milestone table below.
 
 | Milestone | Status | Summary | Key paths / specs |
 | --------- | ------ | ------- | ----------------- |
@@ -120,7 +137,9 @@ Status reflects work merged into this repo through **Milestone 8**. Milestones *
 | **6** | Done | Telemetry capture, Prefect pipeline, reporting APIs + UI | `services/api/telemetry/`, `reporting/`, [PIPELINE_DESIGN.md](./docs/pipelines/PIPELINE_DESIGN.md), contexts 15–16 |
 | **7** | Done | RAG knowledge base — Qdrant, embed, retrieve, `/knowledge` | `services/api/knowledge/`, `docs/rag/`, `docs/company-knowledge-base/`, [context-21](./memory-bank/historical-reference/context-21-rag-knowledge-base.md) |
 | **8** | Done | Agent memory (MEM-092) — propose, confirm, audit, inject | `services/api/agent/memory/`, [memory-design.md](./docs/agent/memory-design.md), [context-26](./memory-bank/historical-reference/context-26-milestone-8-agent-memory.md) |
-| **9–10** | Planned | Workflows, real-time (course) | `agents/`, `skills/` scaffolding |
+| **9** | Done | Agentic RFP workflow — intake/routing, draft generation, HITL approval, final document | `services/api/rfp/`, `uis/backoffice/app/rfp/`, [context-27 P1](./memory-bank/historical-reference/context-27-milestone-9-rfp-intake-routing-p1.md)–[P3](./memory-bank/historical-reference/context-27-milestone-9-rfp-approval-document-p3.md) |
+| **10 P1** | Done | RFP SSE — `rfp_ticket_created` on `/rfp` dashboard (refetch-then-SSE, dedupe) | `services/api/rfp/sse.py`, `uis/backoffice/lib/rfp-sse.ts`, [context-28 P1](./memory-bank/historical-reference/context-28-milestone-10-real-time-systems-sse-p1.md) |
+| **10 P2** | Done | Support WebSocket chat — token streaming, interrupt, reconnect, multi-tab fan-out | `services/api/agent/chat_*.py`, `uis/backoffice/lib/agent-chat-ws.ts`, [context-28 P2](./memory-bank/historical-reference/context-28-milestone-10-real-time-systems-websocket-chat-streaming-p2.md) |
 
 ### Cross-cutting workstreams (also shipped)
 
@@ -154,6 +173,17 @@ Built incrementally on `/agent/query` and `/support`:
 - `uis/backoffice/lib/support-memory-coaching.ts` — approve-phrase UI on `/support`  
 - Tests: `services/api/tests/pipelines/test_agent_memory*.py`
 
+### Real-time transports (Milestone 10)
+
+| Surface | Transport | Endpoint / module | Spec |
+| ------- | --------- | ----------------- | ---- |
+| RFP dashboard `/rfp` | **SSE** (server → client) | `GET /rfp/events/stream` via `/api/rfp/events/stream`; `rfp-sse.ts` | [context-28 P1](./memory-bank/historical-reference/context-28-milestone-10-real-time-systems-sse-p1.md) |
+| Support chat `/support` | **WebSocket** (bidirectional) | `WS /agent/chat/ws` via `/api/agent/chat/ws?session_id=&access_token=`; `agent-chat-ws.ts` | [context-28 P2](./memory-bank/historical-reference/context-28-milestone-10-real-time-systems-websocket-chat-streaming-p2.md) |
+
+- **`POST /agent/query`** remains for regression; `/support` UI uses WebSocket.
+- RFP uses SSE only; support chat uses WebSocket only — do not mix transports.
+- Chat persistence: Postgres `agent_chat_sessions` / `agent_chat_messages`; LangGraph checkpoint still keyed by `session_id` (= `thread_id`).
+
 ---
 
 ## API surface (high level)
@@ -168,7 +198,10 @@ Built incrementally on `/agent/query` and `/support`:
 | `/reporting` | Weekly KPIs; `POST /reporting/pipeline-runs` → Celery |
 | `/tasks/{task_id}` | Async task status |
 | `/knowledge/query`, `/knowledge/reindex` | RAG (Qdrant) |
-| `/agent/query` | LangGraph support agent (optional `thread_id` for memory) |
+| `/rfp/*` | Milestone 9 — PDF intake, draft, approval, final document, trace |
+| `/rfp/events/stream` | Milestone 10 P1 — SSE `rfp_ticket_created` (JWT via `authorizedFetch`, not `EventSource`) |
+| `/agent/query` | LangGraph support agent (optional `thread_id`); REST fallback — `/support` UI uses WebSocket |
+| `/agent/chat/ws` | Milestone 10 P2 — Support chat WebSocket (JWT in `access_token` query param) |
 
 Detail: [services/api/README.md](./services/api/README.md).
 
@@ -201,11 +234,20 @@ npm run api:test
 # Agent memory regression gate (MEM-092)
 cd services/api && uv run pytest tests/pipelines/test_agent_memory*.py tests/test_agent_api.py -q
 
+# RFP workflow + SSE (M9 + M10 P1)
+cd services/api && uv run pytest tests/test_rfp_sse.py tests/pipelines/test_rfp_e2e.py -q
+
+# Support WebSocket chat (M10 P2)
+cd services/api && uv run pytest tests/test_agent_chat_ws.py -q
+
 # MCP server
 npm run mcp:test
 
 # Backoffice
 cd uis/backoffice && npm test
+
+# Backoffice real-time client tests
+cd uis/backoffice && npm test -- --run tests/agent-chat-ws.test.ts tests/rfp-sse.test.ts
 ```
 
 ---

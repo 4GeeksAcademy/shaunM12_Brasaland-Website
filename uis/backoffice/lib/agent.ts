@@ -1,6 +1,10 @@
 /** Support Agent API client (context-23 Part 1 Phase 3 + MEM-092 thread continuity). */
 
 import { formatApiError } from "@/lib/api-error";
+import {
+  getSupportSessionId as getStoredSupportSessionId,
+  resetSupportSessionId as resetStoredSupportSessionId,
+} from "@/lib/agent-chat-session";
 import { authorizedFetch } from "@/lib/http";
 
 export interface AgentQueryResponse {
@@ -11,8 +15,6 @@ export interface AgentQueryRequest {
   question: string;
   thread_id?: string;
 }
-
-const SUPPORT_THREAD_STORAGE_KEY = "brasaland_support_thread_id";
 
 function getBaseUrl(): string {
   const configured = process.env.NEXT_PUBLIC_AGENT_API_BASE_URL?.trim();
@@ -51,24 +53,21 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return JSON.parse(body) as T;
 }
 
+export function getSupportSessionId(): string {
+  return getStoredSupportSessionId();
+}
+
+export function resetSupportSessionId(): string {
+  return resetStoredSupportSessionId();
+}
+
+/** REST regression alias — same value as ``session_id`` / LangGraph ``thread_id``. */
 export function getSupportThreadId(): string {
-  if (typeof window === "undefined") {
-    return "";
-  }
-  let threadId = sessionStorage.getItem(SUPPORT_THREAD_STORAGE_KEY);
-  if (!threadId) {
-    threadId = crypto.randomUUID();
-    sessionStorage.setItem(SUPPORT_THREAD_STORAGE_KEY, threadId);
-  }
-  return threadId;
+  return getSupportSessionId();
 }
 
 export function resetSupportThreadId(): string {
-  const threadId = crypto.randomUUID();
-  if (typeof window !== "undefined") {
-    sessionStorage.setItem(SUPPORT_THREAD_STORAGE_KEY, threadId);
-  }
-  return threadId;
+  return resetSupportSessionId();
 }
 
 export async function askSupportAgent(

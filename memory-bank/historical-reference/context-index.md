@@ -44,6 +44,8 @@ Ordered index of historical reference context documents.
 - `context-27-milestone-9-rfp-intake-routing-p1.md` — **Milestone 9 Part 1 (parent spec):** shared §1–§9 + RFP intake/routing — `/rfp` API + UI, LangGraph, MarkItDown, classifier, OWS, Postgres, locked decisions M9-1–H8
 - `context-27-milestone-9-rfp-response-generation-p2.md` — **Milestone 9 Part 2:** response generation + evaluation — generators, evaluators, loop, `POST .../draft` (**27 decisions confirmed 2026-08-06** — read p1 §1–§9 first)
 - `context-27-milestone-9-rfp-approval-document-p3.md` — **Milestone 9 Part 3:** HITL approval + final document — interrupt/resume, arbitration, CEO gate, E2E (**14 decisions locked 2026-08-06** — read p1 §1–§9 + p2 first)
+- `context-28-milestone-10-real-time-systems-sse-p1.md` — **Milestone 10 Part 1:** RFP SSE notifications — `GET /rfp/events/stream`, in-memory pub/sub, refetch-then-SSE, `/rfp` UI (locked 2026-08-07; Part 2 is separate branch)
+- `context-28-milestone-10-real-time-systems-websocket-chat-streaming-p2.md` — **Milestone 10 Part 2:** Support Agent WebSocket chat streaming — `WS /agent/chat/ws`, pub/sub, abort, reconnect, `/support` UI (locked 2026-08-07; read Part 1 companion for SSE only)
 - Seed PDFs (when added): `assets/milestone-9/CONTEXT-brasaland-request-{1,2,3}.pdf` under `memory-bank/historical-reference/`
 
 ## Numbering Notes
@@ -63,4 +65,5 @@ Ordered index of historical reference context documents.
 - `context-25` is reserved for SEC-114 agent harness and guardrails (Support Agent `/agent/query`).
 - `context-26` is reserved for MEM-092 agent memory and self-improvement (Support Agent `/agent/query`, Milestone 8).
 - `context-27` is reserved for Milestone 9 agentic RFP workflow: Part 1 parent spec (`-p1`) plus companion `-p2` / `-p3` for generation/evaluation and HITL approval. **Not** `context-9` (error-handling).
+- `context-28` is reserved for Milestone 10 real-time systems: Part 1 SSE RFP notifications (`-sse-p1`); Part 2 WebSocket support chat streaming (`-websocket-chat-streaming-p2`) — separate branches/PRs.
 - `context-9` currently has three related companion files by design.
